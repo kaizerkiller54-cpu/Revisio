@@ -1,0 +1,6 @@
+{
+  "name": "Revisio",
+  "description": "Plateforme Revisio de consultation, partage et gestion des anciennes épreuves pour les étudiants de première année de l'Institut Universitaire Saint Jean.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

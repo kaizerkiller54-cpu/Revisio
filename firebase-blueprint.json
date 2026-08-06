@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Système d'utilisateurs ISJ (Étudiants, Admins, SuperAdmins)",
+      "type": "object",
+      "properties": {
+        "nom": { "type": "string", "maxLength": 100 },
+        "prenom": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["Etudiant", "Administrateur", "SuperAdministrateur"] },
+        "dateCreation": { "type": "string" }
+      },
+      "required": ["nom", "prenom", "email", "role", "dateCreation"]
+    },
+    "DocumentModel": {
+      "title": "DocumentModel",
+      "description": "Épreuves et sujets d'examens ISJ",
+      "type": "object",
+      "properties": {
+        "titre": { "type": "string", "maxLength": 200 },
+        "matiere": { "type": "string", "maxLength": 100 },
+        "semestre": { "type": "string", "enum": ["Semestre 1", "Semestre 2"] },
+        "typeEpreuve": { "type": "string", "enum": ["CC", "SN", "SR"] },
+        "anneeAcademique": { "type": "string", "maxLength": 20 },
+        "fichierUrl": { "type": "string", "maxLength": 500 },
+        "fichierNom": { "type": "string", "maxLength": 200 },
+        "statut": { "type": "string", "enum": ["En attente", "Publié", "Refusé"] },
+        "datePublication": { "type": "string" },
+        "dateAjout": { "type": "string" },
+        "telechargementsCount": { "type": "integer" },
+        "contributionId": { "type": "string" }
+      },
+      "required": ["titre", "matiere", "semestre", "typeEpreuve", "anneeAcademique", "fichierNom", "statut", "dateAjout", "telechargementsCount"]
+    },
+    "ContributionModel": {
+      "title": "ContributionModel",
+      "description": "Contributions soumises par les étudiants",
+      "type": "object",
+      "properties": {
+        "utilisateurId": { "type": "string" },
+        "utilisateurNom": { "type": "string", "maxLength": 150 },
+        "utilisateurEmail": { "type": "string", "maxLength": 120 },
+        "anneeAcademique": { "type": "string", "maxLength": 20 },
+        "matiere": { "type": "string", "maxLength": 100 },
+        "semestre": { "type": "string", "enum": ["Semestre 1", "Semestre 2"] },
+        "typeEpreuve": { "type": "string", "enum": ["CC", "SN", "SR"] },
+        "titre": { "type": "string", "maxLength": 200 },
+        "commentaire": { "type": "string", "maxLength": 1000 },
+        "fichierUrl": { "type": "string", "maxLength": 500 },
+        "fichierNom": { "type": "string", "maxLength": 200 },
+        "statut": { "type": "string", "enum": ["En attente", "Publié", "Refusé"] },
+        "dateEnvoi": { "type": "string" }
+      },
+      "required": ["utilisateurId", "utilisateurNom", "utilisateurEmail", "fichierNom", "statut", "dateEnvoi"]
+    },
+    "MatiereModel": {
+      "title": "MatiereModel",
+      "description": "Matières et enseignements à l'ISJ",
+      "type": "object",
+      "properties": {
+        "nom": { "type": "string", "maxLength": 100 },
+        "code": { "type": "string", "maxLength": 20 },
+        "semestre": { "type": "string", "enum": ["Semestre 1", "Semestre 2"] },
+        "description": { "type": "string", "maxLength": 500 },
+        "countDocs": { "type": "integer" }
+      },
+      "required": ["nom", "code", "semestre", "description", "countDocs"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Journal d'actions administratives",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "adminNom": { "type": "string", "maxLength": 150 },
+        "adminEmail": { "type": "string", "maxLength": 120 },
+        "action": { "type": "string" },
+        "details": { "type": "string", "maxLength": 1000 },
+        "targetId": { "type": "string" },
+        "targetName": { "type": "string", "maxLength": 150 },
+        "date": { "type": "string" }
+      },
+      "required": ["adminId", "adminNom", "adminEmail", "action", "details", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection des utilisateurs"
+    },
+    "/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/DocumentModel" },
+      "description": "Collection des épreuves et sujets publiés"
+    },
+    "/contributions/{contributionId}": {
+      "schema": { "$ref": "#/entities/ContributionModel" },
+      "description": "Collection des contributions déposées"
+    },
+    "/matieres/{matiereId}": {
+      "schema": { "$ref": "#/entities/MatiereModel" },
+      "description": "Collection des matières de cours"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Collection des logs d'audit des administrateurs"
+    }
+  }
+}

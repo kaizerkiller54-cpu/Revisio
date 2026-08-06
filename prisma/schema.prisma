@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  Etudiant
+  Administrateur
+  SuperAdministrateur
+}
+
+enum TypeEpreuve {
+  CC
+  SN
+  SR
+}
+
+enum Semestre {
+  Semestre_1
+  Semestre_2
+}
+
+enum Statut {
+  En_attente
+  Publie
+  Refuse
+}
+
+enum NotificationType {
+  info
+  success
+  warning
+  error
+}
+
+model User {
+  id        String   @id @default(uuid())
+  nom       String
+  prenom    String
+  email     String   @unique
+  role      Role     @default(Etudiant)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contributions Contribution[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Matiere {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  nom         String
+  semestre    Semestre
+  description String?
+
+  documents Document[]
+
+  @@map("matieres")
+}
+
+model Document {
+  id                   String     @id @default(uuid())
+  titre                String
+  matiereId            String
+  matiere              Matiere    @relation(fields: [matiereId], references: [id])
+  semestre             Semestre
+  typeEpreuve          TypeEpreuve
+  anneeAcademique      String
+  fichierUrl           String
+  fichierNom           String
+  statut               Statut     @default(Publie)
+  datePublication      DateTime?
+  telechargementsCount Int        @default(0)
+  contributionId       String?    @unique
+  contribution         Contribution? @relation(fields: [contributionId], references: [id])
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@index([matiereId, typeEpreuve, semestre])
+  @@map("documents")
+}
+
+model Contribution {
+  id              String    @id @default(uuid())
+  utilisateurId   String
+  utilisateurNom  String
+  utilisateurEmail String
+  utilisateur     User      @relation(fields: [utilisateurId], references: [id])
+  anneeAcademique String
+  matiere         String
+  semestre        Semestre
+  typeEpreuve     TypeEpreuve
+  titre           String?
+  commentaire     String?
+  fichierUrl      String
+  fichierNom      String
+  statut          Statut    @default(En_attente)
+  dateEnvoi       DateTime  @default(now())
+
+  document Document?
+
+  @@index([utilisateurId, statut])
+  @@map("contributions")
+}
+
+model UserActivity {
+  id          String   @id @default(uuid())
+  userId      String
+  userNom     String
+  userEmail   String
+  userRole    Role
+  actionType  String
+  description String
+  targetId    String?
+  targetTitle String?
+  timestamp   DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@map("user_activities")
+}
+
+model UserNotification {
+  id        String           @id @default(uuid())
+  userId    String // "user-id", "ALL", ou "ADMINS"
+  titre     String
+  message   String
+  type      NotificationType @default(info)
+  lue       Boolean          @default(false)
+  linkTab   String?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, lue])
+  @@map("user_notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  adminNom   String
+  adminEmail String
+  action     String
+  details    String
+  targetId   String?
+  targetName String?
+  date       DateTime @default(now())
+
+  @@map("audit_logs")
+}

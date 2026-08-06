@@ -1,0 +1,289 @@
+import React, { useState, useEffect } from "react";
+import { User, DocumentModel, MatiereModel, ContributionModel, DashboardStats } from "./types";
+import {
+  getMeApi,
+  getSubjectsApi,
+  getDocumentsApi,
+  getContributionsApi,
+  getAdminStatsApi,
+  recordDownloadApi
+} from "./lib/api";
+import { Navbar } from "./components/Navbar";
+import { Footer } from "./components/Footer";
+import { PdfViewerModal } from "./components/PdfViewerModal";
+import { HomeView } from "./views/HomeView";
+import { SubjectsView } from "./views/SubjectsView";
+import { ExamsView } from "./views/ExamsView";
+import { ContributeView } from "./views/ContributeView";
+import { AdminDashboardView } from "./views/AdminDashboardView";
+import { AdminDocumentsView } from "./views/AdminDocumentsView";
+import { SuperAdminAuditView } from "./views/SuperAdminAuditView";
+import { UserActivityLogView } from "./views/UserActivityLogView";
+import { LoginView } from "./views/LoginView";
+import { RegisterView } from "./views/RegisterView";
+import { SettingsView } from "./views/SettingsView";
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("home");
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(
+    (localStorage.getItem("isj_app_theme") as any) || "light"
+  );
+
+  const [documents, setDocuments] = useState<DocumentModel[]>([]);
+  const [matieres, setMatieres] = useState<MatiereModel[]>([]);
+  const [contributions, setContributions] = useState<ContributionModel[]>([]);
+  const [adminStats, setAdminStats] = useState<DashboardStats | null>(null);
+
+  const [previewDocument, setPreviewDocument] = useState<DocumentModel | null>(null);
+
+  const [examsFilters, setExamsFilters] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load initial datasets from API
+  const loadData = async () => {
+    try {
+      const me = await getMeApi();
+      if (me) {
+        setUser(me);
+      } else {
+        setUser(null);
+        setActiveTab("login");
+      }
+
+      const [docsData, subjectsData, contribsData, statsData] = await Promise.all([
+        getDocumentsApi({ statut: "Publié" }),
+        getSubjectsApi(),
+        getContributionsApi().catch(() => []),
+        getAdminStatsApi().catch(() => null),
+      ]);
+
+      setDocuments(docsData);
+      setMatieres(subjectsData);
+      setContributions(contribsData);
+      if (statsData) setAdminStats(statsData);
+    } catch (err) {
+      console.error("Erreur de chargement des données:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleNavigate = (tab: string, filterState?: any) => {
+    if (!user && tab !== "login" && tab !== "register") {
+      setAuthNotice("Connexion Obligatoire : Veuillez vous connecter ou créer un compte pour accéder aux ressources d'épreuves.");
+      setActiveTab("login");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (filterState) {
+      setExamsFilters(filterState);
+    }
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("isj_auth_token");
+    setActiveTab("login");
+  };
+
+  const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
+    setTheme(newTheme);
+    localStorage.setItem("isj_app_theme", newTheme);
+  };
+
+  const handleDownloadDocument = async (doc: DocumentModel) => {
+    if (!user) {
+      setAuthNotice(
+        "Accès Téléchargement Restreint : Vous devez être connecté ou créer un compte pour télécharger les épreuves au format PDF."
+      );
+      setActiveTab("register");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    try {
+      await recordDownloadApi(doc.id);
+      // Trigger download action in browser
+      const link = document.createElement("a");
+      link.href = doc.fichierUrl;
+      link.download = doc.fichierNom || `${doc.titre}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Optimistically increment download count
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id ? { ...d, telechargementsCount: (d.telechargementsCount || 0) + 1 } : d
+        )
+      );
+    } catch (err) {
+      console.error("Erreur lors du téléchargement:", err);
+    }
+  };
+
+  const userContributions = contributions.filter(
+    (c) => c.utilisateurEmail?.toLowerCase() === user?.email?.toLowerCase()
+  );
+
+  const isDarkMode = theme === "dark";
+  const isAuthPage = activeTab === "login" || activeTab === "register";
+
+  return (
+    <div
+      className={`min-h-screen flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300 ${
+        isDarkMode ? "bg-slate-950 text-slate-100 dark" : "bg-slate-50 text-slate-900"
+      }`}
+    >
+      {/* Top Navbar - Hidden on Auth pages */}
+      {!isAuthPage && (
+        <Navbar
+          user={user}
+          activeTab={activeTab}
+          setActiveTab={handleNavigate}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* Main Container */}
+      <main className={`flex-1 ${isAuthPage ? "w-full p-0 flex flex-col justify-center" : "max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"}`}>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-3">
+            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-slate-400 font-semibold">
+              Chargement des anciennes épreuves de l'ISJ...
+            </p>
+          </div>
+        ) : (
+          <>
+            {activeTab === "home" && (
+              <HomeView
+                documents={documents}
+                matieres={matieres}
+                onNavigate={handleNavigate}
+                onViewDoc={(doc) => setPreviewDocument(doc)}
+                onDownloadDoc={handleDownloadDocument}
+              />
+            )}
+
+            {activeTab === "subjects" && (
+              <SubjectsView
+                matieres={matieres}
+                onSelectMatiere={(matiereNom, semestre) =>
+                  handleNavigate("exams", { matiere: matiereNom, semestre })
+                }
+              />
+            )}
+
+            {activeTab === "exams" && (
+              <ExamsView
+                documents={documents}
+                onViewDoc={(doc) => setPreviewDocument(doc)}
+                onDownloadDoc={handleDownloadDocument}
+                initialFilters={examsFilters}
+              />
+            )}
+
+            {activeTab === "contribute" && (
+              <ContributeView
+                user={user}
+                onNavigateToLogin={() => setActiveTab("login")}
+                userContributions={userContributions}
+                onContributionSuccess={loadData}
+              />
+            )}
+
+            {(activeTab === "admin-dashboard") && (user?.role === "Administrateur" || user?.role === "SuperAdministrateur") && (
+              <AdminDashboardView
+                stats={adminStats}
+                onNavigateToModeration={() => setActiveTab("admin-documents")}
+              />
+            )}
+
+            {(activeTab === "admin-documents") && (user?.role === "Administrateur" || user?.role === "SuperAdministrateur") && (
+              <AdminDocumentsView
+                contributions={contributions}
+                documents={documents}
+                onRefreshData={loadData}
+                onPreviewPdf={(doc) => setPreviewDocument(doc)}
+              />
+            )}
+
+            {activeTab === "super-admin-audit" && user?.role === "SuperAdministrateur" && (
+              <SuperAdminAuditView
+                currentUser={user}
+                onRefreshData={loadData}
+              />
+            )}
+
+            {activeTab === "activity-log" && (
+              <UserActivityLogView
+                currentUser={user}
+              />
+            )}
+
+            {activeTab === "settings" && (
+              <SettingsView
+                user={user}
+                currentTheme={theme}
+                onChangeTheme={handleThemeChange}
+                onUpdateUser={(updated) => setUser(updated)}
+                onNavigateToRegister={() => setActiveTab("register")}
+              />
+            )}
+
+            {activeTab === "login" && (
+              <LoginView
+                onLoginSuccess={(loggedUser, token) => {
+                  setUser(loggedUser);
+                  localStorage.setItem("isj_auth_token", token);
+                  loadData();
+                  setActiveTab("home");
+                  setAuthNotice(null);
+                }}
+                onNavigateToRegister={() => {
+                  setAuthNotice(null);
+                  setActiveTab("register");
+                }}
+                redirectReason={authNotice}
+              />
+            )}
+
+            {activeTab === "register" && (
+              <RegisterView
+                onRegisterSuccess={(registeredUser, token) => {
+                  setUser(registeredUser);
+                  localStorage.setItem("isj_auth_token", token);
+                  loadData();
+                  setActiveTab("home");
+                  setAuthNotice(null);
+                }}
+                onNavigateToLogin={() => setActiveTab("login")}
+                redirectReason={authNotice}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* PDF View Modal */}
+      <PdfViewerModal
+        document={previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        onDownload={handleDownloadDocument}
+      />
+    </div>
+  );
+}
+
