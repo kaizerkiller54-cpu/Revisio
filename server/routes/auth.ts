@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "../prisma/client";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError, badRequest, unauthorized } from "../utils/errors";
 import { mapUser } from "../utils/mappers";
 import { authenticateJWT } from "../middlewares/authenticate";
 import { validate } from "../middlewares/validate";
-import { authRateLimiter } from "../middlewares/rateLimit";
+import { authRateLimiter, refreshRateLimiter } from "../middlewares/rateLimit";
 import { logUserActivity } from "../services/activity.service";
 import {
   createSupabaseUser,
@@ -16,27 +17,35 @@ import {
   type SupabaseSession,
   updateSupabasePassword,
 } from "../services/auth.service";
-import { getSuperAdminMasterKey } from "../config/superadmin";
+import { tryGetSuperAdminMasterKey } from "../config/superadmin";
 
 const router = Router();
 
+function masterKeyMatches(candidate: string | undefined, expected: string | null | undefined): boolean {
+  if (!expected || !candidate) return false;
+  const a = Buffer.from(candidate.trim());
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 const registerSchema = z.object({
-  nom: z.string().min(2, "Le nom est requis."),
-  prenom: z.string().min(2, "Le prénom est requis."),
-  email: z.string().email("Adresse e-mail invalide."),
-  motDePasse: z.string().min(4, "Le mot de passe doit contenir au moins 4 caractères."),
+  nom: z.string().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
+  prenom: z.string().min(2, "Le prénom est requis.").max(80, "Le prénom est trop long."),
+  email: z.string().email("Adresse e-mail invalide.").max(200),
+  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional(),
+  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
-  masterKey: z.string().optional(),
+  masterKey: z.string().max(256).optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email("Adresse e-mail invalide."),
-  motDePasse: z.string().min(1, "Le mot de passe est requis."),
-  masterKey: z.string().optional(),
+  email: z.string().email("Adresse e-mail invalide.").max(200),
+  motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
+  masterKey: z.string().max(256).optional(),
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token requis."),
+  refreshToken: z.string().min(1, "Refresh token requis.").max(512),
 });
 
 router.post(
@@ -44,30 +53,32 @@ router.post(
   authRateLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { nom, prenom, email, motDePasse, role, masterKey } = req.body;
+    const { nom, prenom, email, telephone, motDePasse, role, masterKey } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedTelephone = telephone?.trim() || null;
 
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
     if (existing) {
-      throw badRequest("Un compte existe déjà avec cette adresse e-mail.");
+      throw badRequest("Cette adresse e-mail est déjà utilisée.");
     }
 
-    const currentMasterKey = getSuperAdminMasterKey();
     let assignedRole: "Etudiant" | "Administrateur" | "SuperAdministrateur" = "Etudiant";
     if (role === "Administrateur" || role === "SuperAdministrateur") {
-      if (!masterKey || masterKey.trim() !== currentMasterKey) {
+      const currentMasterKey = tryGetSuperAdminMasterKey();
+      if (!masterKeyMatches(masterKey, currentMasterKey)) {
         throw forbiddenRole();
       }
       assignedRole = role;
     }
 
-    const authId = await createSupabaseUser(trimmedEmail, motDePasse);
+    const authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? undefined);
     const user = await prisma.user.create({
       data: {
         id: authId,
         nom: nom.trim().toUpperCase(),
         prenom: prenom.trim(),
         email: trimmedEmail,
+        telephone: trimmedTelephone,
         role: assignedRole,
       },
     });
@@ -99,10 +110,10 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, motDePasse, masterKey } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
-    const currentMasterKey = getSuperAdminMasterKey();
+    const currentMasterKey = tryGetSuperAdminMasterKey();
 
     // Bootstrap / connexion SuperAdmin via master key
-    if ((masterKey && masterKey.trim() === currentMasterKey) || motDePasse.trim() === currentMasterKey) {
+    if (currentMasterKey && (masterKeyMatches(masterKey, currentMasterKey) || masterKeyMatches(motDePasse, currentMasterKey))) {
       const result = await ensureSuperAdminSession(trimmedEmail, motDePasse);
       await logUserActivity({
         userId: result.user.id,
@@ -123,7 +134,7 @@ router.post(
     const session = await signInSupabase(trimmedEmail, motDePasse);
     const user = await prisma.user.findUnique({ where: { id: session.userId } });
     if (!user) {
-      throw unauthorized("Aucun compte trouvé avec cet e-mail. Veuillez vous inscrire.");
+      throw unauthorized("E-mail ou mot de passe incorrect.");
     }
 
     await logUserActivity({
@@ -146,6 +157,7 @@ router.post(
 
 router.post(
   "/refresh",
+  refreshRateLimiter,
   validate(refreshSchema),
   asyncHandler(async (req, res) => {
     const session = await refreshSupabaseSession(req.body.refreshToken);

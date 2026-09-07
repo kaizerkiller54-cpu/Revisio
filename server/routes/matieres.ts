@@ -11,11 +11,13 @@ import { logAdminAction } from "../services/audit.service";
 
 const router = Router();
 
+const uuidParam = z.object({ id: z.string().uuid("Identifiant invalide.") });
+
 const createSchema = z.object({
-  nom: z.string().min(2, "Le nom de la matière est requis."),
-  code: z.string().min(2, "Le code est requis."),
+  nom: z.string().min(2, "Le nom de la matière est requis.").max(120),
+  code: z.string().min(2, "Le code est requis.").max(20),
   semestre: z.enum(["Semestre 1", "Semestre 2"]),
-  description: z.string().optional(),
+  description: z.string().max(500).optional(),
 });
 
 const updateSchema = createSchema.partial();
@@ -68,6 +70,7 @@ router.put(
   "/:id",
   authenticateJWT,
   requireRole("Administrateur", "SuperAdministrateur"),
+  validate(uuidParam, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
     const existing = await prisma.matiere.findUnique({ where: { id: req.params.id } });
@@ -92,6 +95,7 @@ router.delete(
   "/:id",
   authenticateJWT,
   requireRole("Administrateur", "SuperAdministrateur"),
+  validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.matiere.findUnique({ where: { id: req.params.id } });
     if (!existing) {

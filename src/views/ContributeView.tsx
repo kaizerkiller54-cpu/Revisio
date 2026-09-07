@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { User, ContributionModel, Semestre, EpreuveType } from "../types";
 import { submitContributionApi } from "../lib/api";
 import { Upload, FileText, CheckCircle2, AlertCircle, Clock, ShieldAlert, FileUp, Calendar, BookOpen, Layers } from "lucide-react";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 
 interface ContributeViewProps {
   user: User | null;
@@ -145,8 +146,8 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
-        <div className="flex items-center space-x-3 text-indigo-900">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
+        <div className="flex items-center space-x-3 text-indigo-900 dark:text-indigo-300">
           <Upload className="w-8 h-8" />
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             Soumettre une Ancienne Épreuve
@@ -158,17 +159,17 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
       </div>
 
       {/* Upload Card & Form */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm">
         {!user && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start space-x-3 text-amber-900 text-xs">
-            <ShieldAlert className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/40 rounded-2xl flex items-start space-x-3 text-amber-900 dark:text-amber-100 text-xs">
+            <ShieldAlert className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
             <div className="space-y-1">
               <span className="font-bold text-amber-950">Session Anonyme</span>
               <p>
                 Vous êtes actuellement non connecté. Vous pouvez envoyer votre document, mais pour suivre l'état de vos soumissions, nous vous conseillons de{" "}
                 <button
                   onClick={onNavigateToLogin}
-                  className="underline font-bold text-indigo-900 hover:text-indigo-700"
+                  className="underline font-bold text-indigo-900 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-indigo-200"
                 >
                   vous connecter à votre compte
                 </button>.
@@ -178,22 +179,22 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
         )}
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs font-semibold flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/40 text-red-700 dark:text-red-200 rounded-2xl text-xs font-semibold flex items-center space-x-2">
+            <AlertCircle className="w-5 h-5 shrink-0 text-red-600 dark:text-red-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold flex items-start space-x-3">
-            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
+          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-200 rounded-2xl text-xs font-semibold flex items-start space-x-3">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Metadata Section: Year, Subject, Semester, Type */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
             <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
               <Calendar className="w-4 h-4 text-indigo-700" />
               <span>Informations sur l'Épreuve</span>
@@ -202,13 +203,13 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               {/* Année Académique (Spécifier l'année) */}
               <div>
-                <label className="block font-bold text-slate-900 mb-1.5">
+                <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                   Année Académique <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={anneeAcademique}
                   onChange={(e) => setAnneeAcademique(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 >
                   {ANNEES_OPTIONS.map((annee) => (
                     <option key={annee} value={annee}>
@@ -220,14 +221,14 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
 
               {/* Matière */}
               <div>
-                <label className="block font-bold text-slate-900 mb-1.5 flex items-center space-x-1">
+                <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1.5 flex items-center space-x-1">
                   <BookOpen className="w-3.5 h-3.5 text-indigo-700" />
                   <span>Matière</span> <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={matiere}
                   onChange={(e) => handleMatiereChange(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 >
                   <optgroup label="Semestre 1 (S1)">
                     {MATIERES_S1.map((m) => (
@@ -248,25 +249,27 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
 
               {/* Type d'épreuve */}
               <div>
-                <label className="block font-bold text-slate-900 mb-1.5 flex items-center space-x-1">
+                <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1.5 flex items-center space-x-1">
                   <Layers className="w-3.5 h-3.5 text-indigo-700" />
                   <span>Type d'Épreuve</span> <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={typeEpreuve}
                   onChange={(e) => setTypeEpreuve(e.target.value as EpreuveType)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 >
                   <option value="CC">Contrôle Continu (CC)</option>
                   <option value="SN">Session Normale (SN)</option>
                   <option value="SR">Session Rattrapage (SR)</option>
+                  <option value="TD">Travaux Dirigés (TD)</option>
+                  <option value="TP">Travaux Pratiques (TP)</option>
                 </select>
               </div>
             </div>
 
             {/* Titre proposé */}
             <div>
-              <label className="block font-bold text-slate-900 mb-1.5">
+              <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Titre indicatif de l'épreuve
               </label>
               <input
@@ -274,7 +277,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                 value={titre}
                 onChange={(e) => setTitre(e.target.value)}
                 placeholder={`Ex: Épreuve de ${matiere} - ${typeEpreuve} ${anneeAcademique}`}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
               />
             </div>
           </div>
@@ -285,7 +288,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               Fichier PDF de l'épreuve <span className="text-red-500">*</span>
             </label>
 
-            <div className="relative border-2 border-dashed border-slate-300 hover:border-indigo-600 bg-slate-50 rounded-2xl p-6 sm:p-10 text-center transition-all group">
+            <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-600 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-6 sm:p-10 text-center transition-all group">
               <input
                 type="file"
                 accept=".pdf,application/pdf"
@@ -294,26 +297,26 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               />
 
               <div className="space-y-3 pointer-events-none">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-900 border border-indigo-100 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
                   <FileUp className="w-7 h-7" />
                 </div>
 
                 {selectedFile ? (
                   <div className="space-y-1">
-                    <p className="font-bold text-emerald-700 text-sm flex items-center justify-center space-x-2">
+                    <p className="font-bold text-emerald-700 dark:text-emerald-300 text-sm flex items-center justify-center space-x-2">
                       <FileText className="w-4 h-4" />
                       <span>{selectedFile.name}</span>
                     </p>
-                    <p className="text-xs text-slate-500 font-mono">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                       {(selectedFile.size / (1024 * 1024)).toFixed(2)} Mo • PDF Valide
                     </p>
-                    <p className="text-[11px] text-indigo-700 underline font-bold pt-1">
+                    <p className="text-[11px] text-indigo-700 dark:text-indigo-300 underline font-bold pt-1">
                       Cliquez pour remplacer le fichier
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       Glissez-déposez votre fichier PDF ici, ou <span className="text-indigo-700 underline font-bold">parcourez vos fichiers</span>
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
@@ -335,7 +338,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
               placeholder="Ex: Épreuve de Session Normale tenue en Janvier, sujet complet avec partie Exercice et Problème..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl p-3.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 transition-all"
             />
           </div>
 
@@ -345,13 +348,24 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               type="submit"
               disabled={isSubmitting || !selectedFile}
               className={`w-full py-3.5 rounded-full text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center space-x-2 ${
-                isSubmitting || !selectedFile
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  : "bg-indigo-900 hover:bg-indigo-800 cursor-pointer"
+                isSubmitting
+                  ? "bg-indigo-800 cursor-wait"
+                  : !selectedFile
+                    ? "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+                    : "bg-indigo-900 hover:bg-indigo-800 cursor-pointer"
               }`}
             >
-              <Upload className="w-4 h-4" />
-              <span>{isSubmitting ? "Envoi du fichier en cours..." : "Envoyer l'épreuve à la modération"}</span>
+              {isSubmitting ? (
+                <>
+                  <LoadingSpinner className="text-white" />
+                  <span>Envoi du fichier en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span>Envoyer l'épreuve à la modération</span>
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -359,7 +373,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
 
       {/* User Contributions History */}
       {userContributions.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 space-y-4 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
             <Clock className="w-5 h-5 text-indigo-700" />
             <span>Historique de vos soumissions ({userContributions.length})</span>
@@ -369,19 +383,19 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
             {userContributions.map((c) => (
               <div
                 key={c.id}
-                className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-slate-500" />
+                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     <span className="font-bold text-slate-900">{c.fichierNom}</span>
                     {c.anneeAcademique && (
-                      <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-mono text-[10px] font-bold">
+                      <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">
                         {c.anneeAcademique}
                       </span>
                     )}
                     {c.matiere && (
-                      <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 text-[10px] font-bold">
+                      <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] font-bold">
                         {c.matiere}
                       </span>
                     )}
@@ -389,26 +403,26 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                   {c.commentaire && (
                     <p className="text-slate-600 italic">"{c.commentaire}"</p>
                   )}
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
                     Transmis le : {new Date(c.dateEnvoi).toLocaleDateString("fr-FR")} à {new Date(c.dateEnvoi).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
 
                 <div>
                   {c.statut === "En attente" && (
-                    <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold flex items-center space-x-1">
+                    <span className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-bold flex items-center space-x-1">
                       <Clock className="w-3 h-3" />
                       <span>En attente de validation</span>
                     </span>
                   )}
                   {c.statut === "Publié" && (
-                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold flex items-center space-x-1">
+                    <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-bold flex items-center space-x-1">
                       <CheckCircle2 className="w-3 h-3" />
                       <span>Publié</span>
                     </span>
                   )}
                   {c.statut === "Refusé" && (
-                    <span className="px-3 py-1 rounded-full bg-red-50 text-red-800 border border-red-200 font-bold">
+                    <span className="px-3 py-1 rounded-full bg-red-50 dark:bg-red-500/15 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-500/30 font-bold">
                       Refusé
                     </span>
                   )}

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { prisma } from "../prisma/client";
 import { asyncHandler } from "../utils/asyncHandler";
 import { badRequest, forbidden, notFound } from "../utils/errors";
@@ -12,25 +13,30 @@ import {
   deleteSupabaseUser,
   updateSupabaseEmail,
   updateSupabasePassword,
+  updateSupabasePhone,
 } from "../services/auth.service";
 import { logAdminAction } from "../services/audit.service";
 import { createNotification } from "../services/notification.service";
 
 const router = Router();
 
+const uuidParam = z.object({ id: z.string().uuid("Identifiant invalide.") });
+
 const profileSchema = z.object({
-  nom: z.string().min(2).optional(),
-  prenom: z.string().min(2).optional(),
-  email: z.string().email().optional(),
-  nouveauMotDePasse: z.string().min(4).optional(),
+  nom: z.string().min(2).max(80).optional(),
+  prenom: z.string().min(2).max(80).optional(),
+  email: z.string().email().max(200).optional(),
+  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
+  nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128).optional(),
 });
 
 const createUserSchema = z.object({
-  nom: z.string().min(2),
-  prenom: z.string().min(2),
-  email: z.string().email(),
+  nom: z.string().min(2).max(80),
+  prenom: z.string().min(2).max(80),
+  email: z.string().email().max(200),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
-  motDePasse: z.string().min(4).optional(),
+  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
+  motDePasse: z.string().min(8).max(128).optional(),
 });
 
 const updateRoleSchema = z.object({
@@ -47,7 +53,7 @@ router.put(
     if (!user) {
       throw notFound("Utilisateur non trouvé.");
     }
-    const { nom, prenom, email, nouveauMotDePasse } = req.body;
+    const { nom, prenom, email, telephone, nouveauMotDePasse } = req.body;
 
     let newEmail = user.email;
     if (email && email.trim().toLowerCase() !== user.email) {
@@ -58,17 +64,23 @@ router.put(
       newEmail = email.trim().toLowerCase();
     }
 
+    const newTelephone = telephone !== undefined ? (telephone?.trim() || null) : user.telephone;
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         nom: nom?.trim().toUpperCase() ?? user.nom,
         prenom: prenom?.trim() ?? user.prenom,
         email: newEmail,
+        telephone: newTelephone,
       },
     });
 
     if (newEmail !== user.email) {
       await updateSupabaseEmail(user.id, newEmail);
+    }
+    if (newTelephone !== user.telephone) {
+      await updateSupabasePhone(user.id, newTelephone);
     }
     if (nouveauMotDePasse) {
       await updateSupabasePassword(user.id, nouveauMotDePasse.trim());
@@ -96,20 +108,25 @@ router.post(
   requireRole("SuperAdministrateur"),
   validate(createUserSchema),
   asyncHandler(async (req, res) => {
-    const { nom, prenom, email, role, motDePasse } = req.body;
+    const { nom, prenom, email, role, telephone, motDePasse } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
     if (existing) {
       throw badRequest("Un utilisateur avec cet e-mail existe déjà.");
     }
     const assignedRole = role ?? "Administrateur";
-    const authId = await createSupabaseUser(trimmedEmail, motDePasse ?? "ISJ2026!");
+    const trimmedTelephone = telephone?.trim() || null;
+    // Pas de mot de passe par défaut codé en dur : un mot de passe fort
+    // aléatoire est généré et renvoyé une seule fois à l'administrateur.
+    const temporaryPassword = motDePasse?.trim() || randomBytes(18).toString("base64");
+    const authId = await createSupabaseUser(trimmedEmail, temporaryPassword, trimmedTelephone ?? undefined);
     const user = await prisma.user.create({
       data: {
         id: authId,
         nom: nom.trim().toUpperCase(),
         prenom: prenom.trim(),
         email: trimmedEmail,
+        telephone: trimmedTelephone,
         role: assignedRole,
       },
     });
@@ -124,7 +141,13 @@ router.post(
       targetName: `${user.prenom} ${user.nom}`,
     });
 
-    res.status(201).json({ message: "Utilisateur créé avec succès.", user: mapUser(user) });
+    res.status(201).json({
+      message: motDePasse
+        ? "Utilisateur créé avec succès."
+        : "Utilisateur créé avec succès. Un mot de passe temporaire aléatoire lui a été attribué.",
+      user: mapUser(user),
+      ...(motDePasse ? {} : { temporaryPassword }),
+    });
   })
 );
 
@@ -133,6 +156,7 @@ router.put(
   "/:id/role",
   authenticateJWT,
   requireRole("SuperAdministrateur"),
+  validate(uuidParam, "params"),
   validate(updateRoleSchema),
   asyncHandler(async (req, res) => {
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
@@ -173,6 +197,7 @@ router.delete(
   "/:id",
   authenticateJWT,
   requireRole("SuperAdministrateur"),
+  validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) {

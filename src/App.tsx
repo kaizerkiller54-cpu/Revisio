@@ -6,11 +6,12 @@ import {
   getDocumentsApi,
   getContributionsApi,
   getAdminStatsApi,
-  recordDownloadApi
+  downloadDocumentFileApi
 } from "./lib/api";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { PdfViewerModal } from "./components/PdfViewerModal";
+import { CookieConsent } from "./components/CookieConsent";
 import { HomeView } from "./views/HomeView";
 import { SubjectsView } from "./views/SubjectsView";
 import { ExamsView } from "./views/ExamsView";
@@ -27,9 +28,11 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<string>("home");
   const [authNotice, setAuthNotice] = useState<string | null>(null);
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(
-    (localStorage.getItem("isj_app_theme") as any) || "light"
-  );
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+    const saved = localStorage.getItem("isj_app_theme");
+    if (saved === "dark" || saved === "light" || saved === "system") return saved;
+    return "light";
+  });
 
   const [documents, setDocuments] = useState<DocumentModel[]>([]);
   const [matieres, setMatieres] = useState<MatiereModel[]>([]);
@@ -110,14 +113,19 @@ export default function App() {
     }
 
     try {
-      await recordDownloadApi(doc.id);
-      // Trigger download action in browser
+      const result = await downloadDocumentFileApi(doc.id);
+      if (!result) {
+        console.error("Échec du téléchargement du document.");
+        return;
+      }
+      const url = URL.createObjectURL(result.blob);
       const link = document.createElement("a");
-      link.href = doc.fichierUrl;
-      link.download = doc.fichierNom || `${doc.titre}.pdf`;
+      link.href = url;
+      link.download = result.filename || doc.fichierNom || `${doc.titre}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
 
       // Optimistically increment download count
       setDocuments((prev) =>
@@ -134,13 +142,17 @@ export default function App() {
     (c) => c.utilisateurEmail?.toLowerCase() === user?.email?.toLowerCase()
   );
 
-  const isDarkMode = theme === "dark";
+  const isDarkMode = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isDarkMode);
+  }, [isDarkMode]);
   const isAuthPage = activeTab === "login" || activeTab === "register";
 
   return (
     <div
       className={`min-h-screen flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300 ${
-        isDarkMode ? "bg-slate-950 text-slate-100 dark" : "bg-slate-50 text-slate-900"
+        isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >
       {/* Top Navbar - Hidden on Auth pages */}
@@ -283,6 +295,9 @@ export default function App() {
         onClose={() => setPreviewDocument(null)}
         onDownload={handleDownloadDocument}
       />
+
+      {/* Bannière de consentement aux cookies (1ère visite) */}
+      <CookieConsent />
     </div>
   );
 }

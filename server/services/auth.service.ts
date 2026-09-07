@@ -93,14 +93,16 @@ export async function findSupabaseUserByEmail(email: string): Promise<{ id: stri
   return user ? { id: user.id } : null;
 }
 
-export async function createSupabaseUser(email: string, password: string): Promise<string> {
+export async function createSupabaseUser(email: string, password: string, phone?: string): Promise<string> {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
+    phone: phone || undefined,
+    phone_confirm: !!phone,
     email_confirm: true,
   });
   if (error) {
-    if (/already registered/i.test(error.message)) {
+    if (/already (been )?registered/i.test(error.message)) {
       const existing = await findSupabaseUserByEmail(email);
       if (existing) return existing.id;
     }
@@ -130,6 +132,14 @@ export async function updateSupabaseEmail(userId: string, email: string) {
 export async function updateSupabasePassword(userId: string, password: string) {
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password });
   if (error) throw new AppError(400, `Impossible de modifier le mot de passe : ${error.message}`);
+}
+
+export async function updateSupabasePhone(userId: string, phone: string | null) {
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    phone: phone || undefined,
+    phone_confirm: !!phone,
+  });
+  if (error) throw new AppError(400, `Impossible de modifier le numéro de téléphone : ${error.message}`);
 }
 
 export async function deleteSupabaseUser(userId: string) {

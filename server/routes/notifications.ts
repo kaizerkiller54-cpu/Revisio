@@ -1,33 +1,29 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../prisma/client";
 import { asyncHandler } from "../utils/asyncHandler";
+import { notFound } from "../utils/errors";
 import { mapNotification } from "../utils/mappers";
 import { authenticateJWT } from "../middlewares/authenticate";
+import { validate } from "../middlewares/validate";
 
 const router = Router();
 
-function resolveUserContext(req: any): { userId: string; userRole: string } {
-  if (req.user) {
-    return { userId: req.user.id, userRole: req.user.role };
+const uuidParam = z.object({ id: z.string().uuid("Identifiant invalide.") });
+
+function visibleIds(user: { id: string; role: string }): string[] {
+  if (user.role === "Administrateur" || user.role === "SuperAdministrateur") {
+    return [user.id, "ALL", "ADMINS"];
   }
-  const userId = (req.headers["x-user-id"] as string) || "user-1";
-  const userRole = (req.headers["x-user-role"] as string) || "Etudiant";
-  return { userId, userRole };
+  return [user.id, "ALL"];
 }
 
 router.get(
   "/",
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const { userId, userRole } = resolveUserContext(req);
     const rows = await prisma.userNotification.findMany({
-      where: {
-        OR: [
-          { userId: "ALL" },
-          { userId },
-          ...(userRole === "Administrateur" || userRole === "SuperAdministrateur" ? [{ userId: "ADMINS" }] : []),
-        ],
-      },
+      where: { userId: { in: visibleIds(req.user!) } },
       orderBy: { createdAt: "desc" },
     });
     res.json(rows.map(mapNotification));
@@ -35,43 +31,28 @@ router.get(
 );
 
 router.put(
-  "/:id/read",
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    const notif = await prisma.userNotification.update({
-      where: { id: req.params.id },
-      data: { lue: true },
-    });
-    res.json({ message: "Notification marquée comme lue.", notification: mapNotification(notif) });
-  })
-);
-
-router.put(
   "/read-all",
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const { userId, userRole } = resolveUserContext(req);
     const results = await prisma.userNotification.updateMany({
-      where: {
-        OR: [
-          { userId: "ALL" },
-          { userId },
-          ...(userRole === "Administrateur" || userRole === "SuperAdministrateur" ? [{ userId: "ADMINS" }] : []),
-        ],
-        lue: false,
-      },
+      where: { userId: { in: visibleIds(req.user!) }, lue: false },
       data: { lue: true },
     });
     res.json({ message: "Toutes les notifications ont été marquées comme lues.", count: results.count });
   })
 );
 
-router.delete(
-  "/:id",
+router.put(
+  "/:id/read",
   authenticateJWT,
+  validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
-    await prisma.userNotification.delete({ where: { id: req.params.id } });
-    res.json({ message: "Notification supprimée." });
+    const notif = await prisma.userNotification.findUnique({ where: { id: req.params.id } });
+    if (!notif || !visibleIds(req.user!).includes(notif.userId)) {
+      throw notFound("Notification introuvable.");
+    }
+    const updated = await prisma.userNotification.update({ where: { id: notif.id }, data: { lue: true } });
+    res.json({ message: "Notification marquée comme lue.", notification: mapNotification(updated) });
   })
 );
 
@@ -79,16 +60,24 @@ router.delete(
   "/",
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const { userId, userRole } = resolveUserContext(req);
     const results = await prisma.userNotification.deleteMany({
-      where: {
-        OR: [
-          { userId },
-          ...(userRole === "Administrateur" || userRole === "SuperAdministrateur" ? [{ userId: "ADMINS" }] : []),
-        ],
-      },
+      where: { userId: { in: visibleIds(req.user!) } },
     });
     res.json({ message: "Toutes les notifications ont été effacées.", count: results.count });
+  })
+);
+
+router.delete(
+  "/:id",
+  authenticateJWT,
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const notif = await prisma.userNotification.findUnique({ where: { id: req.params.id } });
+    if (!notif || !visibleIds(req.user!).includes(notif.userId)) {
+      throw notFound("Notification introuvable.");
+    }
+    await prisma.userNotification.delete({ where: { id: notif.id } });
+    res.json({ message: "Notification supprimée." });
   })
 );
 

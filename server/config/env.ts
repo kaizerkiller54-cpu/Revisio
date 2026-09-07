@@ -14,6 +14,8 @@ function required(name: string): string {
 export const env = {
   port: Number(process.env.PORT ?? 3000),
   databaseUrl: required("DATABASE_URL"),
+  // Nombre de sauts de proxy devant l'application (0 = accès direct).
+  trustProxy: Number(process.env.TRUST_PROXY_HOPS ?? 0),
   supabase: {
     url: required("SUPABASE_URL"),
     anonKey: required("SUPABASE_ANON_KEY"),

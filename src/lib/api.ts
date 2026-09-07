@@ -35,12 +35,13 @@ export async function registerApi(
   email: string,
   motDePasse: string,
   role: string,
-  masterKey?: string
+  masterKey?: string,
+  telephone?: string
 ) {
   const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nom, prenom, email, motDePasse, role, masterKey }),
+    body: JSON.stringify({ nom, prenom, email, motDePasse, role, masterKey, telephone }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Échec de l'inscription.");
@@ -60,6 +61,7 @@ export async function updateUserProfileApi(data: {
   nom?: string;
   prenom?: string;
   email?: string;
+  telephone?: string | null;
   nouveauMotDePasse?: string;
 }) {
   const res = await fetch("/api/users/profile", {
@@ -92,6 +94,21 @@ export async function sendContactMessageApi(contactData: {
   return resData;
 }
 
+export async function downloadFeedbackApi(): Promise<{ blob: Blob; filename: string } | null> {
+  try {
+    const res = await fetch("/api/contact/feedback", {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = /filename="?([^";]+)"?/i.exec(disposition);
+    return { blob, filename: match?.[1] ?? "retours-utilisateurs.json" };
+  } catch {
+    return null;
+  }
+}
+
 export async function getSubjectsApi(): Promise<MatiereModel[]> {
   const res = await fetch("/api/subjects");
   if (!res.ok) throw new Error("Impossible de charger les matières.");
@@ -119,6 +136,86 @@ export async function getDocumentsApi(params?: {
   return res.json();
 }
 
+export interface DocumentSearchPage {
+  data: DocumentModel[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SearchSuggestion {
+  id: string;
+  titre: string;
+  matiere: string;
+  typeEpreuve: string;
+  semestre: string;
+  anneeAcademique: string;
+  fichierUrl: string;
+  score: number;
+}
+
+const buildDocumentSearchUrl = (params: {
+  search?: string;
+  matiere?: string;
+  semestre?: string;
+  typeEpreuve?: string;
+  anneeAcademique?: string;
+  statut?: string;
+  page?: number;
+  pageSize?: number;
+}) => {
+  const url = new URL("/api/documents/search", window.location.origin);
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== "" && value !== "Tous" && value !== "Toutes") {
+        url.searchParams.append(key, String(value));
+      }
+    });
+  }
+  return url;
+};
+
+export async function searchDocumentsApi(params: {
+  search?: string;
+  matiere?: string;
+  semestre?: string;
+  typeEpreuve?: string;
+  anneeAcademique?: string;
+  statut?: string;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<DocumentSearchPage> {
+  const url = buildDocumentSearchUrl(params);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("Impossible d'effectuer la recherche.");
+  return res.json();
+}
+
+export async function suggestDocumentsApi(q: string, limit = 6): Promise<SearchSuggestion[]> {
+  const url = new URL("/api/documents/suggest", window.location.origin);
+  url.searchParams.append("q", q);
+  url.searchParams.append("limit", String(limit));
+  const res = await fetch(url.toString());
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.data ?? [];
+}
+
+export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob; filename: string } | null> {
+  try {
+    const res = await fetch(`/api/documents/${id}/download`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = /filename\*=UTF-8''([^;]+)/i.exec(disposition) ?? /filename="?([^";]+)"?/i.exec(disposition);
+    return { blob, filename: match ? decodeURIComponent(match[1]) : "epreuve.pdf" };
+  } catch {
+    return null;
+  }
+}
+
 export async function getDocumentByIdApi(id: string): Promise<DocumentModel> {
   const res = await fetch(`/api/documents/${id}`);
   if (!res.ok) throw new Error("Épreuve non trouvée.");
@@ -128,7 +225,7 @@ export async function getDocumentByIdApi(id: string): Promise<DocumentModel> {
 export async function recordDownloadApi(id: string) {
   const res = await fetch(`/api/documents/${id}/download`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
   });
   return res.json();
 }
@@ -259,6 +356,7 @@ export async function createAdminUserApi(userData: {
   prenom: string;
   email: string;
   role?: UserRole;
+  telephone?: string | null;
 }): Promise<{ message: string; user: User }> {
   const res = await fetch("/api/admin/users", {
     method: "POST",
@@ -306,24 +404,26 @@ export async function getAdminStatsApi(): Promise<DashboardStats> {
 }
 
 // User Activity Logs API
-export async function getUserActivitiesApi(params?: {
-  userId?: string;
-  actionType?: string;
-  search?: string;
-}): Promise<UserActivity[]> {
-  try {
-    const query = new URLSearchParams();
-    if (params?.userId) query.set("userId", params.userId);
-    if (params?.actionType) query.set("actionType", params.actionType);
-    if (params?.search) query.set("search", params.search);
+export interface UserActivityPage {
+  data: UserActivity[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  counts?: { download: number; submit: number; moderation: number };
+}
 
-    const res = await fetch(`/api/activities?${query.toString()}`, {
+const EMPTY_ACTIVITY_PAGE: UserActivityPage = { data: [], total: 0, page: 1, pageSize: 50, totalPages: 0, counts: { download: 0, submit: 0, moderation: 0 } };
+
+export async function getUserActivitiesApi(queryString: string): Promise<UserActivityPage> {
+  try {
+    const res = await fetch(`/api/activities?${queryString}`, {
       headers: { ...getAuthHeader() },
     });
-    if (!res.ok) return [];
-    return await res.json();
+    if (!res.ok) return EMPTY_ACTIVITY_PAGE;
+    return { ...EMPTY_ACTIVITY_PAGE, ...(await res.json()) };
   } catch {
-    return [];
+    return EMPTY_ACTIVITY_PAGE;
   }
 }
 

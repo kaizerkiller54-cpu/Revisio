@@ -12,6 +12,11 @@ export const supabaseAuth = createClient(env.supabase.url, env.supabase.anonKey,
 });
 
 const BUCKET = "epreuves";
+const MAX_PDF_SIZE = 15 * 1024 * 1024;
+
+function isPdfMagic(buffer: Buffer): boolean {
+  return buffer.length >= 5 && buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+}
 
 export function isSupabaseStorageUrl(url: string): boolean {
   return url.startsWith(`${env.supabase.url}/storage/`);
@@ -43,6 +48,15 @@ export async function ensureBucket() {
 }
 
 export async function uploadPdfBuffer(buffer: Buffer, originalName: string): Promise<string> {
+  if (buffer.length === 0) {
+    throw badRequest("Le fichier PDF est vide.");
+  }
+  if (buffer.length > MAX_PDF_SIZE) {
+    throw badRequest("Le fichier est trop volumineux (maximum 15 Mo).");
+  }
+  if (!isPdfMagic(buffer)) {
+    throw badRequest("Le fichier n'est pas un PDF valide (signature %PDF- absente).");
+  }
   await ensureBucket();
   const path = `${randomUUID()}-${sanitizeFilename(originalName)}`;
   const { error } = await supabaseAdmin.storage.from(BUCKET).upload(path, buffer, {
@@ -60,17 +74,17 @@ export async function uploadPdfFromDataUrl(dataUrl: string, fileName: string): P
   if (!match) {
     throw badRequest("Le fichier doit être un PDF encodé en base64 (data:application/pdf;base64,...).");
   }
-  const buffer = Buffer.from(match[1], "base64");
-  if (buffer.length === 0) {
-    throw badRequest("Le fichier PDF est vide.");
+  if (match[1].length > Math.ceil(MAX_PDF_SIZE * 1.4) + 10) {
+    throw badRequest("Le fichier est trop volumineux (maximum 15 Mo).");
   }
+  const buffer = Buffer.from(match[1], "base64");
   return uploadPdfBuffer(buffer, fileName);
 }
 
 export async function resolvePdfUrl(fichierUrl: string, fichierNom: string): Promise<string> {
   if (isSupabaseStorageUrl(fichierUrl)) return fichierUrl;
-  if (fichierUrl.startsWith("data:")) return uploadPdfFromDataUrl(fichierUrl, fichierNom);
-  return fichierUrl;
+  if (/^data:application\/pdf;base64,/i.test(fichierUrl)) return uploadPdfFromDataUrl(fichierUrl, fichierNom);
+  throw badRequest("URL de fichier invalide. Seul un PDF du stockage de la plateforme est accepté.");
 }
 
 export async function deleteStorageFileByUrl(url: string): Promise<void> {

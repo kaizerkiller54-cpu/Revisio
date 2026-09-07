@@ -17,6 +17,7 @@ export const mapUser = (u: User) => ({
   nom: u.nom,
   prenom: u.prenom,
   email: u.email,
+  telephone: u.telephone ?? null,
   role: u.role,
   dateCreation: u.createdAt.toISOString(),
 });

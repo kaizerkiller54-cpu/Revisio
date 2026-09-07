@@ -11,14 +11,26 @@ import statsRoutes from "./routes/stats";
 import adminRoutes from "./routes/admin";
 import contactRoutes from "./routes/contact";
 import { errorHandler } from "./middlewares/errorHandler";
+import { securityHeaders, apiNotFound } from "./middlewares/security";
+import { apiLimiter } from "./middlewares/rateLimit";
+import { env } from "./config/env";
 
 export function createApp() {
   const app = express();
 
+  app.disable("x-powered-by");
+
+  // Ne révèle l'adresse IP réelle que si l'app est derrière un reverse proxy
+  // configuré (TRUST_PROXY_HOPS) — évite le contournement des rate limiters.
+  if (env.trustProxy > 0) {
+    app.set("trust proxy", env.trustProxy);
+  }
+
+  app.use(securityHeaders());
   app.use(express.json({ limit: "25mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "25mb" }));
   app.use("/uploads", express.static(uploadsDirPath));
 
+  app.use("/api", apiLimiter);
   app.use("/api/contact", contactRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/documents", documentRoutes);
@@ -32,6 +44,7 @@ export function createApp() {
   app.use("/api/stats", statsRoutes);
   app.use("/api/activities", activityRoutes);
   app.use("/api/notifications", notificationRoutes);
+  app.use("/api", apiNotFound);
 
   app.use(errorHandler);
 

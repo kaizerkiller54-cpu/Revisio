@@ -5,6 +5,7 @@ export interface User {
   nom: string;
   prenom: string;
   email: string;
+  telephone?: string | null;
   role: UserRole;
   dateCreation: string;
 }
@@ -31,7 +32,7 @@ export interface AuditLog {
   date: string;
 }
 
-export type EpreuveType = "CC" | "SN" | "SR";
+export type EpreuveType = "CC" | "SN" | "SR" | "TD" | "TP";
 export type Semestre = "Semestre 1" | "Semestre 2";
 export type DocumentStatut = "En attente" | "Publié" | "Refusé";
 

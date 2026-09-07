@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+/* Mode sombre basé sur la classe .dark appliquée sur l'élément racine.
+   Permet d'utiliser les variantes `dark:*` dans tout le projet. */
+@custom-variant dark (&:where(.dark, .dark *));

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { User, AuditLog, UserRole, AuditActionType } from "../types";
 import { getAuditLogsApi, getUsersApi, updateUserRoleApi, createAdminUserApi, deleteUserApi } from "../lib/api";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -53,6 +54,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
   const [newNom, setNewNom] = useState<string>("");
   const [newPrenom, setNewPrenom] = useState<string>("");
   const [newEmail, setNewEmail] = useState<string>("");
+  const [newTelephone, setNewTelephone] = useState<string>("");
   const [newRole, setNewRole] = useState<UserRole>("Administrateur");
   const [isCreatingAdmin, setIsCreatingAdmin] = useState<boolean>(false);
 
@@ -113,12 +115,14 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
         prenom: newPrenom,
         email: newEmail,
         role: newRole,
+        telephone: newTelephone.trim() || null,
       });
       setSuccessMsg(`L'administrateur/compte ${res.user.prenom} ${res.user.nom} (${res.user.email}) a été créé avec succès.`);
       setIsAddAdminModalOpen(false);
       setNewNom("");
       setNewPrenom("");
       setNewEmail("");
+      setNewTelephone("");
       setNewRole("Administrateur");
       fetchAuditData();
       if (onRefreshData) onRefreshData();
@@ -896,6 +900,20 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
               </div>
 
               <div>
+                <label className="block font-bold text-slate-800 mb-1">Numéro de téléphone :</label>
+                <input
+                  type="tel"
+                  placeholder="+237 ----------- (9 chiffres)"
+                  value={newTelephone}
+                  onChange={(e) => setNewTelephone(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 font-medium"
+                />
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Format camerounais : +237 suivi de 9 chiffres (ex: +237655123456).
+                </p>
+              </div>
+
+              <div>
                 <label className="block font-bold text-slate-800 mb-1">Attribution du Rôle :</label>
                 <select
                   value={newRole}
@@ -921,7 +939,14 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   disabled={isCreatingAdmin}
                   className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-1.5"
                 >
-                  {isCreatingAdmin ? "Création..." : "Créer le compte Admin"}
+                  {isCreatingAdmin ? (
+                    <>
+                      <LoadingSpinner className="text-white" />
+                      <span>Création...</span>
+                    </>
+                  ) : (
+                    <span>Créer le compte Admin</span>
+                  )}
                 </button>
               </div>
             </form>

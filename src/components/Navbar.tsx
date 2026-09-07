@@ -60,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white text-slate-900 border-b border-slate-200 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand matching Geometric Balance */}
@@ -77,8 +77,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("home")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "home"
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <School className="w-4 h-4" />
@@ -89,8 +89,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("subjects")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "subjects"
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -101,8 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("exams")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "exams"
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Search className="w-4 h-4" />
@@ -113,8 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("contribute")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "contribute"
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Upload className="w-4 h-4" />
@@ -125,35 +125,35 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("activity-log")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "activity-log"
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <History className="w-4 h-4" />
-              <span>Journal d'Activité</span>
+              <span>{isSuperAdmin ? "Journal d'Activité Global" : "Mon Journal d'Activité"}</span>
             </button>
 
             <button
               onClick={() => handleNavClick("settings")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "settings"
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
-                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Settings className="w-4 h-4" />
               <span>Paramètres</span>
             </button>
 
-            {isAdmin && (
+            {isSuperAdmin && (
               <>
                 <div className="h-5 w-px bg-slate-200 mx-1" />
                 <button
                   onClick={() => handleNavClick("admin-dashboard")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                     activeTab === "admin-dashboard"
-                      ? "bg-amber-50 text-amber-800 border border-amber-200 font-semibold"
-                      : "text-slate-600 hover:text-amber-700 hover:bg-amber-50/50"
+                      ? "bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold"
+                      : "text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10"
                   }`}
                 >
                   <LayoutDashboard className="w-4 h-4" />
@@ -164,28 +164,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => handleNavClick("admin-documents")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                     activeTab === "admin-documents"
-                      ? "bg-amber-50 text-amber-800 border border-amber-200 font-semibold"
-                      : "text-slate-600 hover:text-amber-700 hover:bg-amber-50/50"
+                      ? "bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold"
+                      : "text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10"
                   }`}
                 >
                   <FileCheck className="w-4 h-4" />
                   <span>Modération</span>
                 </button>
-              </>
-            )}
 
-            {isSuperAdmin && (
-              <button
-                onClick={() => handleNavClick("super-admin-audit")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
-                  activeTab === "super-admin-audit"
-                    ? "bg-purple-50 text-purple-900 border border-purple-200 font-extrabold shadow-sm"
-                    : "text-purple-700 hover:text-purple-900 hover:bg-purple-50/60"
-                }`}
-              >
-                <ShieldAlert className="w-4 h-4 text-purple-700" />
-                <span>Journal d'Audit</span>
-              </button>
+                <button
+                  onClick={() => handleNavClick("super-admin-audit")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+                    activeTab === "super-admin-audit"
+                      ? "bg-purple-50 dark:bg-purple-500/15 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-extrabold shadow-sm"
+                      : "text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-200 hover:bg-purple-50/60 dark:hover:bg-purple-500/10"
+                  }`}
+                >
+                  <ShieldAlert className="w-4 h-4 text-purple-700" />
+                  <span>Journal d'Audit</span>
+                </button>
+              </>
             )}
           </nav>
 
@@ -195,7 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
 
             {user ? (
-              <div className="flex items-center space-x-3 pl-2 border-l border-slate-200">
+              <div className="flex items-center space-x-3 pl-2 border-l border-slate-200 dark:border-slate-700">
                 <div className="text-right">
                   <p className="text-xs font-bold text-slate-900 leading-tight">
                     {user.prenom} {user.nom}
@@ -203,8 +201,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span
                     className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
                       isAdmin
-                        ? "bg-amber-100 text-amber-800 border border-amber-200"
-                        : "bg-indigo-100 text-indigo-800 border border-indigo-200"
+                        ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30"
+                        : "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30"
                     }`}
                   >
                     {user.role}
@@ -213,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={onLogout}
                   title="Déconnexion"
-                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -251,9 +249,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-5 space-y-2 animate-fadeIn">
+        <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-2 pb-5 space-y-2 animate-fadeIn">
           {user && (
-            <div className="p-3 mb-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <div className="p-3 mb-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <div>
                 <p className="font-bold text-sm text-slate-900">
                   {user.prenom} {user.nom}
@@ -262,7 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <span
                 className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                  isAdmin ? "bg-amber-100 text-amber-800" : "bg-indigo-100 text-indigo-800"
+                  isAdmin ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300" : "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300"
                 }`}
               >
                 {user.role}
@@ -273,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("home")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "home" ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+              activeTab === "home" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <School className="w-4 h-4" />
@@ -283,7 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("subjects")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "subjects" ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+              activeTab === "subjects" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -293,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("exams")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "exams" ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+              activeTab === "exams" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <Search className="w-4 h-4" />
@@ -303,7 +301,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("contribute")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "contribute" ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+              activeTab === "contribute" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <Upload className="w-4 h-4" />
@@ -313,17 +311,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("activity-log")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "activity-log" ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+              activeTab === "activity-log" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <History className="w-4 h-4" />
-            <span>Journal d'Activité</span>
+            <span>{isSuperAdmin ? "Journal d'Activité Global" : "Mon Journal d'Activité"}</span>
           </button>
 
           <button
             onClick={() => handleNavClick("settings")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "settings" ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+              activeTab === "settings" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -331,14 +329,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {isAdmin && (
-            <div className="pt-2 border-t border-slate-200 space-y-1">
-              <div className="px-3 py-1 text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1">
+              <div className="px-3 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                 Espace Administration
               </div>
               <button
                 onClick={() => handleNavClick("admin-dashboard")}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                  activeTab === "admin-dashboard" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600"
+                  activeTab === "admin-dashboard" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600 dark:text-slate-300"
                 }`}
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -348,7 +346,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => handleNavClick("admin-documents")}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                  activeTab === "admin-documents" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600"
+                  activeTab === "admin-documents" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600 dark:text-slate-300"
                 }`}
               >
                 <FileCheck className="w-4 h-4" />
@@ -369,14 +367,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          <div className="pt-3 border-t border-slate-200">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
             {user ? (
               <button
                 onClick={() => {
                   onLogout();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center space-x-2"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Se déconnecter</span>
@@ -385,7 +383,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   onClick={() => handleNavClick("login")}
-                  className="w-full text-center py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg"
+                  className="w-full text-center py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-lg"
                 >
                   Connexion
                 </button>

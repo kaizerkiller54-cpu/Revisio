@@ -6,6 +6,7 @@ import {
   deleteDocumentApi,
   updateDocumentApi
 } from "../lib/api";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import {
   FileCheck,
   CheckCircle2,
@@ -419,6 +420,8 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                     <option value="CC">CC (Contrôle Continu)</option>
                     <option value="SN">SN (Session Normale)</option>
                     <option value="SR">SR (Session Rattrapage)</option>
+                    <option value="TD">TD (Travaux Dirigés)</option>
+                    <option value="TP">TP (Travaux Pratiques)</option>
                   </select>
                 </div>
               </div>
@@ -448,9 +451,16 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                 <button
                   type="submit"
                   disabled={isApproveLoading}
-                  className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-full shadow-sm"
+                  className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-full shadow-sm flex items-center space-x-2"
                 >
-                  {isApproveLoading ? "Publication..." : "Approuver et Publier"}
+                  {isApproveLoading ? (
+                    <>
+                      <LoadingSpinner className="text-white" />
+                      <span>Publication...</span>
+                    </>
+                  ) : (
+                    <span>Approuver et Publier</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -524,6 +534,8 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                     <option value="CC">CC</option>
                     <option value="SN">SN</option>
                     <option value="SR">SR</option>
+                    <option value="TD">TD</option>
+                    <option value="TP">TP</option>
                   </select>
                 </div>
               </div>

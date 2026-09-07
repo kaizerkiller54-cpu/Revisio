@@ -16,11 +16,13 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AppLogo } from "../components/AppLogo";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { motion } from "motion/react";
 
-import bgLibrary from "../assets/images/students_studying_library_1785894997035.jpg";
-import bgExamPrep from "../assets/images/student_writing_exam_1785895008446.jpg";
-import bgCampus from "../assets/images/university_campus_hall_1785895019995.jpg";
+import bgSlide1 from "../assets/images/slide_f1.webp";
+import bgSlide2 from "../assets/images/slide_f2.webp";
+import bgSlide3 from "../assets/images/slide_f3.webp";
+import bgSlide4 from "../assets/images/slide_f4.webp";
 
 interface LoginViewProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -30,21 +32,27 @@ interface LoginViewProps {
 
 const carouselSlides = [
   {
-    image: bgLibrary,
+    image: bgSlide1,
     title: "Bienvenue à l'Institut Saint Jean",
     subtitle: "Votre portail privilégié d'accès à la banque d'épreuves de Première Année.",
     badge: "Accès Privilégié • Nouveaux Étudiants",
   },
   {
-    image: bgExamPrep,
-    title: "Sujets & Épreuves de 1ère Année",
+    image: bgSlide2,
+    title: "Excellence Académique",
     subtitle: "Abordez les contrôles continus et examens de semestre avec assurance.",
     badge: "Préparation Optimale L1",
   },
   {
-    image: bgCampus,
-    title: "Excellence & Réussite Académique",
+    image: bgSlide3,
+    title: "Sujets & Épreuves de 1ère Année",
     subtitle: "Rejoignez la communauté étudiante et préparez vos réussites dès le 1er jour.",
+    badge: "Banque d'Épreuves ISJ",
+  },
+  {
+    image: bgSlide4,
+    title: "Réussite & Avenir",
+    subtitle: "Construisez votre parcours universitaire avec confiance et détermination.",
     badge: "Comunidad ISJ 2026",
   },
 ];
@@ -112,8 +120,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
         ))}
 
         {/* Balanced Light Overlay for Crisp Image Visibility & Text Readability */}
-        <div className="absolute inset-0 bg-slate-950/40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/45 to-slate-950/75" />
+        <div className="absolute inset-0 bg-slate-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/38 via-slate-950/22 to-slate-950/38" />
       </div>
 
       {/* CAROUSEL CONTROLS & SLIDE INDICATORS */}
@@ -332,10 +340,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               >
                 {isLoading ? (
                   <span className="flex items-center space-x-2">
-                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <LoadingSpinner className="text-white" />
                     <span>Connexion en cours...</span>
                   </span>
                 ) : (

@@ -4,13 +4,21 @@ import { createServer as createViteServer } from "vite";
 import { createApp } from "./server/app";
 import { env } from "./server/config/env";
 import { prisma } from "./server/prisma/client";
+import { ensureSearchIndexes } from "./server/services/search.service";
 
 async function startServer() {
+  ensureSearchIndexes().catch(() => {
+    // La recherche basique reste opérationnelle en cas d'échec.
+  });
   const app = createApp();
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // Autorise l'accès depuis ngrok / réseau local (hosts dynamiques).
+        allowedHosts: true,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

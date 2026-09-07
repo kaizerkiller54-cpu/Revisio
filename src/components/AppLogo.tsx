@@ -126,7 +126,7 @@ export const AppLogo: React.FC<AppLogoProps> = ({
         <div className="flex items-center space-x-2">
           <span
             className={`${titleSizes[size]} font-black tracking-tight ${
-              isDark ? "text-white" : "text-slate-900"
+              isDark ? "text-white" : "text-slate-900 dark:text-white"
             }`}
           >
             Revisio
@@ -137,7 +137,7 @@ export const AppLogo: React.FC<AppLogoProps> = ({
         {showSubtitle && (
           <p
             className={`text-[10px] font-semibold tracking-wide uppercase ${
-              isDark ? "text-slate-400" : "text-slate-500"
+              isDark ? "text-slate-400" : "text-slate-500 dark:text-slate-400"
             }`}
           >
             Portail Académique des Épreuves

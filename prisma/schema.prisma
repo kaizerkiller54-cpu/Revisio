@@ -16,6 +16,8 @@ enum TypeEpreuve {
   CC
   SN
   SR
+  TD
+  TP
 }
 
 enum Semestre {
@@ -41,6 +43,7 @@ model User {
   nom       String
   prenom    String
   email     String   @unique
+  telephone String?  // Format camerounais: +237XXXXXXXXX
   role      Role     @default(Etudiant)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -82,6 +85,9 @@ model Document {
   updatedAt            DateTime   @updatedAt
 
   @@index([matiereId, typeEpreuve, semestre])
+  @@index([statut, anneeAcademique])
+  @@index([semestre, typeEpreuve, statut])
+  @@index([titre])
   @@map("documents")
 }
 
