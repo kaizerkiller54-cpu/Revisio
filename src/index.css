@@ -3,3 +3,74 @@
 /* Mode sombre basé sur la classe .dark appliquée sur l'élément racine.
    Permet d'utiliser les variantes `dark:*` dans tout le projet. */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ===== Logo animé ===== */
+@keyframes isj-halo-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes isj-glow-pulse {
+  0%, 100% { opacity: 0.4;  transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.06); }
+}
+
+@keyframes isj-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+@keyframes isj-logo-sheen {
+  0%, 55% { transform: translateX(-160%) skewX(-14deg); }
+  100%    { transform: translateX(340%) skewX(-14deg); }
+}
+
+@keyframes isj-star-twinkle {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.8); }
+}
+
+@keyframes isj-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+.animate-isj-halo    { animation: isj-halo-spin 9s linear infinite; }
+.animate-isj-glow    { animation: isj-glow-pulse 3.2s ease-in-out infinite; }
+.animate-isj-float   { animation: isj-logo-float 4.5s ease-in-out infinite; }
+.animate-isj-sheen   { animation: isj-logo-sheen 5.5s ease-in-out infinite; }
+.animate-isj-twinkle { animation: isj-star-twinkle 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.animate-isj-dot     { animation: isj-dot-pulse 2.8s ease-in-out infinite; }
+
+/* ===== Navigation fluide ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes isj-view-fade {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-isj-view {
+  animation: isj-view-fade 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-isj-halo,
+  .animate-isj-glow,
+  .animate-isj-float,
+  .animate-isj-sheen,
+  .animate-isj-twinkle,
+  .animate-isj-dot {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-isj-view {
+    animation: none;
+  }
+}

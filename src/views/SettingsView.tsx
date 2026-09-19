@@ -148,8 +148,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center space-x-2 text-indigo-900 dark:text-indigo-300 font-extrabold text-xs uppercase tracking-wider">
-            <Settings className="w-4 h-4 text-indigo-700" />
+          <div className="flex items-center space-x-2 text-blue-900 dark:text-blue-300 font-extrabold text-xs uppercase tracking-wider">
+            <Settings className="w-4 h-4 text-blue-700" />
             <span>Paramètres Système & Préférences</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900">Préférences de Compte</h1>
@@ -160,9 +160,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <button
           onClick={() => setContactModalOpen(true)}
-          className="bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-xs px-4 py-2.5 rounded-2xl flex items-center space-x-2 shadow-sm transition-all shrink-0"
+          className="bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs px-4 py-2.5 rounded-2xl flex items-center space-x-2 shadow-sm transition-all shrink-0"
         >
-          <MessageSquare className="w-4 h-4 text-indigo-200" />
+          <MessageSquare className="w-4 h-4 text-blue-200" />
           <span>Nous Contacter</span>
         </button>
       </div>
@@ -186,7 +186,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <span>{isDownloadingFeedback ? "Téléchargement..." : "Télécharger les retours (JSON)"}</span>
           </button>
           {feedbackMsg && (
-            <p className="text-[10px] font-bold text-emerald-900 dark:text-emerald-200 sm:absolute sm:right-4 sm:top-4">
+            <p className="text-[10px] font-bold text-emerald-900 dark:text-emerald-200 w-full sm:w-auto sm:text-right">
               {feedbackMsg}
             </p>
           )}
@@ -199,8 +199,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center space-x-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center text-indigo-900 dark:text-indigo-300 font-bold shrink-0">
-                <UserIcon className="w-5 h-5 text-indigo-700" />
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/30 flex items-center justify-center text-blue-900 dark:text-blue-300 font-bold shrink-0">
+                <UserIcon className="w-5 h-5 text-blue-700" />
               </div>
               <div>
                 <h2 className="text-base font-extrabold text-slate-900 dark:text-white">Identifiants de Connexion</h2>
@@ -250,7 +250,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       required
                       value={nom}
                       onChange={(e) => setNom(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                   <div>
@@ -260,14 +260,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       required
                       value={prenom}
                       onChange={(e) => setPrenom(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1 flex items-center space-x-1">
-                    <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                    <Mail className="w-3.5 h-3.5 text-blue-600" />
                     <span>Adresse E-mail Académique</span>
                   </label>
                   <input
@@ -275,7 +275,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
 
@@ -289,7 +289,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     onChange={(e) => setTelephone(e.target.value)}
                     placeholder="+237 ----------- (9 chiffres)"
                     inputMode="tel"
-                    className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 ${
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
                       telephone.trim() && !telephoneIsValid ? "border-red-400 ring-1 ring-red-300" : "border-slate-200 dark:border-slate-600"
                     }`}
                   />
@@ -300,7 +300,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <div>
                   <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1 flex items-center space-x-1">
-                    <Lock className="w-3.5 h-3.5 text-indigo-600" />
+                    <Lock className="w-3.5 h-3.5 text-blue-600" />
                     <span>Nouveau Mot de Passe (Laissez vide pour conserver l'actuel)</span>
                   </label>
                   <input
@@ -308,7 +308,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     placeholder="Saisissez un nouveau mot de passe"
                     value={nouveauMotDePasse}
                     onChange={(e) => setNouveauMotDePasse(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
 
@@ -316,7 +316,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="submit"
                     disabled={isUpdatingProfile}
-                    className="bg-indigo-900 hover:bg-indigo-950 text-white font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all disabled:opacity-50 flex items-center space-x-2"
+                    className="bg-blue-900 hover:bg-blue-950 text-white font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all disabled:opacity-50 flex items-center space-x-2"
                   >
                     {isUpdatingProfile ? (
                       <>
@@ -338,8 +338,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           {/* Theme Switcher Card */}
           <div className="bg-white border border-slate-200 dark:border-slate-600 rounded-3xl p-6 shadow-xs space-y-4">
             <div className="flex items-center space-x-3 pb-3 border-b border-slate-100 dark:border-slate-700/60 dark:border-slate-700/60">
-              <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center text-indigo-900 dark:text-indigo-300 font-bold shrink-0">
-                <Palette className="w-4 h-4 text-indigo-700" />
+              <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/30 flex items-center justify-center text-blue-900 dark:text-blue-300 font-bold shrink-0">
+                <Palette className="w-4 h-4 text-blue-700" />
               </div>
               <div>
                 <h2 className="text-sm font-extrabold text-slate-900">Apparence & Thème</h2>
@@ -353,7 +353,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onClick={() => onChangeTheme("light")}
                 className={`w-full p-3 rounded-2xl border transition-all flex items-center justify-between font-bold ${
                   currentTheme === "light"
-                    ? "bg-indigo-50 dark:bg-indigo-500/20 border-indigo-600 text-indigo-950 dark:text-indigo-100 shadow-2xs"
+                    ? "bg-blue-50 dark:bg-blue-500/20 border-blue-600 text-blue-950 dark:text-blue-100 shadow-2xs"
                     : "bg-slate-50 border-slate-200 dark:border-slate-600 text-slate-700 hover:bg-slate-100"
                 }`}
               >
@@ -361,7 +361,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <Sun className="w-4 h-4 text-amber-500" />
                   <span>Mode Clair (Standard)</span>
                 </div>
-                {currentTheme === "light" && <CheckCircle2 className="w-4 h-4 text-indigo-600" />}
+                {currentTheme === "light" && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
               </button>
 
               <button
@@ -369,15 +369,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onClick={() => onChangeTheme("dark")}
                 className={`w-full p-3 rounded-2xl border transition-all flex items-center justify-between font-bold ${
                   currentTheme === "dark"
-                    ? "bg-indigo-50 dark:bg-indigo-500/20 border-indigo-600 text-indigo-950 dark:text-indigo-100 shadow-2xs"
+                    ? "bg-blue-50 dark:bg-blue-500/20 border-blue-600 text-blue-950 dark:text-blue-100 shadow-2xs"
                     : "bg-slate-50 border-slate-200 dark:border-slate-600 text-slate-700 hover:bg-slate-100"
                 }`}
               >
                 <div className="flex items-center space-x-2">
-                  <Moon className="w-4 h-4 text-indigo-700" />
+                  <Moon className="w-4 h-4 text-blue-700" />
                   <span>Mode Sombre (Confort Visuel)</span>
                 </div>
-                {currentTheme === "dark" && <CheckCircle2 className="w-4 h-4 text-indigo-600" />}
+                {currentTheme === "dark" && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
               </button>
 
               <button
@@ -385,7 +385,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onClick={() => onChangeTheme("system")}
                 className={`w-full p-3 rounded-2xl border transition-all flex items-center justify-between font-bold ${
                   currentTheme === "system"
-                    ? "bg-indigo-50 dark:bg-indigo-500/20 border-indigo-600 text-indigo-950 dark:text-indigo-100 shadow-2xs"
+                    ? "bg-blue-50 dark:bg-blue-500/20 border-blue-600 text-blue-950 dark:text-blue-100 shadow-2xs"
                     : "bg-slate-50 border-slate-200 dark:border-slate-600 text-slate-700 hover:bg-slate-100"
                 }`}
               >
@@ -393,20 +393,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <Laptop className="w-4 h-4 text-slate-600" />
                   <span>Automatique (Système)</span>
                 </div>
-                {currentTheme === "system" && <CheckCircle2 className="w-4 h-4 text-indigo-600" />}
+                {currentTheme === "system" && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
               </button>
             </div>
           </div>
 
           {/* Contact Support Card */}
-          <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 text-white space-y-4 shadow-sm">
+          <div className="bg-gradient-to-br from-blue-900 to-slate-900 rounded-3xl p-6 text-white space-y-4 shadow-sm">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-indigo-200 shrink-0">
-                <LifeBuoy className="w-5 h-5 text-indigo-200" />
+              <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-blue-200 shrink-0">
+                <LifeBuoy className="w-5 h-5 text-blue-200" />
               </div>
               <div>
                 <h3 className="font-extrabold text-sm text-white">Besoin d'aide ou Suggestion ?</h3>
-                <p className="text-[11px] text-indigo-200">Institut Saint Jean Direction</p>
+                <p className="text-[11px] text-blue-200">Institut Saint Jean Direction</p>
               </div>
             </div>
 
@@ -416,9 +416,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             <button
               onClick={() => setContactModalOpen(true)}
-              className="w-full bg-white text-indigo-950 hover:bg-indigo-50 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm"
+              className="w-full bg-white text-blue-950 hover:bg-blue-50 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm"
             >
-              <MessageSquare className="w-4 h-4 text-indigo-900" />
+              <MessageSquare className="w-4 h-4 text-blue-900" />
               <span>Ouvrir le Formulaire de Contact</span>
             </button>
           </div>
@@ -431,8 +431,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-600 animate-fadeIn">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700/60 dark:border-slate-700/60">
               <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center text-indigo-900 dark:text-indigo-300">
-                  <Send className="w-4 h-4 text-indigo-700" />
+                <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/30 flex items-center justify-center text-blue-900 dark:text-blue-300">
+                  <Send className="w-4 h-4 text-blue-700" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-slate-900">Nous Contacter - ISJ Support</h3>
@@ -459,7 +459,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     setContactSuccessMsg(null);
                     setContactModalOpen(false);
                   }}
-                  className="bg-indigo-900 text-white font-bold text-xs px-5 py-2.5 rounded-xl"
+                  className="bg-blue-900 text-white font-bold text-xs px-5 py-2.5 rounded-xl"
                 >
                   Fermer
                 </button>
@@ -481,7 +481,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={contactNom}
                       onChange={(e) => setContactNom(e.target.value)}
                       placeholder="Nom complet"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                   <div>
@@ -492,7 +492,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
                       placeholder="votre@email.com"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -503,7 +503,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <select
                       value={contactCategorie}
                       onChange={(e) => setContactCategorie(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     >
                       <option value="Demande d'épreuve">Demande d'épreuve spécifique</option>
                       <option value="Signalement d'erreur">Signalement d'erreur de corrigé</option>
@@ -519,7 +519,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={contactSujet}
                       onChange={(e) => setContactSujet(e.target.value)}
                       placeholder="Sujet de votre message"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -532,7 +532,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     value={contactMessage}
                     onChange={(e) => setContactMessage(e.target.value)}
                     placeholder="Détaillez votre message ou votre requête..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
 
@@ -547,7 +547,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="submit"
                     disabled={isSendingContact}
-                    className="px-5 py-2 bg-indigo-900 hover:bg-indigo-950 text-white rounded-xl font-bold flex items-center space-x-1.5 disabled:opacity-50"
+                    className="px-5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold flex items-center space-x-1.5 disabled:opacity-50"
                   >
                     {isSendingContact ? (
                       <>

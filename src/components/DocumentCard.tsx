@@ -43,7 +43,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         return {
           label: "TP",
           fullLabel: "Travaux Pratiques",
-          color: "bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-500/20",
+          color: "bg-sky-50 dark:bg-sky-400/15 text-sky-600 dark:text-sky-300 border-sky-100 dark:border-sky-400/20",
         };
       default:
         return {
@@ -57,17 +57,17 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   const badge = getTypeBadge(doc.typeEpreuve);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-md group">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-md group">
       <div>
         {/* Top Badges */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${badge.color}`}
+            className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider min-w-0 truncate whitespace-nowrap overflow-hidden ${badge.color}`}
             title={badge.fullLabel}
           >
             {badge.label} • {badge.fullLabel}
           </span>
-          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 flex items-center space-x-1">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 flex items-center space-x-1 shrink-0">
             <Calendar className="w-3 h-3 text-slate-400" />
             <span>{doc.anneeAcademique}</span>
           </span>
@@ -76,7 +76,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         {/* Title */}
         <h3
           onClick={() => onView(doc)}
-          className="text-base font-bold text-slate-900 group-hover:text-indigo-700 transition-colors cursor-pointer mb-2 line-clamp-2 leading-snug"
+          className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors cursor-pointer mb-2 line-clamp-2 leading-snug"
         >
           {doc.titre}
         </h3>
@@ -84,8 +84,8 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         {/* Details tags */}
         <div className="space-y-1.5 mb-4 text-xs text-slate-600 dark:text-slate-400">
           <div className="flex items-center space-x-2">
-            <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span className="font-semibold text-slate-900">{doc.matiere}</span>
+            <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+            <span className="font-semibold text-slate-900 min-w-0 break-words">{doc.matiere}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Tag className="w-4 h-4 text-slate-400 shrink-0" />
@@ -102,7 +102,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             <span>{doc.telechargementsCount || 0}</span>
           </span>
           <span className="flex items-center space-x-1" title="Format PDF">
-            <FileText className="w-3.5 h-3.5 text-indigo-500" />
+            <FileText className="w-3.5 h-3.5 text-blue-500" />
             <span>PDF</span>
           </span>
         </div>
@@ -112,12 +112,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             onClick={() => onView(doc)}
             className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center space-x-1"
           >
-            <Eye className="w-3.5 h-3.5 text-indigo-600" />
+            <Eye className="w-3.5 h-3.5 text-blue-600" />
             <span>Voir</span>
           </button>
           <button
             onClick={() => onDownload(doc)}
-            className="px-3 py-1.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold transition-all flex items-center space-x-1 shadow-sm"
+            className="px-3 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition-all flex items-center space-x-1 shadow-sm"
           >
             <Download className="w-3.5 h-3.5" />
             <span>PDF</span>

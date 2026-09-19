@@ -16,7 +16,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div>
-          <div className="inline-flex items-center space-x-2 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full mb-2">
+          <div className="inline-flex items-center space-x-2 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full mb-2">
             <ShieldCheck className="w-4 h-4" />
             <span>Panneau Administration • Institut Universitaire Saint Jean</span>
           </div>
@@ -30,7 +30,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
         <button
           onClick={onNavigateToModeration}
-          className="px-5 py-2.5 bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-xs rounded-full shadow-sm transition-all flex items-center space-x-2 shrink-0"
+          className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-full shadow-sm transition-all flex items-center space-x-2 shrink-0"
         >
           <FileCheck className="w-4 h-4" />
           <span>Accéder à la Modération</span>
@@ -63,7 +63,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Total Documents
             </span>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
               <FileText className="w-5 h-5" />
             </div>
           </div>
@@ -130,7 +130,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           </div>
           <button
             onClick={onNavigateToModeration}
-            className="px-5 py-2.5 bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-xs rounded-full transition-colors shadow-sm flex items-center space-x-1.5 shrink-0"
+            className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-full transition-colors shadow-sm flex items-center space-x-1.5 shrink-0"
           >
             <span>Traiter les demandes</span>
             <ArrowRight className="w-4 h-4" />

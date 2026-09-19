@@ -41,7 +41,7 @@ export const Footer: React.FC = () => {
             </p>
             <div className="pt-2">
               <span className="inline-flex items-center space-x-1.5 text-[10px] text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700 uppercase font-medium">
-                <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                <BookOpen className="w-3.5 h-3.5 text-blue-400" />
                 <span>Revisio - Version 1.0</span>
               </span>
             </div>

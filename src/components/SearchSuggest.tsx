@@ -130,7 +130,7 @@ export const SearchSuggest: React.FC<SearchSuggestProps> = ({
           className={inputClassName}
         />
         {loading && (
-          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-indigo-500">
+          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-blue-500">
             <Loader2 className="w-4 h-4 animate-spin" />
           </div>
         )}
@@ -157,11 +157,11 @@ export const SearchSuggest: React.FC<SearchSuggestProps> = ({
                       onMouseEnter={() => setActiveIndex(i)}
                       className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${
                         i === activeIndex
-                          ? "bg-indigo-50 dark:bg-indigo-500/10"
+                          ? "bg-blue-50 dark:bg-blue-500/10"
                           : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
                       }`}
                     >
-                      <span className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                      <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
                         <FileText className="w-4 h-4" />
                       </span>
                       <span className="flex-1 min-w-0">

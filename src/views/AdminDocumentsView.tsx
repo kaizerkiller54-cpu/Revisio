@@ -154,7 +154,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center space-x-2">
-            <FileCheck className="w-7 h-7 text-indigo-700" />
+            <FileCheck className="w-7 h-7 text-blue-700" />
             <span>Gestion et Modération</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
@@ -168,7 +168,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
             onClick={() => setActiveTab("pending")}
             className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 ${
               activeTab === "pending"
-                ? "bg-indigo-900 text-white shadow-sm"
+                ? "bg-blue-900 text-white shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -179,7 +179,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
             onClick={() => setActiveTab("published")}
             className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 ${
               activeTab === "published"
-                ? "bg-indigo-900 text-white shadow-sm"
+                ? "bg-blue-900 text-white shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -217,9 +217,9 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                      <FileText className="w-5 h-5 text-indigo-700 shrink-0" />
-                      <span>{contrib.fichierNom}</span>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2 min-w-0">
+                      <FileText className="w-5 h-5 text-blue-700 shrink-0" />
+                      <span className="min-w-0 break-all">{contrib.fichierNom}</span>
                     </h3>
 
                     {contrib.commentaire && (
@@ -253,7 +253,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                       }
                       className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center space-x-1.5"
                     >
-                      <Eye className="w-4 h-4 text-indigo-700" />
+                      <Eye className="w-4 h-4 text-blue-700" />
                       <span>Voir PDF</span>
                     </button>
 
@@ -302,7 +302,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                     <td className="p-4 font-bold text-slate-900 max-w-xs truncate">
                       {doc.titre}
                     </td>
-                    <td className="p-4 text-indigo-700 font-bold">{doc.matiere}</td>
+                    <td className="p-4 text-blue-700 font-bold">{doc.matiere}</td>
                     <td className="p-4">{doc.semestre}</td>
                     <td className="p-4">
                       <span className="px-2.5 py-1 rounded-full font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
@@ -317,14 +317,14 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                       <button
                         onClick={() => onPreviewPdf(doc)}
                         title="Voir PDF"
-                        className="p-2 text-slate-600 hover:text-indigo-900 bg-slate-100 rounded-xl"
+                        className="p-2 text-slate-600 hover:text-blue-900 bg-slate-100 rounded-xl"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setEditingDoc(doc)}
                         title="Modifier classification"
-                        className="p-2 text-slate-600 hover:text-indigo-900 bg-slate-100 rounded-xl"
+                        className="p-2 text-slate-600 hover:text-blue-900 bg-slate-100 rounded-xl"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -350,7 +350,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative animate-fadeIn">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <h3 className="text-slate-900 font-extrabold text-base flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-indigo-700" />
+                <Sparkles className="w-5 h-5 text-blue-700" />
                 <span>Validation et Classification</span>
               </h3>
               <button
@@ -372,7 +372,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                   value={titre}
                   onChange={(e) => setTitre(e.target.value)}
                   placeholder="Ex: Épreuve d'Analyse Mathématique 1 - Session Normale 2024"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
 
@@ -383,7 +383,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                 <select
                   value={matiere}
                   onChange={(e) => setMatiere(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   {matieresList.map((m) => (
                     <option key={m} value={m}>
@@ -401,7 +401,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                   <select
                     value={semestre}
                     onChange={(e) => setSemestre(e.target.value as Semestre)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="Semestre 1">Semestre 1</option>
                     <option value="Semestre 2">Semestre 2</option>
@@ -415,7 +415,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                   <select
                     value={typeEpreuve}
                     onChange={(e) => setTypeEpreuve(e.target.value as EpreuveType)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="CC">CC (Contrôle Continu)</option>
                     <option value="SN">SN (Session Normale)</option>
@@ -436,7 +436,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                   value={anneeAcademique}
                   onChange={(e) => setAnneeAcademique(e.target.value)}
                   placeholder="Ex: 2023-2024"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
 
@@ -560,7 +560,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-900 text-white font-bold rounded-full shadow-sm"
+                  className="px-5 py-2 bg-blue-900 text-white font-bold rounded-full shadow-sm"
                 >
                   Enregistrer les modifications
                 </button>

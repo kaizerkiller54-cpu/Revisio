@@ -107,8 +107,8 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
         );
       case "SUBMIT_CONTRIBUTION":
         return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200 inline-flex items-center space-x-1">
-            <Upload className="w-3 h-3 text-indigo-600" />
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-900 border border-blue-200 inline-flex items-center space-x-1">
+            <Upload className="w-3 h-3 text-blue-600" />
             <span>Soumission Épreuve</span>
           </span>
         );
@@ -128,8 +128,8 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
         );
       case "CHANGE_USER_ROLE":
         return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-200 inline-flex items-center space-x-1">
-            <ShieldCheck className="w-3 h-3 text-purple-700" />
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-800 border border-sky-200 inline-flex items-center space-x-1">
+            <ShieldCheck className="w-3 h-3 text-sky-600" />
             <span>Élévation de Rôle</span>
           </span>
         );
@@ -171,10 +171,10 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Page Title & Intro */}
       <div
-        className={`${isSuperAdmin ? "bg-slate-900" : "bg-indigo-900"} rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden`}
+        className={`${isSuperAdmin ? "bg-slate-900" : "bg-blue-900"} rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden`}
       >
         <div className="space-y-2 max-w-2xl relative z-10">
-          <div className="inline-flex items-center space-x-2 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center space-x-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
             <History className="w-3.5 h-3.5" />
             <span>Journal d'Activité Personnel</span>
           </div>
@@ -194,20 +194,20 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
             disabled={loading}
             className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shadow-sm"
           >
-            <RefreshCw className={`w-4 h-4 text-indigo-400 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 text-blue-400 ${loading ? "animate-spin" : ""}`} />
             <span>Actualiser</span>
           </button>
 
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-extrabold transition-all shadow-lg flex items-center space-x-2"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-extrabold transition-all shadow-lg flex items-center space-x-2"
           >
-            <FileSpreadsheet className="w-4 h-4 text-indigo-100" />
+            <FileSpreadsheet className="w-4 h-4 text-blue-100" />
             <span>Exporter CSV</span>
           </button>
         </div>
 
-        <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
       </div>
 
       {/* Summary Stats Grid - Only show relevant counts for current user */}
@@ -248,15 +248,15 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
           onClick={() => setActionCategory("submit")}
           className={`p-4 rounded-2xl border cursor-pointer transition-all ${
             actionCategory === "submit"
-              ? "bg-indigo-600 text-white border-indigo-600 shadow-lg scale-[1.02]"
-              : "bg-white border-slate-200 text-slate-800 hover:border-indigo-300"
+              ? "bg-blue-600 text-white border-blue-600 shadow-lg scale-[1.02]"
+              : "bg-white border-slate-200 text-slate-800 hover:border-blue-300"
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold text-indigo-800 font-extrabold">Soumissions</span>
-            <Upload className="w-4 h-4 text-indigo-600" />
+            <span className="text-xs font-bold text-blue-800 font-extrabold">Soumissions</span>
+            <Upload className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-indigo-950">{counts.submit}</p>
+          <p className="text-2xl sm:text-3xl font-black text-blue-950">{counts.submit}</p>
           <p className="text-[10px] text-slate-500 mt-1">Vos dépôts d'épreuves</p>
         </div>
 
@@ -291,7 +291,7 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
               placeholder="Rechercher action, épreuve..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              className="w-full pl-10 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+              className="w-full pl-10 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
             />
             {searchQuery && (
               <button
@@ -333,7 +333,7 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
               <button
                 onClick={() => { setActionCategory("submit"); setPage(1); }}
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
-                  actionCategory === "submit" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+                  actionCategory === "submit" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Soumissions
@@ -355,7 +355,7 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
         {/* Timeline Log Feed */}
         {loading ? (
           <div className="py-12 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
+            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
             <p className="text-xs font-bold text-slate-600">Chargement de votre journal d'activité...</p>
           </div>
         ) : activities.length === 0 ? (
@@ -376,38 +376,38 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
               return (
                 <div key={act.id} className="relative group">
                   {/* Timeline Node Dot */}
-                  <div className="absolute -left-6 sm:-left-8 top-1.5 w-6 h-6 rounded-full bg-white border-2 border-indigo-600 flex items-center justify-center text-indigo-600 shadow-sm group-hover:scale-110 transition-transform">
-                    <Clock className="w-3 h-3 text-indigo-600" />
+                  <div className="absolute -left-6 sm:-left-8 top-1.5 w-6 h-6 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition-transform">
+                    <Clock className="w-3 h-3 text-blue-600" />
                   </div>
 
                   {/* Activity Card */}
-                  <div className="bg-slate-50 hover:bg-indigo-50/40 border border-slate-200 hover:border-indigo-200 rounded-2xl p-4 transition-all space-y-2.5">
+                  <div className="bg-slate-50 hover:bg-blue-50/40 border border-slate-200 hover:border-blue-200 rounded-2xl p-4 transition-all space-y-2.5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center space-x-2.5">
+                      <div className="flex items-center space-x-2.5 min-w-0">
                         <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
                           {act.userNom ? act.userNom.charAt(0) : "U"}
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
-                            <span>{act.userNom}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
+                            <span className="truncate max-w-[200px]">{act.userNom}</span>
                             {isSelf && !isSuperAdmin && (
-                              <span className="text-[9px] bg-purple-100 text-purple-900 px-1.5 py-0.2 rounded font-black">
+                              <span className="text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded font-black">
                                 Vous
                               </span>
                             )}
                             {isSuperAdmin && (
-                              <span className="text-[10px] text-slate-400 font-normal">
+                              <span className="text-[10px] text-slate-400 font-normal inline-block max-w-[240px] truncate align-bottom">
                                 ({act.userEmail})
                               </span>
                             )}
                           </p>
-                          <span className="text-[10px] font-bold text-indigo-700">
+                          <span className="text-[10px] font-bold text-blue-700">
                             {act.userRole}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-2 justify-end">
                         {renderActionBadge(act.actionType)}
                         <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
                           {formatTimestamp(act.timestamp)}
@@ -422,13 +422,13 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
 
                     {/* Target detail callout if present */}
                     {act.targetTitle && (
-                      <div className="bg-white border border-slate-200 p-2.5 rounded-xl text-xs flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                          <span className="font-bold text-slate-800">{act.targetTitle}</span>
+                      <div className="bg-white border border-slate-200 p-2.5 rounded-xl text-xs flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span className="font-bold text-slate-800 min-w-0 truncate">{act.targetTitle}</span>
                         </div>
                         {act.targetId && (
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <span className="text-[10px] font-mono text-slate-400 shrink-0">
                             ID: {act.targetId}
                           </span>
                         )}

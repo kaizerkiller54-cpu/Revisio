@@ -147,7 +147,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
-        <div className="flex items-center space-x-3 text-indigo-900 dark:text-indigo-300">
+        <div className="flex items-center space-x-3 text-blue-900 dark:text-blue-300">
           <Upload className="w-8 h-8" />
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             Soumettre une Ancienne Épreuve
@@ -169,7 +169,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                 Vous êtes actuellement non connecté. Vous pouvez envoyer votre document, mais pour suivre l'état de vos soumissions, nous vous conseillons de{" "}
                 <button
                   onClick={onNavigateToLogin}
-                  className="underline font-bold text-indigo-900 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-indigo-200"
+                  className="underline font-bold text-blue-900 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200"
                 >
                   vous connecter à votre compte
                 </button>.
@@ -196,7 +196,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
           {/* Metadata Section: Year, Subject, Semester, Type */}
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
             <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
-              <Calendar className="w-4 h-4 text-indigo-700" />
+              <Calendar className="w-4 h-4 text-blue-700" />
               <span>Informations sur l'Épreuve</span>
             </h2>
 
@@ -209,7 +209,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                 <select
                   value={anneeAcademique}
                   onChange={(e) => setAnneeAcademique(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   {ANNEES_OPTIONS.map((annee) => (
                     <option key={annee} value={annee}>
@@ -222,13 +222,13 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               {/* Matière */}
               <div>
                 <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1.5 flex items-center space-x-1">
-                  <BookOpen className="w-3.5 h-3.5 text-indigo-700" />
+                  <BookOpen className="w-3.5 h-3.5 text-blue-700" />
                   <span>Matière</span> <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={matiere}
                   onChange={(e) => handleMatiereChange(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <optgroup label="Semestre 1 (S1)">
                     {MATIERES_S1.map((m) => (
@@ -250,13 +250,13 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               {/* Type d'épreuve */}
               <div>
                 <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1.5 flex items-center space-x-1">
-                  <Layers className="w-3.5 h-3.5 text-indigo-700" />
+                  <Layers className="w-3.5 h-3.5 text-blue-700" />
                   <span>Type d'Épreuve</span> <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={typeEpreuve}
                   onChange={(e) => setTypeEpreuve(e.target.value as EpreuveType)}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="CC">Contrôle Continu (CC)</option>
                   <option value="SN">Session Normale (SN)</option>
@@ -277,7 +277,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                 value={titre}
                 onChange={(e) => setTitre(e.target.value)}
                 placeholder={`Ex: Épreuve de ${matiere} - ${typeEpreuve} ${anneeAcademique}`}
-                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
           </div>
@@ -288,7 +288,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               Fichier PDF de l'épreuve <span className="text-red-500">*</span>
             </label>
 
-            <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-600 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-6 sm:p-10 text-center transition-all group">
+            <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-600 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-6 sm:p-10 text-center transition-all group">
               <input
                 type="file"
                 accept=".pdf,application/pdf"
@@ -297,27 +297,27 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               />
 
               <div className="space-y-3 pointer-events-none">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/15 text-blue-900 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
                   <FileUp className="w-7 h-7" />
                 </div>
 
                 {selectedFile ? (
                   <div className="space-y-1">
-                    <p className="font-bold text-emerald-700 dark:text-emerald-300 text-sm flex items-center justify-center space-x-2">
-                      <FileText className="w-4 h-4" />
-                      <span>{selectedFile.name}</span>
+                    <p className="font-bold text-emerald-700 dark:text-emerald-300 text-sm flex items-center justify-center space-x-2 max-w-full">
+                      <FileText className="w-4 h-4 shrink-0" />
+                      <span className="min-w-0 truncate">{selectedFile.name}</span>
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                       {(selectedFile.size / (1024 * 1024)).toFixed(2)} Mo • PDF Valide
                     </p>
-                    <p className="text-[11px] text-indigo-700 dark:text-indigo-300 underline font-bold pt-1">
+                    <p className="text-[11px] text-blue-700 dark:text-blue-300 underline font-bold pt-1">
                       Cliquez pour remplacer le fichier
                     </p>
                   </div>
                 ) : (
                   <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      Glissez-déposez votre fichier PDF ici, ou <span className="text-indigo-700 underline font-bold">parcourez vos fichiers</span>
+                      Glissez-déposez votre fichier PDF ici, ou <span className="text-blue-700 underline font-bold">parcourez vos fichiers</span>
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
                       Format accepté : <strong>PDF uniquement</strong> (Taille max : 15 Mo)
@@ -338,7 +338,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
               placeholder="Ex: Épreuve de Session Normale tenue en Janvier, sujet complet avec partie Exercice et Problème..."
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl p-3.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl p-3.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-800 transition-all"
             />
           </div>
 
@@ -349,10 +349,10 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
               disabled={isSubmitting || !selectedFile}
               className={`w-full py-3.5 rounded-full text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center space-x-2 ${
                 isSubmitting
-                  ? "bg-indigo-800 cursor-wait"
+                  ? "bg-blue-800 cursor-wait"
                   : !selectedFile
                     ? "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-                    : "bg-indigo-900 hover:bg-indigo-800 cursor-pointer"
+                    : "bg-blue-900 hover:bg-blue-800 cursor-pointer"
               }`}
             >
               {isSubmitting ? (
@@ -375,7 +375,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
       {userContributions.length > 0 && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 space-y-4 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-indigo-700" />
+            <Clock className="w-5 h-5 text-blue-700" />
             <span>Historique de vos soumissions ({userContributions.length})</span>
           </h3>
 
@@ -386,11 +386,11 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                 className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                    <span className="font-bold text-slate-900">{c.fichierNom}</span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                    <span className="font-bold text-slate-900 min-w-0 break-all">{c.fichierNom}</span>
                     {c.anneeAcademique && (
-                      <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">
+                      <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-bold">
                         {c.anneeAcademique}
                       </span>
                     )}

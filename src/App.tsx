@@ -43,6 +43,7 @@ export default function App() {
 
   const [examsFilters, setExamsFilters] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [consentReminderKey, setConsentReminderKey] = useState(0);
 
   // Load initial datasets from API
   const loadData = async () => {
@@ -151,7 +152,7 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300 ${
+      className={`min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-300 ${
         isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >
@@ -175,7 +176,7 @@ export default function App() {
             </p>
           </div>
         ) : (
-          <>
+          <div key={activeTab} className="animate-isj-view">
             {activeTab === "home" && (
               <HomeView
                 documents={documents}
@@ -260,6 +261,7 @@ export default function App() {
                   loadData();
                   setActiveTab("home");
                   setAuthNotice(null);
+                  setConsentReminderKey((k) => k + 1);
                 }}
                 onNavigateToRegister={() => {
                   setAuthNotice(null);
@@ -277,12 +279,13 @@ export default function App() {
                   loadData();
                   setActiveTab("home");
                   setAuthNotice(null);
+                  setConsentReminderKey((k) => k + 1);
                 }}
                 onNavigateToLogin={() => setActiveTab("login")}
                 redirectReason={authNotice}
               />
             )}
-          </>
+          </div>
         )}
       </main>
 
@@ -297,7 +300,7 @@ export default function App() {
       />
 
       {/* Bannière de consentement aux cookies (1ère visite) */}
-      <CookieConsent />
+      <CookieConsent reminderKey={consentReminderKey} />
     </div>
   );
 }

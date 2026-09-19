@@ -90,12 +90,12 @@ export const BackgroundCarousel: React.FC<BackgroundCarouselProps> = ({
       </div>
 
       {/* Carousel Controls - Desktop only */}
-      <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-20 items-center space-x-2 text-indigo-100">
+      <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-20 items-center space-x-2 text-blue-100">
         <button
           onClick={() =>
             setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)
           }
-          className="p-2 rounded-full bg-slate-900/70 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-200 transition-all backdrop-blur-md shadow-lg"
+          className="p-2 rounded-full bg-slate-900/70 hover:bg-blue-600 border border-blue-500/30 text-blue-200 transition-all backdrop-blur-md shadow-lg"
           title="Image précédente"
           aria-label="Image précédente"
         >
@@ -110,7 +110,7 @@ export const BackgroundCarousel: React.FC<BackgroundCarouselProps> = ({
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 idx === currentSlide
                   ? "w-7 bg-amber-400 shadow-sm shadow-amber-400/50"
-                  : "w-2 bg-indigo-900/80 hover:bg-indigo-600"
+                  : "w-2 bg-blue-900/80 hover:bg-blue-600"
               }`}
               aria-label={`Aller à l'image ${idx + 1}`}
             />
@@ -119,7 +119,7 @@ export const BackgroundCarousel: React.FC<BackgroundCarouselProps> = ({
 
         <button
           onClick={() => setCurrentSlide((prev) => (prev + 1) % carouselSlides.length)}
-          className="p-2 rounded-full bg-slate-900/70 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-200 transition-all backdrop-blur-md shadow-lg"
+          className="p-2 rounded-full bg-slate-900/70 hover:bg-blue-600 border border-blue-500/30 text-blue-200 transition-all backdrop-blur-md shadow-lg"
           title="Image suivante"
           aria-label="Image suivante"
         >

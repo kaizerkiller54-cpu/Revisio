@@ -52,7 +52,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         onSubmit={() => {/* nothing needed, filter is live */}}
         onPick={onPickSuggestion}
         placeholder="Recherche instantanée : nom d'épreuve, matière, année..."
-        inputClassName="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 transition-all"
+        inputClassName="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-800 transition-all"
       />
 
       {/* Select Filters Grid */}
@@ -65,7 +65,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
           <select
             value={selectedMatiere}
             onChange={(e) => setSelectedMatiere(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer font-medium"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
           >
             <option value="Toutes">Toutes les matières</option>
             {matieresOptions.map((m) => (
@@ -84,7 +84,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
           <select
             value={selectedSemestre}
             onChange={(e) => setSelectedSemestre(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer font-medium"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
           >
             <option value="Tous">Tous les semestres</option>
             <option value="Semestre 1">Semestre 1 (S1)</option>
@@ -100,7 +100,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer font-medium"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
           >
             <option value="Tous">Tous les types (CC, SN, SR, TD, TP)</option>
             <option value="CC">Contrôle Continu (CC)</option>
@@ -119,7 +119,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
           <select
             value={selectedAnnee}
             onChange={(e) => setSelectedAnnee(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer font-medium"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
           >
             <option value="Toutes">Toutes les années</option>
             {anneesOptions.map((a) => (
@@ -136,7 +136,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         <div className="flex justify-end pt-1">
           <button
             onClick={onReset}
-            className="text-xs text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 flex items-center space-x-1 underline font-bold"
+            className="text-xs text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 flex items-center space-x-1 underline font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Réinitialiser les filtres</span>

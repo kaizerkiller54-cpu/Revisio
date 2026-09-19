@@ -77,8 +77,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("home")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "home"
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <School className="w-4 h-4" />
@@ -89,8 +89,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("subjects")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "subjects"
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -101,8 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("exams")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "exams"
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Search className="w-4 h-4" />
@@ -113,8 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("contribute")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "contribute"
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Upload className="w-4 h-4" />
@@ -125,8 +125,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("activity-log")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "activity-log"
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <History className="w-4 h-4" />
@@ -137,8 +137,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("settings")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === "settings"
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Settings className="w-4 h-4" />
@@ -176,11 +176,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => handleNavClick("super-admin-audit")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                     activeTab === "super-admin-audit"
-                      ? "bg-purple-50 dark:bg-purple-500/15 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-extrabold shadow-sm"
-                      : "text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-200 hover:bg-purple-50/60 dark:hover:bg-purple-500/10"
+                      ? "bg-sky-50 dark:bg-sky-400/15 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-400/30 font-extrabold shadow-sm"
+                      : "text-sky-600 dark:text-sky-300 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50/60 dark:hover:bg-sky-400/10"
                   }`}
                 >
-                  <ShieldAlert className="w-4 h-4 text-purple-700" />
+                  <ShieldAlert className="w-4 h-4 text-sky-600" />
                   <span>Journal d'Audit</span>
                 </button>
               </>
@@ -195,14 +195,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user ? (
               <div className="flex items-center space-x-3 pl-2 border-l border-slate-200 dark:border-slate-700">
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-900 leading-tight">
+                  <p className="text-xs font-bold text-slate-900 leading-tight max-w-[180px] truncate">
                     {user.prenom} {user.nom}
                   </p>
                   <span
                     className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
                       isAdmin
                         ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30"
-                        : "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30"
+                        : "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30"
                     }`}
                   >
                     {user.role}
@@ -220,13 +220,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handleNavClick("login")}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
                 >
                   Connexion
                 </button>
                 <button
                   onClick={() => handleNavClick("register")}
-                  className="bg-indigo-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-indigo-800 transition-all shadow-sm"
+                  className="bg-blue-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition-all shadow-sm"
                 >
                   S'inscrire
                 </button>
@@ -252,15 +252,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-2 pb-5 space-y-2 animate-fadeIn">
           {user && (
             <div className="p-3 mb-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <div>
-                <p className="font-bold text-sm text-slate-900">
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="font-bold text-sm text-slate-900 truncate">
                   {user.prenom} {user.nom}
                 </p>
-                <p className="text-xs text-slate-500">{user.email}</p>
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
               </div>
               <span
-                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                  isAdmin ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300" : "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300"
+                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                  isAdmin ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300" : "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300"
                 }`}
               >
                 {user.role}
@@ -271,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("home")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "home" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              activeTab === "home" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <School className="w-4 h-4" />
@@ -281,7 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("subjects")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "subjects" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              activeTab === "subjects" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -291,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("exams")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "exams" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              activeTab === "exams" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <Search className="w-4 h-4" />
@@ -301,7 +301,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("contribute")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "contribute" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              activeTab === "contribute" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <Upload className="w-4 h-4" />
@@ -311,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("activity-log")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "activity-log" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              activeTab === "activity-log" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <History className="w-4 h-4" />
@@ -321,7 +321,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick("settings")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "settings" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              activeTab === "settings" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -357,10 +357,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => handleNavClick("super-admin-audit")}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                    activeTab === "super-admin-audit" ? "bg-purple-50 text-purple-900 font-extrabold" : "text-purple-700"
+                    activeTab === "super-admin-audit" ? "bg-sky-50 text-sky-800 font-extrabold" : "text-sky-600"
                   }`}
                 >
-                  <ShieldAlert className="w-4 h-4 text-purple-700" />
+                  <ShieldAlert className="w-4 h-4 text-sky-600" />
                   <span>Journal d'Audit & Historique Admins</span>
                 </button>
               )}
@@ -389,7 +389,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
                 <button
                   onClick={() => handleNavClick("register")}
-                  className="w-full text-center py-2 text-sm font-bold text-white bg-indigo-900 rounded-lg"
+                  className="w-full text-center py-2 text-sm font-bold text-white bg-blue-900 rounded-lg"
                 >
                   S'inscrire
                 </button>
@@ -407,11 +407,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("home")}
               className={`px-3 py-2 rounded-full text-xs font-extrabold flex items-center space-x-1.5 transition-all ${
                 activeTab === "home"
-                  ? "bg-indigo-600 text-white shadow-md ring-1 ring-indigo-400"
+                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
-              <School className="w-4 h-4 shrink-0 text-indigo-300" />
+              <School className="w-4 h-4 shrink-0 text-blue-300" />
               <span className="text-[11px] font-bold">Accueil</span>
             </button>
 
@@ -419,11 +419,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("exams")}
               className={`px-3 py-2 rounded-full text-xs font-extrabold flex items-center space-x-1.5 transition-all ${
                 activeTab === "exams"
-                  ? "bg-indigo-600 text-white shadow-md ring-1 ring-indigo-400"
+                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
-              <Search className="w-4 h-4 shrink-0 text-indigo-300" />
+              <Search className="w-4 h-4 shrink-0 text-blue-300" />
               <span className="text-[11px] font-bold">Épreuves</span>
             </button>
 
@@ -431,11 +431,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => handleNavClick("contribute")}
               className={`px-3 py-2 rounded-full text-xs font-extrabold flex items-center space-x-1.5 transition-all ${
                 activeTab === "contribute"
-                  ? "bg-indigo-600 text-white shadow-md ring-1 ring-indigo-400"
+                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
-              <Upload className="w-4 h-4 shrink-0 text-indigo-300" />
+              <Upload className="w-4 h-4 shrink-0 text-blue-300" />
               <span className="text-[11px] font-bold">Déposer</span>
             </button>
 
@@ -450,7 +450,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               className={`p-2 rounded-full transition-all ${
                 mobileMenuOpen
-                  ? "bg-indigo-600 text-white ring-1 ring-indigo-400"
+                  ? "bg-blue-600 text-white ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
               title="Menu complet"

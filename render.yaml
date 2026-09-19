@@ -1,0 +1,37 @@
+# Blueprint Render — Revisio ISJ
+# Usage : dashboard Render → New → Blueprint → connecter le dépôt.
+# Render demandera les variables "sync: false" (secrets) avant le premier build.
+#
+# Base de données recommandée : Postgres du projet Supabase existant
+# (chaîne "pooler" port 6543 + ?pgbouncer=true), pas le Postgres gratuit
+# Render (expire après 90 jours).
+# Exemple DATABASE_URL :
+#   postgresql://postgres.<ref>:<mot-de-passe>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+#
+# Ne JAMAIS exécuter le seed en production (server/prisma/seed.ts efface tout).
+services:
+  - type: web
+    name: revisio
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY_HOPS
+        value: 1
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPERADMIN_MASTER_KEY
+        sync: false

@@ -232,8 +232,8 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
         );
       case "CHANGE_USER_ROLE":
         return (
-          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
-            <ArrowRightLeft className="w-3.5 h-3.5 text-purple-600" />
+          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+            <ArrowRightLeft className="w-3.5 h-3.5 text-sky-500" />
             <span>Gestion Rôle</span>
           </span>
         );
@@ -265,18 +265,18 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-gradient-to-r from-sky-800 via-blue-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-64 h-64 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center space-x-2 bg-purple-500/20 text-purple-200 border border-purple-400/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-              <ShieldAlert className="w-4 h-4 text-purple-300" />
+            <div className="inline-flex items-center space-x-2 bg-sky-400/20 text-sky-200 border border-sky-400/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+              <ShieldAlert className="w-4 h-4 text-sky-300" />
               <span>Module Super Administrateur</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
               Journal d'Audit & Traçabilité des Admins
             </h1>
-            <p className="text-xs sm:text-sm text-purple-200 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-sky-200 max-w-2xl leading-relaxed">
               Consultez en temps réel l'historique complet des actions effectuées par l'ensemble des administrateurs (plusieurs administrateurs enregistrés). Contrôlez les accès et gérez les privilèges.
             </p>
           </div>
@@ -286,7 +286,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
               onClick={handleExportLogs}
               className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-bold text-white transition-all flex items-center space-x-2 backdrop-blur-sm shadow-sm"
             >
-              <Download className="w-4 h-4 text-purple-300" />
+              <Download className="w-4 h-4 text-sky-300" />
               <span>Exporter Journal (JSON)</span>
             </button>
           </div>
@@ -296,7 +296,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
       {/* Global Stats bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center shrink-0">
             <Users className="w-6 h-6" />
           </div>
           <div>
@@ -308,7 +308,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex items-center justify-center shrink-0">
             <History className="w-6 h-6" />
           </div>
           <div>
@@ -361,28 +361,28 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
       )}
 
       {/* Main Tabs Navigation */}
-      <div className="flex border-b border-slate-200 space-x-4">
+      <div className="flex border-b border-slate-200 space-x-4 overflow-x-auto">
         <button
           onClick={() => setActiveSubTab("logs")}
-          className={`pb-3 px-1 font-bold text-sm flex items-center space-x-2 border-b-2 transition-all ${
+          className={`pb-3 px-1 font-bold text-sm flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
             activeSubTab === "logs"
-              ? "border-purple-600 text-purple-900 font-extrabold"
+              ? "border-sky-500 text-sky-800 font-extrabold"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          <History className="w-4 h-4" />
+          <History className="w-4 h-4 shrink-0" />
           <span>Historique des Actions des Admins ({auditLogs.length})</span>
         </button>
 
         <button
           onClick={() => setActiveSubTab("users")}
-          className={`pb-3 px-1 font-bold text-sm flex items-center space-x-2 border-b-2 transition-all ${
+          className={`pb-3 px-1 font-bold text-sm flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
             activeSubTab === "users"
-              ? "border-purple-600 text-purple-900 font-extrabold"
+              ? "border-sky-500 text-sky-800 font-extrabold"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          <Users className="w-4 h-4" />
+          <Users className="w-4 h-4 shrink-0" />
           <span>Gestion des Administrateurs & Rôles ({users.length})</span>
         </button>
       </div>
@@ -400,7 +400,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Rechercher par admin, épreuve..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white"
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               </form>
@@ -409,12 +409,12 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto text-xs">
                 {/* Admin Select */}
                 <div className="flex items-center space-x-1.5">
-                  <UserIcon className="w-4 h-4 text-purple-600 shrink-0" />
+                  <UserIcon className="w-4 h-4 text-sky-500 shrink-0" />
                   <span className="font-bold text-slate-700">Admin:</span>
                   <select
                     value={selectedAdminFilter}
                     onChange={(e) => setSelectedAdminFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    className="bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <option value="all">Tous les Administrateurs</option>
                     {adminsList.map((adm) => (
@@ -427,12 +427,12 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
 
                 {/* Action Type Select */}
                 <div className="flex items-center space-x-1.5">
-                  <Filter className="w-4 h-4 text-purple-600 shrink-0" />
+                  <Filter className="w-4 h-4 text-sky-500 shrink-0" />
                   <span className="font-bold text-slate-700">Action:</span>
                   <select
                     value={selectedActionFilter}
                     onChange={(e) => setSelectedActionFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    className="bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <option value="all">Toutes les actions</option>
                     <option value="APPROVE_CONTRIBUTION">Approbation & Publication</option>
@@ -449,7 +449,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
           {/* Audit Logs Table / Feed */}
           {isLoading ? (
             <div className="py-12 text-center text-slate-400 text-xs">
-              <div className="w-8 h-8 border-3 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <div className="w-8 h-8 border-3 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
               Chargement du journal d'audit...
             </div>
           ) : auditLogs.length === 0 ? (
@@ -483,10 +483,10 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                       });
 
                       return (
-                        <tr key={log.id} className="hover:bg-purple-50/30 transition-colors">
+                        <tr key={log.id} className="hover:bg-sky-50/30 transition-colors">
                           <td className="py-3.5 px-4">
                             <div className="flex items-center space-x-2.5">
-                              <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-800 font-bold flex items-center justify-center shrink-0 text-[11px] border border-purple-200">
+                              <div className="w-7 h-7 rounded-full bg-sky-100 text-sky-700 font-bold flex items-center justify-center shrink-0 text-[11px] border border-sky-200">
                                 {log.adminNom.charAt(0)}
                               </div>
                               <div>
@@ -573,17 +573,17 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 onClick={() => setUserRoleFilter("Etudiant")}
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   userRoleFilter === "Etudiant"
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                    : "bg-white border-slate-200 text-slate-800 hover:border-indigo-300"
+                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                    : "bg-white border-slate-200 text-slate-800 hover:border-blue-300"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-indigo-700 font-extrabold flex items-center space-x-1">
+                  <span className="text-xs font-bold text-blue-700 font-extrabold flex items-center space-x-1">
                     <span>Étudiants</span>
                   </span>
-                  <UserIcon className="w-4 h-4 text-indigo-600" />
+                  <UserIcon className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-2xl font-black text-indigo-950">{studentsCount}</p>
+                <p className="text-2xl font-black text-blue-950">{studentsCount}</p>
                 <p className="text-[10px] text-slate-500 mt-1">Éligibles pour élévation de privilège</p>
               </div>
 
@@ -607,15 +607,15 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 onClick={() => setUserRoleFilter("SuperAdministrateur")}
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   userRoleFilter === "SuperAdministrateur"
-                    ? "bg-purple-900 text-white border-purple-900 shadow-md"
-                    : "bg-white border-slate-200 text-slate-800 hover:border-purple-300"
+                    ? "bg-sky-800 text-white border-sky-800 shadow-md"
+                    : "bg-white border-slate-200 text-slate-800 hover:border-sky-300"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-purple-900 font-extrabold">SuperAdmin</span>
-                  <ShieldAlert className="w-4 h-4 text-purple-700" />
+                  <span className="text-xs font-bold text-sky-800 font-extrabold">SuperAdmin</span>
+                  <ShieldAlert className="w-4 h-4 text-sky-600" />
                 </div>
-                <p className="text-2xl font-black text-purple-950">{superAdminsCount}</p>
+                <p className="text-2xl font-black text-sky-900">{superAdminsCount}</p>
                 <p className="text-[10px] text-slate-500 mt-1">Supervision & Journal d'Audit</p>
               </div>
             </div>
@@ -640,9 +640,9 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                     setNewRole("Administrateur");
                     setIsAddAdminModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-purple-900 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center space-x-2 shrink-0"
+                  className="px-4 py-2.5 bg-sky-800 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center space-x-2 shrink-0"
                 >
-                  <UserPlus className="w-4 h-4 text-purple-200" />
+                  <UserPlus className="w-4 h-4 text-sky-200" />
                   <span>Ajouter un Administrateur</span>
                 </button>
               </div>
@@ -657,7 +657,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                     placeholder="Rechercher étudiant, admin, e-mail..."
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400"
                   />
                   {userSearchQuery && (
                     <button
@@ -685,8 +685,8 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                     onClick={() => setUserRoleFilter("Etudiant")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
                       userRoleFilter === "Etudiant"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/60"
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/60"
                     }`}
                   >
                     <span>Étudiants ({studentsCount})</span>
@@ -705,8 +705,8 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                     onClick={() => setUserRoleFilter("SuperAdministrateur")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
                       userRoleFilter === "SuperAdministrateur"
-                        ? "bg-purple-900 text-white"
-                        : "bg-purple-50 text-purple-900 hover:bg-purple-100 border border-purple-200/60"
+                        ? "bg-sky-800 text-white"
+                        : "bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60"
                     }`}
                   >
                     <span>SuperAdmins ({superAdminsCount})</span>
@@ -750,10 +750,10 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                               <div className="flex items-center space-x-2.5">
                                 <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs ${
                                   isStudent
-                                    ? "bg-indigo-100 text-indigo-800"
+                                    ? "bg-blue-100 text-blue-800"
                                     : u.role === "Administrateur"
                                     ? "bg-amber-100 text-amber-800"
-                                    : "bg-purple-100 text-purple-900"
+                                    : "bg-sky-100 text-sky-800"
                                 }`}>
                                   {u.prenom.charAt(0)}{u.nom.charAt(0)}
                                 </div>
@@ -761,7 +761,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                                   <p className="font-bold text-slate-900 flex items-center space-x-1">
                                     <span>{u.prenom} {u.nom}</span>
                                     {isSelf && (
-                                      <span className="text-[9px] bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded font-extrabold ml-1">
+                                      <span className="text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-extrabold ml-1">
                                         Vous
                                       </span>
                                     )}
@@ -775,8 +775,8 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
 
                             <td className="py-3.5 px-4">
                               {u.role === "SuperAdministrateur" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200 flex items-center space-x-1 w-fit">
-                                  <ShieldAlert className="w-3 h-3 text-purple-700" />
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200 flex items-center space-x-1 w-fit">
+                                  <ShieldAlert className="w-3 h-3 text-sky-600" />
                                   <span>SuperAdministrateur</span>
                                 </span>
                               ) : u.role === "Administrateur" ? (
@@ -785,8 +785,8 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                                   <span>Administrateur</span>
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 inline-flex items-center space-x-1">
-                                  <UserIcon className="w-3 h-3 text-indigo-600" />
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center space-x-1">
+                                  <UserIcon className="w-3 h-3 text-blue-600" />
                                   <span>Étudiant</span>
                                 </span>
                               )}
@@ -813,9 +813,9 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                                     setEditingUser(u);
                                     setTargetRole(u.role);
                                   }}
-                                  className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 rounded-lg text-xs font-bold transition-colors inline-flex items-center space-x-1"
+                                  className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center space-x-1"
                                 >
-                                  <ArrowRightLeft className="w-3.5 h-3.5 text-purple-600" />
+                                  <ArrowRightLeft className="w-3.5 h-3.5 text-sky-500" />
                                   <span>Rôle</span>
                                 </button>
 
@@ -851,8 +851,8 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-fadeIn">
             <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
-              <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center border border-purple-200 shrink-0 font-bold">
-                <UserPlus className="w-5 h-5 text-purple-700" />
+              <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center border border-sky-200 shrink-0 font-bold">
+                <UserPlus className="w-5 h-5 text-sky-600" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-slate-900">Ajouter un Administrateur</h3>
@@ -871,7 +871,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   placeholder="ex: Dr. Kamga"
                   value={newPrenom}
                   onChange={(e) => setNewPrenom(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-900 font-medium"
                 />
               </div>
 
@@ -883,7 +883,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   placeholder="ex: NKONGO"
                   value={newNom}
                   onChange={(e) => setNewNom(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 font-medium uppercase"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-900 font-medium uppercase"
                 />
               </div>
 
@@ -895,7 +895,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   placeholder="ex: kamga@isj.cm"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-900 font-mono"
                 />
               </div>
 
@@ -906,7 +906,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   placeholder="+237 ----------- (9 chiffres)"
                   value={newTelephone}
                   onChange={(e) => setNewTelephone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-900 font-medium"
                 />
                 <p className="mt-1 text-[10px] text-slate-500">
                   Format camerounais : +237 suivi de 9 chiffres (ex: +237655123456).
@@ -918,7 +918,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 font-bold bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 text-slate-900 font-bold bg-white"
                 >
                   <option value="Administrateur">Administrateur (Modération, validation épreuves)</option>
                   <option value="SuperAdministrateur">SuperAdministrateur (Audit, gestion globale admins)</option>
@@ -937,7 +937,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 <button
                   type="submit"
                   disabled={isCreatingAdmin}
-                  className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-sky-800 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-1.5"
                 >
                   {isCreatingAdmin ? (
                     <>
@@ -978,7 +978,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 {deletingUser.prenom} {deletingUser.nom}
               </div>
               <div className="font-mono text-slate-600 text-xs">
-                {deletingUser.email} — Rôle actuel : <strong className="text-purple-900">{deletingUser.role}</strong>
+                {deletingUser.email} — Rôle actuel : <strong className="text-sky-800">{deletingUser.role}</strong>
               </div>
               <p className="text-[11px] text-rose-800 font-semibold pt-1">
                 ⚠️ L'accès de cet utilisateur sera immédiatement révoqué.
@@ -1011,7 +1011,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-fadeIn">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center border border-purple-200 shrink-0 font-bold">
+              <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center border border-sky-200 shrink-0 font-bold">
                 <ArrowRightLeft className="w-5 h-5" />
               </div>
               <div>
@@ -1029,7 +1029,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 onClick={() => setTargetRole("Etudiant")}
                 className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                   targetRole === "Etudiant"
-                    ? "bg-indigo-50 border-indigo-600 text-indigo-950 font-bold"
+                    ? "bg-blue-50 border-blue-600 text-blue-950 font-bold"
                     : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
                 }`}
               >
@@ -1037,7 +1037,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   <p className="font-bold text-slate-900">Étudiant</p>
                   <p className="text-[10px] text-slate-500">Accès standard à la recherche et au téléchargement d'épreuves.</p>
                 </div>
-                {targetRole === "Etudiant" && <CheckCircle2 className="w-5 h-5 text-indigo-700" />}
+                {targetRole === "Etudiant" && <CheckCircle2 className="w-5 h-5 text-blue-700" />}
               </div>
 
               <div
@@ -1059,7 +1059,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 onClick={() => setTargetRole("SuperAdministrateur")}
                 className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                   targetRole === "SuperAdministrateur"
-                    ? "bg-purple-50 border-purple-600 text-purple-950 font-bold"
+                    ? "bg-sky-50 border-sky-500 text-sky-900 font-bold"
                     : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
                 }`}
               >
@@ -1067,7 +1067,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                   <p className="font-bold text-slate-900">SuperAdministrateur</p>
                   <p className="text-[10px] text-slate-500">Consulte le journal d'audit de toutes les actions et gère les rôles.</p>
                 </div>
-                {targetRole === "SuperAdministrateur" && <CheckCircle2 className="w-5 h-5 text-purple-700" />}
+                {targetRole === "SuperAdministrateur" && <CheckCircle2 className="w-5 h-5 text-sky-600" />}
               </div>
             </div>
 
@@ -1083,7 +1083,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                 type="button"
                 disabled={isUpdatingRole}
                 onClick={handleConfirmRoleChange}
-                className="px-5 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-1.5"
+                className="px-5 py-2.5 rounded-xl bg-sky-800 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-1.5"
               >
                 {isUpdatingRole ? "Mise à jour..." : "Confirmer le changement"}
               </button>

@@ -55,94 +55,98 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   };
 
   return (
-    <div className="max-w-md mx-auto py-12 px-4 w-full overflow-hidden">
+    <div className="min-h-[calc(100vh-120px)] flex items-center justify-center py-8 px-4 w-full bg-slate-50 dark:bg-slate-950">
       <motion.div
-        initial={{ y: -120, opacity: 0 }}
+        initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6"
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl shadow-slate-200/60 dark:shadow-slate-950 space-y-8"
       >
         {/* Header */}
         <div className="flex flex-col items-center justify-center text-center space-y-3">
-          <AppLogo size="lg" variant="light" showSubtitle={false} />
-          <h2 className="text-xl font-extrabold text-slate-900">Création de Compte ISJ</h2>
-          <p className="text-xs text-slate-500">
-            Créez votre compte d'accès aux épreuves et sujets du Niveau 1
-          </p>
+          <AppLogo size="lg" variant="light" showSubtitle={false} animated={false} />
+          <div className="space-y-1">
+            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Créer votre compte
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Accédez aux épreuves et sujets du Niveau 1
+            </p>
+          </div>
         </div>
 
         {redirectReason && (
-          <div className="p-3.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-950 dark:text-amber-100 rounded-2xl text-xs font-bold flex items-start space-x-2 animate-fadeIn shadow-2xs">
+          <div className="p-3.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-950 dark:text-amber-100 rounded-2xl text-xs font-bold flex items-start space-x-2 animate-fadeIn">
             <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <span>{redirectReason}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-3.5 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/40 text-red-700 dark:text-red-200 rounded-2xl text-xs font-semibold flex items-center space-x-2">
+          <div className="p-3.5 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/40 text-red-700 dark:text-red-200 rounded-2xl text-xs font-semibold flex items-center space-x-2 animate-fadeIn">
             <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1">Nom</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nom</label>
               <input
                 type="text"
                 required
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
-                placeholder="Ex: TALLA"
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-2xl p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 text-sm"
+                placeholder="TALLA"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1">Prénom</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Prénom</label>
               <input
                 type="text"
                 required
                 value={prenom}
                 onChange={(e) => setPrenom(e.target.value)}
-                placeholder="Ex: Roland"
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-2xl p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 text-sm"
+                placeholder="Roland"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1">Adresse E-mail académique</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Adresse E-mail académique</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="votre.email@isj.cm"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-2xl p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 text-sm"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
             />
           </div>
 
           <div>
-            <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1">Numéro de téléphone</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Numéro de téléphone</label>
             <input
               type="tel"
               value={telephone}
               onChange={(e) => setTelephone(e.target.value)}
               placeholder="+237 ----------- (9 chiffres)"
               inputMode="tel"
-              className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-2xl p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 text-sm ${
-                telephone.trim() && !telephoneIsValid ? "border-red-400 ring-1 ring-red-300" : "border-slate-200 dark:border-slate-600"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all ${
+                telephone.trim() && !telephoneIsValid ? "border-red-400 ring-1 ring-red-300" : "border-slate-300 dark:border-slate-700"
               }`}
             />
-            <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
               Format camerounais : +237 suivi de 9 chiffres (ex: +237655123456).
             </p>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1">Mot de passe</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Mot de passe</label>
             <input
               type="password"
               required
@@ -150,14 +154,14 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               value={motDePasse}
               onChange={(e) => setMotDePasse(e.target.value)}
               placeholder="6 caractères minimum"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-2xl p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800 text-sm"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3.5 bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-sm rounded-full transition-all shadow-sm flex items-center justify-center space-x-2 ${
+            className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center space-x-2 active:scale-[0.99] ${
               isLoading ? "opacity-80 cursor-wait" : ""
             }`}
           >
@@ -175,11 +179,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
           </button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700">
-          Vous possédez déjà un compte ?{" "}
+        <div className="pt-4 text-center text-sm text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
+          Vous avez déjà un compte ?{" "}
           <button
             onClick={onNavigateToLogin}
-            className="text-indigo-900 font-bold hover:underline"
+            className="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors"
           >
             Se connecter
           </button>

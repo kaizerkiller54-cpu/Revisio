@@ -117,7 +117,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center space-x-2">
-            <FileText className="w-7 h-7 text-indigo-700" />
+            <FileText className="w-7 h-7 text-blue-700" />
             <span>Catalogue des Épreuves</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -127,12 +127,12 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
         <div className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full text-slate-700 dark:text-slate-300 font-medium self-start sm:self-auto shadow-sm">
           {loading ? (
             <span className="flex items-center space-x-1.5">
-              <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
+              <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
               <span>Recherche en cours...</span>
             </span>
           ) : (
             <>
-              <strong className="text-indigo-900 font-bold">{total}</strong> épreuve(s) trouvée(s)
+              <strong className="text-blue-900 font-bold">{total}</strong> épreuve(s) trouvée(s)
             </>
           )}
         </div>
@@ -161,7 +161,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-slate-500 font-bold">Filtres actifs:</span>
           {selectedMatiere !== "Toutes" && (
-            <span className="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30 px-3 py-1 rounded-full font-semibold">
+            <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-3 py-1 rounded-full font-semibold">
               Matière: {selectedMatiere}
             </span>
           )}
@@ -186,7 +186,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
       {/* Exams Grid */}
       {loading && !hasFetched ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-xs text-slate-400 font-semibold">Recherche en cours...</p>
         </div>
       ) : results.length > 0 ? (
@@ -233,7 +233,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
           </p>
           <button
             onClick={handleResetFilters}
-            className="mt-4 px-4 py-2 bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold rounded-full transition-colors shadow-sm"
+            className="mt-4 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-full transition-colors shadow-sm"
           >
             Réinitialiser tous les filtres
           </button>

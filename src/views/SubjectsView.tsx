@@ -31,7 +31,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
     <div className="space-y-8 pb-12">
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
-        <div className="flex items-center space-x-3 text-indigo-900 dark:text-indigo-300">
+        <div className="flex items-center space-x-3 text-blue-900 dark:text-blue-300">
           <BookOpen className="w-8 h-8" />
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             Matières du Niveau 1 Ingénieur
@@ -50,7 +50,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Filtrer une matière par nom ou code..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-slate-900 dark:text-slate-100 text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-slate-800"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-slate-900 dark:text-slate-100 text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-800"
             />
           </div>
 
@@ -59,7 +59,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               onClick={() => setActiveSemestreFilter("Tous")}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 activeSemestreFilter === "Tous"
-                  ? "bg-indigo-900 text-white shadow-sm"
+                  ? "bg-blue-900 text-white shadow-sm"
                   : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -69,7 +69,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               onClick={() => setActiveSemestreFilter("Semestre 1")}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 activeSemestreFilter === "Semestre 1"
-                  ? "bg-indigo-900 text-white shadow-sm"
+                  ? "bg-blue-900 text-white shadow-sm"
                   : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -79,7 +79,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               onClick={() => setActiveSemestreFilter("Semestre 2")}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 activeSemestreFilter === "Semestre 2"
-                  ? "bg-indigo-900 text-white shadow-sm"
+                  ? "bg-blue-900 text-white shadow-sm"
                   : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -95,25 +95,19 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
           <div
             key={m.id}
             onClick={() => onSelectMatiere(m.nom, m.semestre)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all duration-200 cursor-pointer flex flex-col justify-between group shadow-sm hover:shadow-md"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 cursor-pointer flex flex-col justify-between group shadow-sm hover:shadow-md"
           >
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/15 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-500/30">
+                <span className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/15 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-500/30 shrink-0">
                   {m.code}
                 </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    m.semestre === "Semestre 1"
-                      ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30"
-                      : "bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30"
-                  }`}
-                >
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 shrink-0">
                   {m.semestre}
                 </span>
               </div>
 
-              <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-700 transition-colors mb-2">
+              <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2 break-words">
                 {m.nom}
               </h3>
 
@@ -124,9 +118,9 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
               <span className="text-slate-600 font-medium">
-                <strong className="text-indigo-900 dark:text-indigo-300 font-bold">{m.countDocs}</strong> épreuve(s)
+                <strong className="text-blue-900 dark:text-blue-300 font-bold">{m.countDocs}</strong> épreuve(s)
               </span>
-              <span className="text-indigo-700 font-bold group-hover:translate-x-1 transition-transform flex items-center space-x-1">
+              <span className="text-blue-700 font-bold group-hover:translate-x-1 transition-transform flex items-center space-x-1">
                 <span>Consulter</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </span>

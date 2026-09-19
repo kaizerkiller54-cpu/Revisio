@@ -125,12 +125,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
       </div>
 
       {/* CAROUSEL CONTROLS & SLIDE INDICATORS */}
-      <div className="hidden lg:flex absolute bottom-8 left-12 z-20 items-center space-x-3 text-indigo-100">
+      <div className="hidden lg:flex absolute bottom-8 left-12 z-20 items-center space-x-3 text-blue-100">
         <button
           onClick={() =>
             setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)
           }
-          className="p-2.5 rounded-full bg-slate-900/70 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-200 transition-all backdrop-blur-md shadow-lg"
+          className="p-2.5 rounded-full bg-slate-900/70 hover:bg-blue-600 border border-blue-500/30 text-blue-200 transition-all backdrop-blur-md shadow-lg"
           title="Image précédente"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -144,7 +144,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               className={`h-2 rounded-full transition-all duration-300 ${
                 idx === currentSlide
                   ? "w-8 bg-amber-400 shadow-sm shadow-amber-400/50"
-                  : "w-2.5 bg-indigo-900/80 hover:bg-indigo-600"
+                  : "w-2.5 bg-blue-900/80 hover:bg-blue-600"
               }`}
             />
           ))}
@@ -152,7 +152,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
         <button
           onClick={() => setCurrentSlide((prev) => (prev + 1) % carouselSlides.length)}
-          className="p-2.5 rounded-full bg-slate-900/70 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-200 transition-all backdrop-blur-md shadow-lg"
+          className="p-2.5 rounded-full bg-slate-900/70 hover:bg-blue-600 border border-blue-500/30 text-blue-200 transition-all backdrop-blur-md shadow-lg"
           title="Image suivante"
         >
           <ChevronRight className="w-4 h-4" />
@@ -167,7 +167,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <div className="space-y-3.5">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white drop-shadow-sm">
               Votre Pass Réussite pour Dompter la{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-indigo-200">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-blue-200">
                 Première Année
               </span>
             </h1>
@@ -180,33 +180,33 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
           {/* Key Value Prop Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            <div className="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-700/40 backdrop-blur-md hover:border-indigo-500/60 transition-all">
+            <div className="p-4 rounded-2xl bg-blue-950/60 border border-blue-700/40 backdrop-blur-md hover:border-blue-500/60 transition-all">
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-xl bg-indigo-600/30 text-amber-300 border border-indigo-500/30">
+                <div className="p-2.5 rounded-xl bg-blue-600/30 text-amber-300 border border-blue-500/30">
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-white">Annales Spéciales 1ère Année</h3>
-                  <p className="text-[11px] text-indigo-200/80">Sujets de CC & examens classés</p>
+                  <p className="text-[11px] text-blue-200/80">Sujets de CC & examens classés</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-700/40 backdrop-blur-md hover:border-indigo-500/60 transition-all">
+            <div className="p-4 rounded-2xl bg-blue-950/60 border border-blue-700/40 backdrop-blur-md hover:border-blue-500/60 transition-all">
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-xl bg-indigo-600/30 text-amber-300 border border-indigo-500/30">
+                <div className="p-2.5 rounded-xl bg-blue-600/30 text-amber-300 border border-blue-500/30">
                   <Download className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-white">Téléchargement Direct PDF</h3>
-                  <p className="text-[11px] text-indigo-200/80">Révisez facilement hors ligne</p>
+                  <p className="text-[11px] text-blue-200/80">Révisez facilement hors ligne</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Privilege Guarantee */}
-          <div className="pt-2 flex items-center text-xs text-indigo-200/90 border-t border-indigo-800/40">
+          <div className="pt-2 flex items-center text-xs text-blue-200/90 border-t border-blue-800/40">
             <span>Plateforme dédiée à l'accompagnement et à la réussite de la promotion 2026</span>
           </div>
         </div>
@@ -219,35 +219,26 @@ export const LoginView: React.FC<LoginViewProps> = ({
             className={`bg-slate-900/95 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-slate-950 space-y-6 relative overflow-hidden transition-colors duration-300 ${
               errorMsg
                 ? "border-2 border-red-500/90 shadow-red-950/40"
-                : "border border-indigo-700/50"
+                : "border border-slate-700"
             }`}
           >
-            {/* Elegant Top Accent Line (Red on Error, Amber gradient otherwise) */}
-            <div
-              className={`absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300 ${
-                errorMsg
-                  ? "bg-gradient-to-r from-red-600 via-red-500 to-amber-500"
-                  : "bg-gradient-to-r from-amber-400 via-indigo-500 to-indigo-700"
-              }`}
-            />
-
             {/* Form Header */}
             <div className="text-center space-y-2 pt-1">
               <div className="flex justify-center mb-1">
-                <AppLogo size="md" variant="dark" showSubtitle={false} />
+                <AppLogo size="md" variant="dark" showSubtitle={false} animated={false} />
               </div>
 
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center justify-center space-x-2">
                 <span>Espace Connexion Étudiant</span>
               </h2>
-              <p className="text-xs text-indigo-200/80">
+              <p className="text-xs text-blue-200/80">
                 Connectez-vous pour débloquer votre accès aux annales d'épreuves
               </p>
             </div>
 
             {/* Notice banner if redirected */}
             {redirectReason && (
-              <div className="p-3.5 bg-indigo-950/90 border border-indigo-700/60 text-indigo-100 rounded-2xl text-xs font-medium flex items-center space-x-2.5">
+              <div className="p-3.5 bg-blue-950/90 border border-blue-700/60 text-blue-100 rounded-2xl text-xs font-medium flex items-center space-x-2.5">
                 <Lock className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>{redirectReason}</span>
               </div>
@@ -265,13 +256,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               {/* Email Field */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-indigo-100">
+                <label className="block font-bold text-blue-100">
                   Adresse e-mail académique
                 </label>
                 <div className="relative">
                   <div
                     className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none ${
-                      errorMsg ? "text-red-400" : "text-indigo-400"
+                      errorMsg ? "text-red-400" : "text-blue-400"
                     }`}
                   >
                     <Mail className="w-4 h-4" />
@@ -285,10 +276,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       if (errorMsg) setErrorMsg(null);
                     }}
                     placeholder="nom.prenom@isj.cm"
-                    className={`w-full pl-10 pr-4 py-3 bg-slate-950/90 rounded-2xl text-white placeholder-indigo-400/50 focus:outline-none text-xs font-medium transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 bg-slate-950/90 rounded-2xl text-white placeholder-blue-400/50 focus:outline-none text-xs font-medium transition-all ${
                       errorMsg
                         ? "border-2 border-red-500 ring-2 ring-red-500/40 text-red-100 bg-red-950/20 placeholder-red-300/40 focus:border-red-400 focus:ring-red-400"
-                        : "border border-indigo-900/80 focus:ring-2 focus:ring-amber-400"
+                        : "border border-blue-900/80 focus:ring-2 focus:ring-amber-400"
                     }`}
                   />
                 </div>
@@ -296,13 +287,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
               {/* Password Field */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-indigo-100">
+                <label className="block font-bold text-blue-100">
                   Mot de passe
                 </label>
                 <div className="relative">
                   <div
                     className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none ${
-                      errorMsg ? "text-red-400" : "text-indigo-400"
+                      errorMsg ? "text-red-400" : "text-blue-400"
                     }`}
                   >
                     <Lock className="w-4 h-4" />
@@ -316,16 +307,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       if (errorMsg) setErrorMsg(null);
                     }}
                     placeholder="••••••••"
-                    className={`w-full pl-10 pr-10 py-3 bg-slate-950/90 rounded-2xl text-white placeholder-indigo-400/50 focus:outline-none text-xs font-medium transition-all ${
+                    className={`w-full pl-10 pr-10 py-3 bg-slate-950/90 rounded-2xl text-white placeholder-blue-400/50 focus:outline-none text-xs font-medium transition-all ${
                       errorMsg
                         ? "border-2 border-red-500 ring-2 ring-red-500/40 text-red-100 bg-red-950/20 placeholder-red-300/40 focus:border-red-400 focus:ring-red-400"
-                        : "border border-indigo-900/80 focus:ring-2 focus:ring-amber-400"
+                        : "border border-blue-900/80 focus:ring-2 focus:ring-amber-400"
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-indigo-400 hover:text-indigo-200"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-blue-400 hover:text-blue-200"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -336,7 +327,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-sm rounded-2xl transition-all shadow-lg shadow-indigo-950 flex items-center justify-center space-x-2 group active:scale-[0.99]"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm rounded-2xl transition-all shadow-lg shadow-blue-950 flex items-center justify-center space-x-2 group active:scale-[0.99]"
               >
                 {isLoading ? (
                   <span className="flex items-center space-x-2">
@@ -354,13 +345,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
             </form>
 
             {/* Account Registration Link */}
-            <div className="pt-3 text-center text-xs text-indigo-200/80 border-t border-indigo-900/50 space-y-2.5">
-              <p className="text-indigo-200/90 font-medium">
+            <div className="pt-3 text-center text-xs text-blue-200/80 border-t border-blue-900/50 space-y-2.5">
+              <p className="text-blue-200/90 font-medium">
                 Vous n'avez pas encore votre compte étudiant ?
               </p>
               <button
                 onClick={onNavigateToRegister}
-                className="w-full py-3 px-4 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-amber-300 font-bold rounded-2xl transition-all text-xs flex items-center justify-center space-x-2 shadow-sm"
+                className="w-full py-3 px-4 bg-blue-950/80 hover:bg-blue-900 border border-blue-700/60 text-amber-300 font-bold rounded-2xl transition-all text-xs flex items-center justify-center space-x-2 shadow-sm"
               >
                 <span>Créer mon compte étudiant (1ère Année)</span>
                 <ArrowRight className="w-3.5 h-3.5 text-amber-400" />

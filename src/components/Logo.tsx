@@ -24,9 +24,9 @@ export const Logo: React.FC<LogoProps> = ({ size = "md", showText = true, dark =
     <div className="flex items-center space-x-3 select-none">
       {/* Loupe + Document Icon Container */}
       <div
-        className={`${containerSizes[size]} bg-indigo-900 text-white flex items-center justify-center shadow-sm border border-indigo-800 shrink-0 relative`}
+        className={`${containerSizes[size]} bg-blue-900 text-white flex items-center justify-center shadow-sm border border-blue-800 shrink-0 relative`}
       >
-        <FileSearch className={`${iconSizes[size]} text-indigo-100`} />
+        <FileSearch className={`${iconSizes[size]} text-blue-100`} />
       </div>
 
       {showText && (
@@ -35,7 +35,7 @@ export const Logo: React.FC<LogoProps> = ({ size = "md", showText = true, dark =
             <span className={`font-extrabold leading-tight tracking-tight ${dark ? "text-white text-lg" : "text-slate-900 text-base"}`}>
               Revisio
             </span>
-            <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100 font-bold uppercase tracking-wide">
+            <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100 font-bold uppercase tracking-wide">
               ISJ N1
             </span>
           </div>

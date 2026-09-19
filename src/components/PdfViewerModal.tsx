@@ -45,7 +45,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         {/* Header Bar */}
         <div className="bg-white dark:bg-slate-900 px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4">
           <div className="flex items-center space-x-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div className="truncate">
@@ -53,7 +53,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                 {doc.titre}
               </h3>
               <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
-                <span className="text-indigo-700 font-bold">{doc.matiere}</span>
+                <span className="text-blue-700 font-bold">{doc.matiere}</span>
                 <span>•</span>
                 <span>{doc.semestre}</span>
                 <span>•</span>
@@ -68,7 +68,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             <button
               onClick={handleCopyLink}
               title="Copier le lien de l'épreuve"
-              className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-colors text-xs flex items-center space-x-1"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors text-xs flex items-center space-x-1"
             >
               <Share2 className="w-4 h-4" />
               {copied && <span className="text-emerald-600 font-bold text-[10px]">Copié !</span>}
@@ -76,13 +76,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             <button
               onClick={handlePrint}
               title="Imprimer"
-              className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-colors hidden sm:flex"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors hidden sm:flex"
             >
               <Printer className="w-4 h-4" />
             </button>
             <button
               onClick={() => onDownload(doc)}
-              className="px-4 py-2 bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold rounded-full transition-all flex items-center space-x-1.5 shadow-sm"
+              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-full transition-all flex items-center space-x-1.5 shadow-sm"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Télécharger PDF</span>
@@ -126,7 +126,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                   </div>
                   <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-medium uppercase">Type d'épreuve</span>
-                    <span className="font-bold text-indigo-700">{doc.typeEpreuve}</span>
+                    <span className="font-bold text-blue-700">{doc.typeEpreuve}</span>
                   </div>
                 </div>
 
@@ -144,12 +144,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Téléchargements:</span>
-                    <span className="font-mono text-indigo-900 font-bold">{doc.telechargementsCount}</span>
+                    <span className="font-mono text-blue-900 font-bold">{doc.telechargementsCount}</span>
                   </div>
                 </div>
 
-                <div className="p-3 bg-indigo-50/70 dark:bg-indigo-500/10 rounded-2xl border border-indigo-100 dark:border-indigo-500/30 text-[11px] text-indigo-900 dark:text-indigo-200 space-y-1">
-                  <span className="font-bold block text-indigo-950">Institut Universitaire Saint Jean</span>
+                <div className="p-3 bg-blue-50/70 dark:bg-blue-500/10 rounded-2xl border border-blue-100 dark:border-blue-500/30 text-[11px] text-blue-900 dark:text-blue-200 space-y-1">
+                  <span className="font-bold block text-blue-950">Institut Universitaire Saint Jean</span>
                   <p className="leading-relaxed">
                     Document certifié conforme et validé par l'administration académique.
                   </p>
