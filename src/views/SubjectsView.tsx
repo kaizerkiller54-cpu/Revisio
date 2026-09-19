@@ -8,6 +8,88 @@ interface SubjectsViewProps {
   onSelectMatiere: (matiereNom: string, semestre: string) => void;
 }
 
+function MatiereCard({
+  m,
+  index,
+  onSelect,
+}: {
+  m: MatiereModel;
+  index: number;
+  onSelect: (matiereNom: string, semestre: string) => void;
+}) {
+  return (
+    <Reveal delay={Math.min(index * 0.05, 0.4)} className="h-full">
+      <div
+        onClick={() => onSelect(m.nom, m.semestre)}
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 cursor-pointer flex flex-col justify-between group shadow-sm hover:shadow-md h-full"
+      >
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/15 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-500/30 shrink-0">
+              {m.code}
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 shrink-0">
+              {m.semestre}
+            </span>
+          </div>
+
+          <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2 break-words">
+            {m.nom}
+          </h3>
+
+          <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+            {m.description}
+          </p>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+          <span className="text-slate-600 font-medium">
+            <strong className="text-blue-900 dark:text-blue-300 font-bold">{m.countDocs}</strong> épreuve(s)
+          </span>
+          <span className="text-blue-700 font-bold group-hover:translate-x-1 transition-transform flex items-center space-x-1">
+            <span>Consulter</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </span>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+function SemestreBlock({
+  title,
+  count,
+  list,
+  onSelect,
+}: {
+  title: string;
+  count: number;
+  list: MatiereModel[];
+  onSelect: (matiereNom: string, semestre: string) => void;
+}) {
+  if (list.length === 0) return null;
+  return (
+    <section className="space-y-4">
+      <Reveal>
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center space-x-3">
+            <span className="w-3 h-3 rounded-full bg-blue-600 shrink-0" />
+            <span>{title}</span>
+          </h2>
+          <span className="text-xs bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-3 py-1 rounded-full font-bold shrink-0">
+            {count} Matière{count > 1 ? "s" : ""}
+          </span>
+        </div>
+      </Reveal>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {list.map((m, i) => (
+          <MatiereCard key={m.id} m={m} index={i} onSelect={onSelect} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export const SubjectsView: React.FC<SubjectsViewProps> = ({
   matieres,
   onSelectMatiere,
@@ -27,6 +109,11 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
 
   const s1Count = matieres.filter((m) => m.semestre === "Semestre 1").length;
   const s2Count = matieres.filter((m) => m.semestre === "Semestre 2").length;
+
+  const showS1 = activeSemestreFilter === "Tous" || activeSemestreFilter === "Semestre 1";
+  const showS2 = activeSemestreFilter === "Tous" || activeSemestreFilter === "Semestre 2";
+  const s1List = filtered.filter((m) => m.semestre === "Semestre 1");
+  const s2List = filtered.filter((m) => m.semestre === "Semestre 2");
 
   return (
     <div className="space-y-8 pb-12">
@@ -92,46 +179,23 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
       </div>
       </Reveal>
 
-      {/* Grid of Subjects */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((m, i) => (
-          <Reveal key={m.id} delay={Math.min(i * 0.05, 0.4)}>
-          <div
-            onClick={() => onSelectMatiere(m.nom, m.semestre)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 cursor-pointer flex flex-col justify-between group shadow-sm hover:shadow-md"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/15 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-500/30 shrink-0">
-                  {m.code}
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 shrink-0">
-                  {m.semestre}
-                </span>
-              </div>
-
-              <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2 break-words">
-                {m.nom}
-              </h3>
-
-              <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
-                {m.description}
-              </p>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
-              <span className="text-slate-600 font-medium">
-                <strong className="text-blue-900 dark:text-blue-300 font-bold">{m.countDocs}</strong> épreuve(s)
-              </span>
-              <span className="text-blue-700 font-bold group-hover:translate-x-1 transition-transform flex items-center space-x-1">
-                <span>Consulter</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-          </Reveal>
-        ))}
-      </div>
+      {/* Matières regroupées par semestre */}
+      {showS1 && (
+        <SemestreBlock
+          title="Semestre 1 (S1)"
+          count={s1List.length}
+          list={s1List}
+          onSelect={onSelectMatiere}
+        />
+      )}
+      {showS2 && (
+        <SemestreBlock
+          title="Semestre 2 (S2)"
+          count={s2List.length}
+          list={s2List}
+          onSelect={onSelectMatiere}
+        />
+      )}
 
       {filtered.length === 0 && (
         <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">

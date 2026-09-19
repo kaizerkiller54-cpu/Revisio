@@ -57,11 +57,19 @@ const updateSchema = z.object({
 });
 
 async function resolveMatiere(matiereNom: string, semestre: "Semestre 1" | "Semestre 2") {
-  let matiere = await prisma.matiere.findFirst({ where: { nom: matiereNom } });
+  const trimmed = matiereNom.trim();
+  let matiere = await prisma.matiere.findFirst({ where: { nom: trimmed } });
+  if (!matiere) {
+    // Évite les doublons parasites (ex. "analyse 1" vs "Analyse 1") qui
+    // créaient des matières de test "AUTO-*" : comparaison insensible à la casse.
+    matiere = await prisma.matiere.findFirst({
+      where: { nom: { equals: trimmed, mode: "insensitive" } },
+    });
+  }
   if (!matiere) {
     matiere = await prisma.matiere.create({
       data: {
-        nom: matiereNom,
+        nom: trimmed,
         code: `AUTO-${Date.now()}`,
         semestre: semestreToDb(semestre),
       },
