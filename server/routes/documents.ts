@@ -12,6 +12,7 @@ import { downloadRateLimiter, searchRateLimiter, suggestRateLimiter } from "../m
 import { logUserActivity } from "../services/activity.service";
 import { logAdminAction } from "../services/audit.service";
 import { deleteStorageFileByUrl, isSupabaseStorageUrl, resolvePdfUrl, supabaseAdmin } from "../services/supabase";
+import { stampPdfWithOwner } from "../services/pdf-watermark.service";
 import { ensureSearchIndexes, searchDocuments, suggestDocuments } from "../services/search.service";
 
 const router = Router();
@@ -222,6 +223,14 @@ router.get(
       throw notFound("Fichier épreuve introuvable.");
     }
 
+    // Traçabilité anti-diffusion : les non-admins reçoivent une copie
+    // tatouée à leur identité ; les admins reçoivent le fichier brut.
+    let outBuffer: Buffer = buffer;
+    if (!isAdminUser(req.user)) {
+      const ownerName = `${req.user!.prenom} ${req.user!.nom}`.trim() || "ISJ";
+      outBuffer = Buffer.from(await stampPdfWithOwner(buffer, ownerName, req.user!.email));
+    }
+
     const updated = await prisma.document.update({
       where: { id: doc.id },
       data: { telechargementsCount: { increment: 1 } },
@@ -240,10 +249,10 @@ router.get(
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", buildAttachmentHeader(safeName));
-    res.setHeader("Content-Length", String(buffer.length));
+    res.setHeader("Content-Length", String(outBuffer.length));
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.send(buffer);
+    res.send(outBuffer);
   })
 );
 
@@ -288,7 +297,9 @@ router.post(
     res.json({
       success: true,
       telechargementsCount: updated.telechargementsCount,
-      fichierUrl: doc.fichierUrl,
+      // L'URL brute du stockage n'est exposée qu'aux admins : les autres
+      // rôles téléchargent exclusivement via GET (copie tatouée).
+      ...(isAdminUser(req.user) ? { fichierUrl: doc.fichierUrl } : {}),
       fichierNom: doc.fichierNom,
     });
   })

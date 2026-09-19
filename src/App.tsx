@@ -295,6 +295,7 @@ export default function App() {
       {/* PDF View Modal */}
       <PdfViewerModal
         document={previewDocument}
+        user={user}
         onClose={() => setPreviewDocument(null)}
         onDownload={handleDownloadDocument}
       />

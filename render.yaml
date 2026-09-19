@@ -2,9 +2,14 @@
 # Usage : dashboard Render → New → Blueprint → connecter le dépôt.
 # Render demandera les variables "sync: false" (secrets) avant le premier build.
 #
-# Base de données recommandée : Postgres du projet Supabase existant
-# (chaîne "pooler" port 6543 + ?pgbouncer=true), pas le Postgres gratuit
-# Render (expire après 90 jours).
+# Base de données recommandée : Postgres du projet Supabase existant.
+# - DATABASE_URL (runtime) : URI "Transaction pooler" port 6543 + ?pgbouncer=true
+# - DIRECT_URL (migrations) : URI "Session pooler" port 5432, SANS ?pgbouncer
+#   (le pooler transaction ne supporte pas `migrate deploy`, et le host
+#   direct db.<ref>.supabase.co peut ne pas exister selon les projets).
+# Exemple DIRECT_URL :
+#   postgresql://postgres.<ref>:<mot-de-passe>@aws-1-<region>.pooler.supabase.com:5432/postgres
+# N'utilisez pas le Postgres gratuit Render (expire après 90 jours).
 # Exemple DATABASE_URL :
 #   postgresql://postgres.<ref>:<mot-de-passe>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
 #
@@ -15,7 +20,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install --include=dev && npx prisma generate && npm run build
-    preDeployCommand: npx prisma migrate deploy
+    preDeployCommand: DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy
     startCommand: npm start
     healthCheckPath: /
     envVars:
@@ -24,6 +29,8 @@ services:
       - key: TRUST_PROXY_HOPS
         value: 1
       - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
         sync: false
       - key: SUPABASE_URL
         sync: false

@@ -1,27 +1,77 @@
-import React, { useState } from "react";
-import { DocumentModel } from "../types";
+import React, { useEffect, useMemo, useState } from "react";
+import { DocumentModel, User } from "../types";
 import {
   X,
   Download,
-  ExternalLink,
   FileText,
-  Printer,
   CheckCircle,
-  Share2
+  Share2,
+  ShieldCheck,
+  EyeOff,
 } from "lucide-react";
 
 interface PdfViewerModalProps {
   document: DocumentModel | null;
+  user?: User | null;
   onClose: () => void;
   onDownload: (doc: DocumentModel) => void;
 }
 
+const escapeXml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
 export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   document: doc,
+  user,
   onClose,
   onDownload,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [concealed, setConcealed] = useState(false);
+
+  // Réaffiche l'aperçu à chaque changement de document
+  useEffect(() => {
+    setConcealed(false);
+  }, [doc?.id]);
+
+  // Masque l'aperçu dès que l'onglet perd le focus (anti-capture)
+  useEffect(() => {
+    const onVisibility = () => setConcealed(document.hidden);
+    const onBlur = () => setConcealed(true);
+    const onFocus = () => setConcealed(false);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  // Filigrane nominatif en mosaïque (dissuade et trace toute capture)
+  const watermarkUrl = useMemo(() => {
+    if (!doc) return null;
+    const fullName =
+      user && `${user.prenom} ${user.nom}`.trim()
+        ? `${user.prenom} ${user.nom}`.trim()
+        : "ISJ Revisio";
+    const line2 = user?.email || "Apercu protege";
+    const svg =
+      `<svg xmlns='http://www.w3.org/2000/svg' width='340' height='240'>` +
+      `<text x='50%' y='44%' font-size='15' font-family='sans-serif' font-weight='bold' ` +
+      `fill='#1e3a8a' fill-opacity='0.18' text-anchor='middle' ` +
+      `transform='rotate(-28 170 106)'>${escapeXml(fullName)}</text>` +
+      `<text x='50%' y='56%' font-size='12' font-family='sans-serif' ` +
+      `fill='#1e3a8a' fill-opacity='0.16' text-anchor='middle' ` +
+      `transform='rotate(-28 170 134)'>${escapeXml(line2)}</text>` +
+      `</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  }, [doc, user]);
 
   if (!doc) return null;
 
@@ -31,16 +81,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open(doc.fichierUrl, "_blank");
-    if (printWindow) {
-      printWindow.focus();
-      printWindow.print();
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fadeIn">
+    <div
+      className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fadeIn select-none print:hidden"
+      style={{ WebkitTouchCallout: "none" }}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+    >
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header Bar */}
         <div className="bg-white dark:bg-slate-900 px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4">
@@ -74,13 +121,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               {copied && <span className="text-emerald-600 font-bold text-[10px]">Copié !</span>}
             </button>
             <button
-              onClick={handlePrint}
-              title="Imprimer"
-              className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors hidden sm:flex"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
-            <button
               onClick={() => onDownload(doc)}
               className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-full transition-all flex items-center space-x-1.5 shadow-sm"
             >
@@ -96,15 +136,49 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </div>
         </div>
 
+        {/* Bandeau anti-capture */}
+        <div className="px-4 sm:px-6 py-2 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/30 flex items-center space-x-2 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+          <ShieldCheck className="w-4 h-4 shrink-0" />
+          <span className="truncate">
+            Aperçu protégé — filigrane nominatif, capture et impression désactivées.
+          </span>
+        </div>
+
         {/* Content Body: PDF Iframe + Metadata Drawer */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-slate-100 dark:bg-slate-950">
           {/* Main PDF View Area */}
-          <div className="flex-1 relative bg-slate-200 dark:bg-slate-800 flex flex-col">
+          <div className="flex-1 relative bg-slate-200 dark:bg-slate-800 flex flex-col overflow-hidden">
             <iframe
               src={doc.fichierUrl}
               title={doc.titre}
               className="w-full h-full border-none"
             />
+            {/* Filigrane nominatif en mosaïque par-dessus l'aperçu */}
+            {watermarkUrl && !concealed && (
+              <div
+                aria-hidden
+                className="absolute inset-0 z-10 pointer-events-none"
+                style={{ backgroundImage: watermarkUrl, backgroundRepeat: "repeat" }}
+              />
+            )}
+            {/* Voile de masquage quand l'onglet perd le focus */}
+            {concealed && (
+              <div className="absolute inset-0 z-20 bg-slate-900/95 flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <EyeOff className="w-8 h-8 text-amber-400" />
+                <p className="text-white font-bold text-sm">
+                  Aperçu masqué pour protéger le document
+                </p>
+                <p className="text-slate-300 text-xs">
+                  Revenez sur cet onglet, puis réaffichez l'aperçu.
+                </p>
+                <button
+                  onClick={() => setConcealed(false)}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-full transition-colors"
+                >
+                  Réafficher l'aperçu
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right Info Panel */}
@@ -155,18 +229,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="pt-2">
-              <a
-                href={doc.fichierUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-slate-200 dark:border-slate-700 transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Ouvrir en plein écran</span>
-              </a>
             </div>
           </div>
         </div>
