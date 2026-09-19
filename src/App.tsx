@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { AnimatePresence, MotionConfig } from "motion/react";
+import { PageTransition } from "./components/motion";
 import { User, DocumentModel, MatiereModel, ContributionModel, DashboardStats } from "./types";
 import {
   getMeApi,
@@ -151,6 +153,7 @@ export default function App() {
   const isAuthPage = activeTab === "login" || activeTab === "register";
 
   return (
+    <MotionConfig reducedMotion="user">
     <div
       className={`min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-300 ${
         isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
@@ -176,7 +179,8 @@ export default function App() {
             </p>
           </div>
         ) : (
-          <div key={activeTab} className="animate-isj-view">
+          <AnimatePresence mode="wait" initial={false}>
+            <PageTransition key={activeTab}>
             {activeTab === "home" && (
               <HomeView
                 documents={documents}
@@ -285,7 +289,8 @@ export default function App() {
                 redirectReason={authNotice}
               />
             )}
-          </div>
+            </PageTransition>
+          </AnimatePresence>
         )}
       </main>
 
@@ -303,6 +308,7 @@ export default function App() {
       {/* Bannière de consentement aux cookies (1ère visite) */}
       <CookieConsent reminderKey={consentReminderKey} />
     </div>
+    </MotionConfig>
   );
 }
 

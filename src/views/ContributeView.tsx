@@ -3,6 +3,7 @@ import { User, ContributionModel, Semestre, EpreuveType } from "../types";
 import { submitContributionApi } from "../lib/api";
 import { Upload, FileText, CheckCircle2, AlertCircle, Clock, ShieldAlert, FileUp, Calendar, BookOpen, Layers } from "lucide-react";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { Reveal } from "../components/motion";
 
 interface ContributeViewProps {
   user: User | null;
@@ -146,6 +147,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header */}
+      <Reveal>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
         <div className="flex items-center space-x-3 text-blue-900 dark:text-blue-300">
           <Upload className="w-8 h-8" />
@@ -157,8 +159,10 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
           Vous possédez un sujet d'examen de l'Institut Universitaire Saint Jean ? Partagez-le avec la communauté ! Renseignez l'année académique, la matière et joignez le sujet en PDF.
         </p>
       </div>
+      </Reveal>
 
       {/* Upload Card & Form */}
+      <Reveal delay={0.08}>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-sm">
         {!user && (
           <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/40 rounded-2xl flex items-start space-x-3 text-amber-900 dark:text-amber-100 text-xs">
@@ -370,6 +374,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
           </div>
         </form>
       </div>
+      </Reveal>
 
       {/* User Contributions History */}
       {userContributions.length > 0 && (
@@ -380,9 +385,9 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
           </h3>
 
           <div className="space-y-3">
-            {userContributions.map((c) => (
+            {userContributions.map((c, i) => (
+              <Reveal key={c.id} delay={Math.min(i * 0.05, 0.3)}>
               <div
-                key={c.id}
                 className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
                 <div className="space-y-1">
@@ -428,6 +433,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                   )}
                 </div>
               </div>
+              </Reveal>
             ))}
           </div>
         </div>

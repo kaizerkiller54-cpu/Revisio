@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MatiereModel } from "../types";
 import { BookOpen, ArrowRight, Search } from "lucide-react";
+import { Reveal } from "../components/motion";
 
 interface SubjectsViewProps {
   matieres: MatiereModel[];
@@ -30,6 +31,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
+      <Reveal>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
         <div className="flex items-center space-x-3 text-blue-900 dark:text-blue-300">
           <BookOpen className="w-8 h-8" />
@@ -88,12 +90,13 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
           </div>
         </div>
       </div>
+      </Reveal>
 
       {/* Grid of Subjects */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((m) => (
+        {filtered.map((m, i) => (
+          <Reveal key={m.id} delay={Math.min(i * 0.05, 0.4)}>
           <div
-            key={m.id}
             onClick={() => onSelectMatiere(m.nom, m.semestre)}
             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 cursor-pointer flex flex-col justify-between group shadow-sm hover:shadow-md"
           >
@@ -126,6 +129,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               </span>
             </div>
           </div>
+          </Reveal>
         ))}
       </div>
 

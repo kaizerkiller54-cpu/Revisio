@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+          <nav className="hidden lg:flex items-center space-x-1 lg:space-x-2">
             <button
               onClick={() => handleNavClick("home")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
@@ -188,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* User Auth Info & Actions */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden lg:flex items-center space-x-3">
             {/* Notification Center */}
             <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
 
@@ -235,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile Hamburger Button */}
-          <div className="flex items-center md:hidden space-x-2">
+          <div className="flex items-center lg:hidden space-x-2">
             <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -249,7 +249,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-2 pb-5 space-y-2 animate-fadeIn">
+        <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-2 pb-5 space-y-2 animate-fadeIn">
           {user && (
             <div className="p-3 mb-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <div className="min-w-0 flex-1 pr-2">
@@ -401,7 +401,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* BARRE FLOTTANTE SUR MOBILE LORS DU SCROLL */}
       {isScrolled && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 md:hidden animate-fadeIn max-w-[95vw]">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden animate-fadeIn max-w-[95vw]">
           <div className="bg-slate-900/95 backdrop-blur-md text-white px-2.5 py-1.5 rounded-full shadow-2xl border border-slate-700/70 flex items-center space-x-1 ring-1 ring-black/20">
             <button
               onClick={() => handleNavClick("home")}

@@ -3,6 +3,7 @@ import { DocumentModel, MatiereModel } from "../types";
 import { DocumentCard } from "../components/DocumentCard";
 import { BackgroundCarousel } from "../components/BackgroundCarousel";
 import { SearchSuggest } from "../components/SearchSuggest";
+import { Reveal } from "../components/motion";
 import {
   BookOpen,
   GraduationCap,
@@ -46,6 +47,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="space-y-10 pb-12">
       {/* Hero Section - Scrolling Background Carousel */}
+      <Reveal y={10}>
       <section className="relative rounded-3xl shadow-lg">
         <BackgroundCarousel
           className="text-white rounded-3xl"
@@ -104,8 +106,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </BackgroundCarousel>
       </section>
+      </Reveal>
 
       {/* Stats Counter Section */}
+      <Reveal>
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
           <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-900 dark:text-blue-300 flex items-center justify-center font-bold">
@@ -146,10 +150,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="text-xs text-slate-500 uppercase font-medium">Certifié ISJ</div>
           </div>
         </div>
+
       </section>
+      </Reveal>
 
       {/* Navigation Tree Section (Arborescence MVP) */}
       <section className="space-y-6">
+        <Reveal>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
@@ -168,6 +175,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Semestre 1 */}
@@ -182,9 +190,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </span>
             </div>
             <div className="space-y-2.5">
-              {s1Matieres.map((m) => (
+              {s1Matieres.map((m, i) => (
+                <Reveal key={m.id} delay={Math.min(i * 0.05, 0.3)} y={14}>
                 <div
-                  key={m.id}
                   onClick={() => onNavigate("exams", { matiere: m.nom, semestre: "Semestre 1" })}
                   className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-between group"
                 >
@@ -200,6 +208,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     {m.countDocs} épreuves
                   </span>
                 </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -216,9 +225,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </span>
             </div>
             <div className="space-y-2.5">
-              {s2Matieres.map((m) => (
+              {s2Matieres.map((m, i) => (
+                <Reveal key={m.id} delay={Math.min(i * 0.05, 0.3)} y={14}>
                 <div
-                  key={m.id}
                   onClick={() => onNavigate("exams", { matiere: m.nom, semestre: "Semestre 2" })}
                   className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-between group"
                 >
@@ -234,6 +243,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     {m.countDocs} épreuves
                   </span>
                 </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -242,6 +252,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Recent Exams Section */}
       <section className="space-y-6">
+        <Reveal>
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
@@ -260,20 +271,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {recentDocs.map((doc) => (
-            <DocumentCard
-              key={doc.id}
-              document={doc}
-              onView={onViewDoc}
-              onDownload={onDownloadDoc}
-            />
+          {recentDocs.map((doc, i) => (
+            <Reveal key={doc.id} delay={Math.min(i * 0.06, 0.36)}>
+              <DocumentCard
+                document={doc}
+                onView={onViewDoc}
+                onDownload={onDownloadDoc}
+              />
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* Contribute Banner */}
+      <Reveal>
       <section className="bg-blue-900 text-white rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
         <div className="space-y-2">
           <span className="text-xs font-bold uppercase tracking-widest text-blue-200">
@@ -294,6 +308,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <span>Partager une épreuve</span>
         </button>
       </section>
+      </Reveal>
     </div>
   );
 };

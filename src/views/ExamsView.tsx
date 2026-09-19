@@ -5,6 +5,7 @@ import { SearchFilters } from "../components/SearchFilters";
 import { FileText, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { searchDocumentsApi, SearchSuggestion } from "../lib/api";
 import { useDebounce } from "../hooks/useDebounce";
+import { Reveal } from "../components/motion";
 
 interface ExamsViewProps {
   documents: DocumentModel[];
@@ -114,6 +115,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
+      <Reveal>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center space-x-2">
@@ -137,6 +139,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
           )}
         </div>
       </div>
+      </Reveal>
 
       {/* Multi-criteria Search Bar & Filters */}
       <SearchFilters
@@ -192,13 +195,14 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
       ) : results.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {results.map((doc) => (
-              <DocumentCard
-                key={doc.id}
-                document={doc}
-                onView={onViewDoc}
-                onDownload={onDownloadDoc}
-              />
+            {results.map((doc, i) => (
+              <Reveal key={doc.id} delay={Math.min(i * 0.06, 0.4)}>
+                <DocumentCard
+                  document={doc}
+                  onView={onViewDoc}
+                  onDownload={onDownloadDoc}
+                />
+              </Reveal>
             ))}
           </div>
 
