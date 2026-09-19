@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="rv-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0C4A6E"/>
+    </linearGradient>
+    <linearGradient id="rv-glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#1E40AF"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#rv-bg)"/>
+  <path d="M14 15C14 13.3 15.3 12 17 12H36L48 24V51C48 52.7 46.7 54 45 54H17C15.3 54 14 52.7 14 51V15Z" fill="#0C4A6E" stroke="#7DD3FC" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M36 12V24H48" stroke="#7DD3FC" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <line x1="20" y1="31" x2="36" y2="31" stroke="#E0F2FE" stroke-width="3.2" stroke-linecap="round"/>
+  <line x1="20" y1="38" x2="32" y2="38" stroke="#BAE6FD" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="41" cy="31" r="11" fill="url(#rv-glass)" stroke="#FFFFFF" stroke-width="3.6"/>
+  <line x1="49" y1="39" x2="56" y2="46" stroke="#FFFFFF" stroke-width="4.8" stroke-linecap="round"/>
+</svg>
