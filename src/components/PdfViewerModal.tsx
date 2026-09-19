@@ -53,22 +53,18 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     };
   }, []);
 
-  // Filigrane nominatif en mosaïque (dissuade et trace toute capture)
+  // Filigrane "REVISIO" en mosaïque + e-mail discret (traçabilité anti-fuite)
   const watermarkUrl = useMemo(() => {
     if (!doc) return null;
-    const fullName =
-      user && `${user.prenom} ${user.nom}`.trim()
-        ? `${user.prenom} ${user.nom}`.trim()
-        : "ISJ Revisio";
     const line2 = user?.email || "Apercu protege";
     const svg =
-      `<svg xmlns='http://www.w3.org/2000/svg' width='340' height='240'>` +
-      `<text x='50%' y='44%' font-size='15' font-family='sans-serif' font-weight='bold' ` +
-      `fill='#1e3a8a' fill-opacity='0.18' text-anchor='middle' ` +
-      `transform='rotate(-28 170 106)'>${escapeXml(fullName)}</text>` +
-      `<text x='50%' y='56%' font-size='12' font-family='sans-serif' ` +
-      `fill='#1e3a8a' fill-opacity='0.16' text-anchor='middle' ` +
-      `transform='rotate(-28 170 134)'>${escapeXml(line2)}</text>` +
+      `<svg xmlns='http://www.w3.org/2000/svg' width='380' height='260'>` +
+      `<text x='50%' y='44%' font-size='30' font-family='sans-serif' font-weight='900' ` +
+      `fill='#1e3a8a' fill-opacity='0.20' text-anchor='middle' letter-spacing='4' ` +
+      `transform='rotate(-28 190 114)'>REVISIO</text>` +
+      `<text x='50%' y='58%' font-size='11' font-family='sans-serif' ` +
+      `fill='#1e3a8a' fill-opacity='0.15' text-anchor='middle' ` +
+      `transform='rotate(-28 190 151)'>${escapeXml(line2)}</text>` +
       `</svg>`;
     return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
   }, [doc, user]);
@@ -140,7 +136,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         <div className="px-4 sm:px-6 py-2 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/30 flex items-center space-x-2 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
           <ShieldCheck className="w-4 h-4 shrink-0" />
           <span className="truncate">
-            Aperçu protégé — filigrane nominatif, capture et impression désactivées.
+            Aperçu en lecture seule — Revisio
           </span>
         </div>
 
