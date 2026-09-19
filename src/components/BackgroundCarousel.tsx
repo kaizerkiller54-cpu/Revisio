@@ -89,8 +89,8 @@ export const BackgroundCarousel: React.FC<BackgroundCarouselProps> = ({
         <div className={`absolute inset-0 ${overlayClassName}`} />
       </div>
 
-      {/* Carousel Controls - Desktop only */}
-      <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-20 items-center space-x-2 text-blue-100">
+      {/* Carousel Controls - Desktop only, ancrés en bas à droite du bloc */}
+      <div className="hidden lg:flex absolute bottom-6 right-6 z-20 items-center space-x-2 text-blue-100">
         <button
           onClick={() =>
             setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)

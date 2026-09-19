@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => handleNavClick("home")}
             className="cursor-pointer"
           >
-            <AppLogo size="md" variant="light" showSubtitle={true} />
+            <AppLogo size="md" variant="light" showSubtitle={false} />
           </div>
 
           {/* Desktop Navigation */}
