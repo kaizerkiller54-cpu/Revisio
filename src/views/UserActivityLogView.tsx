@@ -10,12 +10,12 @@ import {
   XCircle,
   ShieldCheck,
   LogIn,
+  LogOut,
   RefreshCw,
   FileText,
   Filter,
-  User as UserIcon,
-  Sparkles,
-  FileSpreadsheet,
+    User as UserIcon,
+    FileSpreadsheet,
   Clock,
   Layers,
   ShieldAlert,
@@ -139,6 +139,13 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
           <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-900 border border-sky-200 inline-flex items-center space-x-1">
             <LogIn className="w-3 h-3 text-sky-600" />
             <span>Connexion</span>
+          </span>
+        );
+      case "LOGOUT":
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 border border-orange-200 inline-flex items-center space-x-1">
+            <LogOut className="w-3 h-3 text-orange-600" />
+            <span>Déconnexion</span>
           </span>
         );
       default:
@@ -360,7 +367,7 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
           </div>
         ) : activities.length === 0 ? (
           <div className="py-16 text-center space-y-3">
-            <Sparkles className="w-10 h-10 text-slate-300 mx-auto" />
+            <History className="w-10 h-10 text-slate-300 mx-auto" />
             <h3 className="text-sm font-bold text-slate-800">Aucune activité</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
               {searchQuery || actionCategory !== "all"

@@ -57,6 +57,17 @@ export async function getMeApi() {
   return data.user as User;
 }
 
+export async function logoutApi(): Promise<void> {
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { ...getAuthHeader() },
+    });
+  } catch {
+    // La déconnexion locale prime : un échec réseau ne doit jamais bloquer l'utilisateur.
+  }
+}
+
 export async function updateUserProfileApi(data: {
   nom?: string;
   prenom?: string;

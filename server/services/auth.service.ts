@@ -124,6 +124,24 @@ export async function refreshSupabaseSession(refreshToken: string): Promise<Supa
   };
 }
 
+/**
+ * Révoque une session Supabase côté serveur à partir de son access token.
+ * Sans cet appel, une "déconnexion" locale laisserait la session valide
+ * jusqu'à expiration du token.
+ */
+export async function revokeSupabaseSession(accessToken: string): Promise<void> {
+  if (!accessToken) throw new AppError(400, "Token de session manquant.");
+  const res = await fetch(`${env.supabase.url}/auth/v1/logout`, {
+    method: "POST",
+    headers: {
+      apikey: env.supabase.anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) throw new AppError(500, "Révocation de la session Supabase impossible.");
+}
+
 export async function updateSupabaseEmail(userId: string, email: string) {
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { email });
   if (error) throw new AppError(400, `Impossible de modifier l'e-mail : ${error.message}`);

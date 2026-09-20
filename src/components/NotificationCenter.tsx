@@ -17,7 +17,6 @@ import {
   Info,
   XCircle,
   ExternalLink,
-  Sparkles,
   RefreshCw,
 } from "lucide-react";
 
@@ -215,7 +214,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center space-y-2">
-                  <Sparkles className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                  <Bell className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
                   <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Aucune notification</p>
                   <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     Vous recevrez des alertes en cas de validation de sujet ou changement de statut.

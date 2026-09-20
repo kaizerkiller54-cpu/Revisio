@@ -13,6 +13,7 @@ import {
   createSupabaseUser,
   findSupabaseUserByEmail,
   refreshSupabaseSession,
+  revokeSupabaseSession,
   signInSupabase,
   type SupabaseSession,
   updateSupabasePassword,
@@ -170,6 +171,30 @@ router.post(
       refreshToken: session.refreshToken,
       user: mapUser(user),
     });
+  })
+);
+
+router.post(
+  "/logout",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    // Révoque la session Supabase côté serveur (best-effort), puis trace
+    // la déconnexion dans le journal d'activité de l'utilisateur.
+    const header = req.headers.authorization ?? "";
+    try {
+      await revokeSupabaseSession(header.replace(/^Bearer\s+/i, ""));
+    } catch {
+      // La déconnexion locale ne doit jamais échouer à cause de Supabase.
+    }
+    await logUserActivity({
+      userId: req.user!.id,
+      userNom: `${req.user!.prenom} ${req.user!.nom}`,
+      userEmail: req.user!.email,
+      userRole: req.user!.role,
+      actionType: "LOGOUT",
+      description: "S'est déconnecté de la plateforme ISJ Revisio.",
+    });
+    res.json({ message: "Déconnexion réussie." });
   })
 );
 

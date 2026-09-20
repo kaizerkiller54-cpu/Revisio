@@ -4,6 +4,7 @@ import { PageTransition } from "./components/motion";
 import { User, DocumentModel, MatiereModel, ContributionModel, DashboardStats } from "./types";
 import {
   getMeApi,
+  logoutApi,
   getSubjectsApi,
   getDocumentsApi,
   getContributionsApi,
@@ -94,10 +95,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem("isj_auth_token");
-    setActiveTab("login");
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+    } finally {
+      setUser(null);
+      localStorage.removeItem("isj_auth_token");
+      setActiveTab("login");
+    }
   };
 
   const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
