@@ -45,6 +45,11 @@
 /* ===== Navigation fluide ===== */
 html {
   scroll-behavior: smooth;
+  background-color: #f8fafc;
+}
+
+html.dark {
+  background-color: #020617;
 }
 
 @keyframes isj-view-fade {

@@ -19,10 +19,8 @@ import { AppLogo } from "../components/AppLogo";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { motion } from "motion/react";
 
-import bgSlide1 from "../assets/images/slide_f1.webp";
-import bgSlide2 from "../assets/images/slide_f2.webp";
-import bgSlide3 from "../assets/images/slide_f3.webp";
-import bgSlide4 from "../assets/images/slide_f4.webp";
+import heroEtudiants from "../assets/images/hero_etudiants.webp";
+import heroCampus from "../assets/images/hero_campus.webp";
 
 interface LoginViewProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -32,28 +30,16 @@ interface LoginViewProps {
 
 const carouselSlides = [
   {
-    image: bgSlide1,
+    image: heroEtudiants,
     title: "Bienvenue à l'Institut Saint Jean",
     subtitle: "Votre portail privilégié d'accès à la banque d'épreuves de Première Année.",
     badge: "Accès Privilégié • Nouveaux Étudiants",
   },
   {
-    image: bgSlide2,
+    image: heroCampus,
     title: "Excellence Académique",
     subtitle: "Abordez les contrôles continus et examens de semestre avec assurance.",
     badge: "Préparation Optimale L1",
-  },
-  {
-    image: bgSlide3,
-    title: "Sujets & Épreuves de 1ère Année",
-    subtitle: "Rejoignez la communauté étudiante et préparez vos réussites dès le 1er jour.",
-    badge: "Banque d'Épreuves ISJ",
-  },
-  {
-    image: bgSlide4,
-    title: "Réussite & Avenir",
-    subtitle: "Construisez votre parcours universitaire avec confiance et détermination.",
-    badge: "Comunidad ISJ 2026",
   },
 ];
 

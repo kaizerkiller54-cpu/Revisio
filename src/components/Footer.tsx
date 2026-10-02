@@ -1,55 +1,148 @@
 import React from "react";
-import { BookOpen } from "lucide-react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { Phone, Mail, MapPin, Navigation } from "lucide-react";
 import { AppLogo } from "./AppLogo";
+import { Reveal } from "./motion";
+import footerBg from "../assets/images/hero_campus.webp";
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate: (tab: string) => void;
+}
+
+const MAPS_URL =
+  "https://www.google.com/maps/search/?api=1&query=Campus+d%27Eyang+La+Lobo+La+Lekie";
+
+const usefulLinks: Array<{ label: string; tab: string }> = [
+  { label: "Accueil", tab: "home" },
+  { label: "Matières", tab: "subjects" },
+  { label: "Épreuves", tab: "exams" },
+  { label: "Contribuer", tab: "contribute" },
+  { label: "Paramètres", tab: "settings" },
+];
+
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  // Le footer est fixe derrière le contenu : le scroll de la page le
+  // dévoile progressivement (la page glisse par-dessus). La parallaxe est
+  // pilotée par la progression globale du scroll sur la fin de page.
+  const { scrollYProgress } = useScroll();
+  const bgY = useTransform(scrollYProgress, [0.72, 1], ["-8%", "8%"]);
+  const bgScale = useTransform(scrollYProgress, [0.72, 1], [1.28, 1.08]);
   return (
-    <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Col 1 */}
-          <div className="space-y-3 md:col-span-2">
-            <AppLogo size="md" variant="dark" showSubtitle={false} />
-            <p className="text-xs text-slate-400 max-w-md leading-relaxed">
-              Portail académique officiel réservé à la consultation, au téléchargement et au partage des anciennes épreuves de Niveau 1 Ingénieur.
-            </p>
-          </div>
+    <footer className="fixed inset-x-0 bottom-0 z-0 h-[92svh] overflow-y-auto text-slate-200">
+      {/* Fond photo campus + overlay de lisibilité (parallaxe au scroll) */}
+      <div className="absolute inset-0 overflow-hidden" aria-hidden>
+        <motion.img
+          src={footerBg}
+          alt=""
+          style={{ y: bgY, scale: bgScale }}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-slate-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-transparent to-slate-950/80" />
+      </div>
 
-          {/* Col 2 */}
-          <div className="space-y-2">
-            <h4 className="text-white font-bold text-xs tracking-widest uppercase">
-              Arborescence
-            </h4>
-            <ul className="space-y-1.5 text-xs text-slate-400">
-              <li>Niveau 1 Ingénieur</li>
-              <li>Semestre 1 (S1) & Semestre 2 (S2)</li>
-              <li>Contrôles Continus (CC)</li>
-              <li>Sessions Normales (SN)</li>
-              <li>Sessions Rattrapage (SR)</li>
-            </ul>
-          </div>
+      <div className="relative min-h-full flex flex-col">
+        <div className="flex-1 flex items-center w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {/* Marque + présentation */}
+              <Reveal>
+                <div className="space-y-4">
+                  <AppLogo size="md" variant="dark" showSubtitle={false} />
+                  <p className="text-sm text-slate-300 max-w-md leading-relaxed">
+                    Portail académique officiel réservé à la consultation, au téléchargement et au partage des anciennes épreuves de Niveau 1 Ingénieur.
+                  </p>
+                </div>
+              </Reveal>
 
-          {/* Col 3 */}
-          <div className="space-y-2">
-            <h4 className="text-white font-bold text-xs tracking-widest uppercase">
-              Support & Contact
-            </h4>
-            <p className="text-xs text-slate-400">
-              Institut Universitaire Saint Jean Ingénieur
-              <br />
-              Yaoundé - Cameroun
-            </p>
-            <div className="pt-2">
-              <span className="inline-flex items-center space-x-1.5 text-[10px] text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700 uppercase font-medium">
-                <BookOpen className="w-3.5 h-3.5 text-blue-400" />
-                <span>Revisio - Version 1.0</span>
-              </span>
+              {/* Contact */}
+              <Reveal delay={0.1}>
+                <div className="space-y-4">
+                  <h4 className="text-white font-extrabold text-sm tracking-widest uppercase">
+                    Contactez-nous
+                  </h4>
+                  <ul className="space-y-3 text-sm">
+                    <li>
+                      <a
+                        href="tel:+237658965383"
+                        className="flex items-center space-x-3 hover:text-white transition-colors"
+                      >
+                        <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="font-bold">+237 658 96 53 83</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="tel:+237651957994"
+                        className="flex items-center space-x-3 hover:text-white transition-colors"
+                      >
+                        <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="font-bold">+237 651 95 79 94</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="mailto:dylanessomba2009@gmail.com"
+                        className="flex items-center space-x-3 hover:text-white transition-colors"
+                      >
+                        <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="break-all">dylanessomba2009@gmail.com</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="mailto:kaizerkiller54@gmail.com"
+                        className="flex items-center space-x-3 hover:text-white transition-colors"
+                      >
+                        <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="break-all">kaizerkiller54@gmail.com</span>
+                      </a>
+                    </li>
+                    <li className="flex items-start space-x-3">
+                      <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <span>Campus d'Eyang, La Lobo, La Lekié</span>
+                    </li>
+                  </ul>
+                  <a
+                    href={MAPS_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center space-x-2 px-5 py-2.5 border border-white/40 hover:border-amber-400 hover:text-amber-300 text-sky-200 text-sm font-semibold rounded transition-colors"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    <span>Localisation</span>
+                  </a>
+                </div>
+              </Reveal>
+
+              {/* Liens utiles */}
+              <Reveal delay={0.2}>
+                <div className="space-y-4">
+                  <h4 className="text-white font-extrabold text-sm tracking-widest uppercase">
+                    Liens utiles
+                  </h4>
+                  <ul className="space-y-3 text-sm">
+                    {usefulLinks.map((l) => (
+                      <li key={l.tab}>
+                        <button
+                          onClick={() => onNavigate(l.tab)}
+                          className="text-slate-200 hover:text-amber-300 transition-colors font-medium"
+                        >
+                          {l.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
             </div>
           </div>
         </div>
 
-        <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-3">
-          <p>© 2026 Institut Universitaire Saint Jean. Tous droits réservés.</p>
+        <div className="relative border-t border-white/15">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center text-xs text-slate-300">
+            © 2026 Institut Universitaire Saint Jean. Tous droits réservés.
+          </div>
         </div>
       </div>
     </footer>
