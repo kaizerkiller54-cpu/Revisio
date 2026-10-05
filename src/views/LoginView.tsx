@@ -21,6 +21,7 @@ import { motion } from "motion/react";
 
 import heroEtudiants from "../assets/images/hero_etudiants.webp";
 import heroCampus from "../assets/images/hero_campus.webp";
+import heroTp from "../assets/images/hero_tp.webp";
 
 interface LoginViewProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -40,6 +41,12 @@ const carouselSlides = [
     title: "Excellence Académique",
     subtitle: "Abordez les contrôles continus et examens de semestre avec assurance.",
     badge: "Préparation Optimale L1",
+  },
+  {
+    image: heroTp,
+    title: "Réussite & Avenir",
+    subtitle: "Construisez votre parcours universitaire avec confiance et détermination.",
+    badge: "Vie Étudiante ISJ",
   },
 ];
 

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import heroEtudiants from "../assets/images/hero_etudiants.webp";
 import heroCampus from "../assets/images/hero_campus.webp";
+import heroTp from "../assets/images/hero_tp.webp";
 
 interface BackgroundCarouselProps {
   className?: string;
@@ -21,6 +22,11 @@ const carouselSlides = [
     image: heroCampus,
     title: "Campus ISJ",
     alt: "Bâtiment du campus ISJ",
+  },
+  {
+    image: heroTp,
+    title: "Travaux Pratiques",
+    alt: "Étudiants ISJ en salle de travaux pratiques",
   },
 ];
 
