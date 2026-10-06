@@ -45,6 +45,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
           fullLabel: "Travaux Pratiques",
           color: "bg-sky-50 dark:bg-sky-400/15 text-sky-600 dark:text-sky-300 border-sky-100 dark:border-sky-400/20",
         };
+      case "Cours":
+        return {
+          label: "Cours",
+          fullLabel: "Cours",
+          color: "bg-teal-50 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-100 dark:border-teal-500/20",
+        };
       default:
         return {
           label: type,

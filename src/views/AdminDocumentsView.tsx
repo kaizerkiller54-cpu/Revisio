@@ -421,6 +421,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                     <option value="SR">SR (Session Rattrapage)</option>
                     <option value="TD">TD (Travaux Dirigés)</option>
                     <option value="TP">TP (Travaux Pratiques)</option>
+                    <option value="Cours">Cours</option>
                   </select>
                 </div>
               </div>
@@ -535,6 +536,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                     <option value="SR">SR</option>
                     <option value="TD">TD</option>
                     <option value="TP">TP</option>
+                    <option value="Cours">Cours</option>
                   </select>
                 </div>
               </div>

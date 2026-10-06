@@ -39,7 +39,7 @@ const createSchema = z.object({
   titre: z.string().min(2, "Le titre est requis.").max(200),
   matiere: z.string().min(2, "La matière est requise.").max(120),
   semestre: z.enum(["Semestre 1", "Semestre 2"]),
-  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP"]),
+  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP", "Cours"]),
   anneeAcademique: z.string().min(4, "L'année académique est requise.").max(20),
   fichierUrl: z
     .string()
@@ -52,7 +52,7 @@ const updateSchema = z.object({
   titre: z.string().min(2).max(200).optional(),
   matiere: z.string().min(2).max(120).optional(),
   semestre: z.enum(["Semestre 1", "Semestre 2"]).optional(),
-  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP"]).optional(),
+  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP", "Cours"]).optional(),
   anneeAcademique: z.string().min(4).max(20).optional(),
 });
 
@@ -107,7 +107,7 @@ router.get(
       where.semestre = semestreToDb(semestre);
     }
     if (typeEpreuve && typeEpreuve !== "Tous") {
-      where.typeEpreuve = typeEpreuve as "CC" | "SN" | "SR" | "TD" | "TP";
+      where.typeEpreuve = typeEpreuve as "CC" | "SN" | "SR" | "TD" | "TP" | "Cours";
     }
     if (anneeAcademique && anneeAcademique !== "Toutes") {
       where.anneeAcademique = anneeAcademique;

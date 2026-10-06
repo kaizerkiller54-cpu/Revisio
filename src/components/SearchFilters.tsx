@@ -102,12 +102,13 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             onChange={(e) => setSelectedType(e.target.value)}
             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
           >
-            <option value="Tous">Tous les types (CC, SN, SR, TD, TP)</option>
+            <option value="Tous">Tous les types (CC, SN, SR, TD, TP, Cours)</option>
             <option value="CC">Contrôle Continu (CC)</option>
             <option value="SN">Session Normale (SN)</option>
             <option value="SR">Session Rattrapage (SR)</option>
             <option value="TD">Travaux Dirigés (TD)</option>
             <option value="TP">Travaux Pratiques (TP)</option>
+            <option value="Cours">Cours</option>
           </select>
         </div>
 

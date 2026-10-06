@@ -32,7 +32,7 @@ export interface AuditLog {
   date: string;
 }
 
-export type EpreuveType = "CC" | "SN" | "SR" | "TD" | "TP";
+export type EpreuveType = "CC" | "SN" | "SR" | "TD" | "TP" | "Cours";
 export type Semestre = "Semestre 1" | "Semestre 2";
 export type DocumentStatut = "En attente" | "Publié" | "Refusé";
 

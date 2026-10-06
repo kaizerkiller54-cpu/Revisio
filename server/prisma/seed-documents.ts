@@ -48,7 +48,7 @@ function makePdf(title: string, bodyLines: string[]): Buffer {
 interface SeedDoc {
   matiere: string;
   semestre: "Semestre 1" | "Semestre 2";
-  typeEpreuve: "CC" | "SN" | "SR" | "TD" | "TP";
+  typeEpreuve: "CC" | "SN" | "SR" | "TD" | "TP" | "Cours";
   anneeAcademique: string;
   titre: string;
   contenu: string[];

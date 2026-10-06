@@ -21,7 +21,7 @@ const submitSchema = z.object({
   anneeAcademique: z.string().max(20).optional(),
   matiere: z.string().max(120).optional(),
   semestre: z.enum(["Semestre 1", "Semestre 2"]).optional(),
-  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP"]).optional(),
+  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP", "Cours"]).optional(),
   titre: z.string().max(200).optional(),
   commentaire: z.string().max(2000).optional(),
   fichierUrl: z
@@ -35,7 +35,7 @@ const approveSchema = z.object({
   titre: z.string().min(2, "Le titre est requis.").max(200),
   matiere: z.string().min(2, "La matière est requise.").max(120),
   semestre: z.enum(["Semestre 1", "Semestre 2"]),
-  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP"]),
+  typeEpreuve: z.enum(["CC", "SN", "SR", "TD", "TP", "Cours"]),
   anneeAcademique: z.string().min(4, "L'année académique est requise.").max(20),
 });
 
@@ -80,7 +80,7 @@ router.post(
         anneeAcademique: body.anneeAcademique || "2025-2026",
         matiere: body.matiere || "Analyse 1",
         semestre: body.semestre ? semestreToDb(body.semestre) : "Semestre_1",
-        typeEpreuve: (body.typeEpreuve as "CC" | "SN" | "SR" | "TD" | "TP") || "SN",
+        typeEpreuve: (body.typeEpreuve as "CC" | "SN" | "SR" | "TD" | "TP" | "Cours") || "SN",
         titre: body.titre || null,
         commentaire: body.commentaire?.trim() || null,
         fichierUrl,

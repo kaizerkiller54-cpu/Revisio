@@ -267,6 +267,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
                   <option value="SR">Session Rattrapage (SR)</option>
                   <option value="TD">Travaux Dirigés (TD)</option>
                   <option value="TP">Travaux Pratiques (TP)</option>
+                  <option value="Cours">Cours</option>
                 </select>
               </div>
             </div>

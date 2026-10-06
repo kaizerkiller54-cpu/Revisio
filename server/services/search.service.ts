@@ -18,7 +18,7 @@ interface SearchRow {
   matiereNom: string;
   matiereId: string;
   semestre: "Semestre_1" | "Semestre_2";
-  typeEpreuve: "CC" | "SN" | "SR" | "TD" | "TP";
+  typeEpreuve: "CC" | "SN" | "SR" | "TD" | "TP" | "Cours";
   anneeAcademique: string;
   fichierUrl: string;
   fichierNom: string;
