@@ -64,7 +64,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </h1>
 
             <p className="text-blue-50 text-sm sm:text-base leading-relaxed max-w-2xl">
-              Consultez et téléchargez les épreuves de <strong className="text-white font-bold">Contrôle Continu (CC)</strong>, <strong className="text-white font-bold">Session Normale (SN)</strong>, <strong className="text-white font-bold">Session de Rattrapage (SR)</strong>, <strong className="text-white font-bold">Travaux Dirigés (TD)</strong> et <strong className="text-white font-bold">Travaux Pratiques (TP)</strong> pour optimiser vos révisions.
+              Consultez et téléchargez les épreuves de <strong className="text-white font-bold">Contrôle Continu (CC)</strong>, <strong className="text-white font-bold">Session Normale (SN)</strong>, <strong className="text-white font-bold">Session de Rattrapage (SR)</strong>, <strong className="text-white font-bold">Travaux Dirigés (TD)</strong> et <strong className="text-white font-bold">Travaux Pratiques (TP)</strong> ainsi que les <strong className="text-white font-bold">Cours</strong> pour optimiser vos révisions.
             </p>
 
             {/* Quick Search Bar */}
@@ -297,7 +297,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             Vous disposez d'une épreuve récente ?
           </h3>
           <p className="text-sm text-blue-100 max-w-xl">
-            Proposez vos épreuves de CC, SN ou SR à la communauté des étudiants ISJ. Chaque sujet est relu et validé avant sa publication.
+            Proposez vos épreuves de CC, SN, SR ou vos Cours à la communauté des étudiants ISJ. Chaque sujet est relu et validé avant sa publication.
           </p>
         </div>
         <button
