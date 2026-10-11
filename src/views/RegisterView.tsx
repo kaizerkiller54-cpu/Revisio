@@ -20,17 +20,25 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
-  const [telephone, setTelephone] = useState("");
+  const [phoneDigits, setPhoneDigits] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
+  const [confirmMotDePasse, setConfirmMotDePasse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const telephoneIsValid = /^\+237[0-9]{9}$/.test(telephone.trim());
+  // Indicatif +237 prédéfini : l'utilisateur ne saisit que ses 9 chiffres.
+  const telephone = phoneDigits ? `+237${phoneDigits}` : "";
+  const telephoneIsValid = phoneDigits === "" || /^[0-9]{9}$/.test(phoneDigits);
+  const passwordsMismatch = confirmMotDePasse !== "" && motDePasse !== confirmMotDePasse;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (telephone.trim() && !telephoneIsValid) {
-      setErrorMsg("Format invalide : +237XXXXXXXXX (9 chiffres après +237).");
+    if (!telephoneIsValid) {
+      setErrorMsg("Numéro incomplet : composez vos 9 chiffres après +237.");
+      return;
+    }
+    if (passwordsMismatch) {
+      setErrorMsg("Les deux mots de passe ne correspondent pas.");
       return;
     }
     setIsLoading(true);
@@ -130,18 +138,26 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
 
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Numéro de téléphone</label>
-            <input
-              type="tel"
-              value={telephone}
-              onChange={(e) => setTelephone(e.target.value)}
-              placeholder="+237 ----------- (9 chiffres)"
-              inputMode="tel"
-              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all ${
-                telephone.trim() && !telephoneIsValid ? "border-red-400 ring-1 ring-red-300" : "border-slate-300 dark:border-slate-700"
+            <div
+              className={`flex items-stretch bg-slate-50 dark:bg-slate-800/60 border rounded-xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:border-blue-500 ${
+                !telephoneIsValid ? "border-red-400 ring-1 ring-red-300" : "border-slate-300 dark:border-slate-700"
               }`}
-            />
+            >
+              <span className="flex items-center px-3.5 text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/60 border-r border-slate-300 dark:border-slate-700 select-none">
+                +237
+              </span>
+              <input
+                type="tel"
+                value={phoneDigits}
+                onChange={(e) => setPhoneDigits(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                placeholder="655123456"
+                inputMode="numeric"
+                maxLength={9}
+                className="w-full px-3.5 py-2.5 bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+              />
+            </div>
             <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
-              Format camerounais : +237 suivi de 9 chiffres (ex: +237655123456).
+              Composez uniquement vos 9 chiffres (ex : 655123456).
             </p>
           </div>
 
@@ -156,6 +172,25 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               placeholder="6 caractères minimum"
               className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
             />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Confirmer le mot de passe</label>
+            <input
+              type="password"
+              required
+              value={confirmMotDePasse}
+              onChange={(e) => setConfirmMotDePasse(e.target.value)}
+              placeholder="Retapez votre mot de passe"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all ${
+                passwordsMismatch ? "border-red-400 ring-1 ring-red-300" : "border-slate-300 dark:border-slate-700"
+              }`}
+            />
+            {passwordsMismatch && (
+              <p className="mt-1.5 text-xs font-semibold text-red-500">
+                Les deux mots de passe ne correspondent pas.
+              </p>
+            )}
           </div>
 
           <button

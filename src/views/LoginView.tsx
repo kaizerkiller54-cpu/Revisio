@@ -268,7 +268,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       setEmail(e.target.value);
                       if (errorMsg) setErrorMsg(null);
                     }}
-                    placeholder="nom.prenom@isj.cm"
+                    placeholder="nom.prenom@saintjeaningenieur.org"
                     className={`w-full pl-10 pr-4 py-3 bg-slate-950/90 rounded-2xl text-white placeholder-blue-400/50 focus:outline-none text-xs font-medium transition-all ${
                       errorMsg
                         ? "border-2 border-red-500 ring-2 ring-red-500/40 text-red-100 bg-red-950/20 placeholder-red-300/40 focus:border-red-400 focus:ring-red-400"
