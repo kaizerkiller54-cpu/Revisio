@@ -67,24 +67,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
               Consultez et téléchargez les épreuves de <strong className="text-white font-bold">Contrôle Continu (CC)</strong>, <strong className="text-white font-bold">Session Normale (SN)</strong>, <strong className="text-white font-bold">Session de Rattrapage (SR)</strong>, <strong className="text-white font-bold">Travaux Dirigés (TD)</strong> et <strong className="text-white font-bold">Travaux Pratiques (TP)</strong> ainsi que les <strong className="text-white font-bold">Cours</strong> pour optimiser vos révisions.
             </p>
 
-            {/* Quick Search Bar */}
             <form onSubmit={handleSearchSubmit} className="pt-2">
-              <div className="flex flex-col sm:flex-row gap-2 max-w-2xl bg-white/95 p-2 rounded-full shadow-xl text-slate-900 backdrop-blur-sm">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row gap-2 max-w-2xl bg-white/95 p-1.5 sm:p-2 rounded-full shadow-xl text-slate-900 backdrop-blur-sm">
+                <div className="flex-1 min-w-0">
                   <SearchSuggest
                     value={searchTerm}
                     onChange={setSearchTerm}
                     onSubmit={() => onNavigate("exams", { search: searchTerm })}
                     onPick={(s) => onNavigate("exams", { search: s.titre })}
-                    placeholder="Recherche instantanée (ex: Analyse 1, Algorithmique, C...)"
-                    inputClassName="w-full pl-11 pr-4 py-3 bg-transparent text-slate-900 placeholder-slate-400 text-sm focus:outline-none"
+                    placeholder="Rechercher une épreuve, une matière..."
+                    inputClassName="w-full pl-9 pr-3 py-2 bg-transparent text-slate-900 placeholder-slate-400 text-sm focus:outline-none"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm rounded-full transition-all shadow-lg flex items-center justify-center space-x-2 shrink-0"
+                  className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-full transition-all shadow-lg flex items-center justify-center space-x-1.5 shrink-0"
                 >
-                  <span>Rechercher</span>
+                  <span className="hidden xs:inline">Rechercher</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

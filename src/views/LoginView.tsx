@@ -209,10 +209,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <motion.div
             animate={isShaking ? { x: [0, -16, 16, -12, 12, -6, 6, 0] } : {}}
             transition={{ duration: 0.45, ease: "easeInOut" }}
-            className={`bg-slate-900/95 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-slate-950 space-y-6 relative overflow-hidden transition-colors duration-300 ${
+            className={`bg-slate-900/85 sm:bg-slate-900/95 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-slate-950 space-y-6 relative overflow-hidden transition-colors duration-300 ${
               errorMsg
                 ? "border-2 border-red-500/90 shadow-red-950/40"
-                : "border border-slate-700"
+                : "border border-slate-700/60 sm:border-slate-700"
             }`}
           >
             {/* Form Header */}

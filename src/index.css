@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
-/* Mode sombre basé sur la classe .dark appliquée sur l'élément racine.
+/* Mode sombre basÃ© sur la classe .dark appliquÃ©e sur l'Ã©lÃ©ment racine.
    Permet d'utiliser les variantes `dark:*` dans tout le projet. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ===== Logo animé ===== */
+/* ===== Logo animÃ© ===== */
 @keyframes isj-halo-spin {
   from { transform: translate(-50%, -50%) rotate(0deg); }
   to   { transform: translate(-50%, -50%) rotate(360deg); }
@@ -42,13 +42,25 @@
 .animate-isj-twinkle { animation: isj-star-twinkle 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
 .animate-isj-dot     { animation: isj-dot-pulse 2.8s ease-in-out infinite; }
 
+/* ===== Zoom lent du fond de pied de page ===== */
+@keyframes isj-footer-zoom {
+  from { transform: scale(1); }
+  to   { transform: scale(1.12); }
+}
+
+.animate-isj-footer-zoom { animation: isj-footer-zoom 26s ease-in-out infinite alternate; }
+
 /* ===== Navigation fluide ===== */
 html {
   scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
   background-color: #f8fafc;
 }
 
-html.dark {
+html.dark body {
   background-color: #020617;
 }
 
@@ -67,7 +79,8 @@ html.dark {
   .animate-isj-float,
   .animate-isj-sheen,
   .animate-isj-twinkle,
-  .animate-isj-dot {
+  .animate-isj-dot,
+  .animate-isj-footer-zoom {
     animation: none;
   }
 

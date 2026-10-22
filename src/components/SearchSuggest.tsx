@@ -113,8 +113,8 @@ export const SearchSuggest: React.FC<SearchSuggestProps> = ({
   return (
     <div ref={containerRef} className={`relative ${containerClassName}`}>
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-          <Search className="w-5 h-5" />
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+          <Search className="w-4 h-4" />
         </div>
         <input
           type="text"
@@ -130,20 +130,20 @@ export const SearchSuggest: React.FC<SearchSuggestProps> = ({
           className={inputClassName}
         />
         {loading && (
-          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-blue-500">
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-blue-500">
             <Loader2 className="w-4 h-4 animate-spin" />
           </div>
         )}
       </div>
 
       {open && value.trim().length >= 2 && (
-        <div className="absolute z-40 mt-2 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
+        <div className="absolute z-40 mt-1.5 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden animate-fadeIn">
           {suggestions.length > 0 ? (
             <>
-              <div className="px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800">
+              <div className="px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800">
                 Résultats instantanés
               </div>
-              <ul className="max-h-80 overflow-y-auto">
+              <ul className="max-h-56 overflow-y-auto">
                 {suggestions.map((s, i) => (
                   <li key={s.id}>
                     <button
@@ -155,24 +155,24 @@ export const SearchSuggest: React.FC<SearchSuggestProps> = ({
                         onPick?.(s);
                       }}
                       onMouseEnter={() => setActiveIndex(i)}
-                      className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${
+                      className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors ${
                         i === activeIndex
                           ? "bg-blue-50 dark:bg-blue-500/10"
                           : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
                       }`}
                     >
-                      <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
-                        <FileText className="w-4 h-4" />
+                      <span className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
+                        <FileText className="w-3.5 h-3.5" />
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-bold text-slate-900 dark:text-white truncate">
+                        <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
                           {highlight(s.titre, value)}
                         </span>
-                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        <span className="block text-[10px] text-slate-500 dark:text-slate-400 truncate">
                           {s.matiere} • {s.typeEpreuve} • {s.anneeAcademique}
                         </span>
                       </span>
-                      <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 shrink-0" />
                     </button>
                   </li>
                 ))}
@@ -180,7 +180,7 @@ export const SearchSuggest: React.FC<SearchSuggestProps> = ({
             </>
           ) : (
             !loading && (
-              <div className="px-4 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+              <div className="px-3 py-4 text-center text-xs text-slate-500 dark:text-slate-400">
                 Aucun résultat pour <strong className="text-slate-700 dark:text-slate-200">"{value}"</strong>
               </div>
             )

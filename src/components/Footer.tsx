@@ -1,5 +1,4 @@
 import React from "react";
-import { motion, useScroll, useTransform } from "motion/react";
 import { Phone, Mail, MapPin, Navigation } from "lucide-react";
 import { AppLogo } from "./AppLogo";
 import { Reveal } from "./motion";
@@ -21,27 +20,20 @@ const usefulLinks: Array<{ label: string; tab: string }> = [
 ];
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  // Le footer est fixe derrière le contenu : le scroll de la page le
-  // dévoile progressivement (la page glisse par-dessus). La parallaxe est
-  // pilotée par la progression globale du scroll sur la fin de page.
-  const { scrollYProgress } = useScroll();
-  const bgY = useTransform(scrollYProgress, [0.72, 1], ["-8%", "8%"]);
-  const bgScale = useTransform(scrollYProgress, [0.72, 1], [1.28, 1.08]);
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-0 h-[92svh] overflow-y-auto text-slate-200">
-      {/* Fond photo campus + overlay de lisibilité (parallaxe au scroll) */}
-      <div className="absolute inset-0 overflow-hidden" aria-hidden>
-        <motion.img
+    <footer className="relative overflow-hidden text-slate-200">
+      {/* Fond photo campus + overlay de lisibilité */}
+      <div className="absolute inset-0" aria-hidden>
+        <img
           src={footerBg}
           alt=""
-          style={{ y: bgY, scale: bgScale }}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center animate-isj-footer-zoom"
         />
         <div className="absolute inset-0 bg-slate-950/70" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-transparent to-slate-950/80" />
       </div>
 
-      <div className="relative min-h-full flex flex-col">
+      <div className="relative min-h-[70vh] flex flex-col">
         <div className="flex-1 flex items-center w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">

@@ -73,13 +73,14 @@ export const BackgroundCarousel: React.FC<BackgroundCarouselProps> = ({
               alt={slide.alt}
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover object-center transform transition-transform duration-20000 ease-linear scale-105"
+              loading="lazy"
             />
           </div>
         ))}
 
         {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-slate-950/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/40 via-slate-950/20 to-slate-950/40" />
+        <div className="absolute inset-0 bg-slate-950/25 sm:bg-slate-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/35 via-slate-950/15 to-slate-950/35 sm:from-slate-950/40 sm:via-slate-950/20 sm:to-slate-950/40" />
         <div className={`absolute inset-0 ${overlayClassName}`} />
       </div>
 

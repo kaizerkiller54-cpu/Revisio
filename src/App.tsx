@@ -161,7 +161,7 @@ export default function App() {
     <MotionConfig reducedMotion="user">
     <div
       className={`min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-300 ${
-        isDarkMode ? "dark text-slate-100" : "text-slate-900"
+        isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >
       {/* Top Navbar - Hidden on Auth pages */}
@@ -175,7 +175,7 @@ export default function App() {
       )}
 
       {/* Main Container */}
-      <main className={`flex-1 relative z-10 bg-slate-50 dark:bg-slate-950 mb-[92svh] ${isAuthPage ? "w-full p-0 flex flex-col justify-center" : "max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"}`}>
+      <main className={`flex-1 ${isAuthPage ? "w-full p-0 flex flex-col justify-center" : "max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"}`}>
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
             <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />

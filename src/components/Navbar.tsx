@@ -3,6 +3,7 @@ import { User } from "../types";
 import { NotificationCenter } from "./NotificationCenter";
 import { AppLogo } from "./AppLogo";
 import {
+  ArrowLeft,
   BookOpen,
   Upload,
   LayoutDashboard,
@@ -35,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   onLogout,
 }) => {
+  const [navHistory, setNavHistory] = useState<string[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -55,7 +57,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isSuperAdmin = user?.role === "SuperAdministrateur";
 
   const handleNavClick = (tab: string) => {
+    if (tab !== activeTab) {
+      setNavHistory((h) => [...h.slice(-9), activeTab]);
+    }
     setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
+
+  const handleBack = () => {
+    setNavHistory((prev) => {
+      if (prev.length === 0) {
+        setActiveTab("home");
+        return prev;
+      }
+      const next = prev[prev.length - 1];
+      setActiveTab(next);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const handleLogoutClick = () => {
+    onLogout();
     setMobileMenuOpen(false);
   };
 
@@ -195,18 +217,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user ? (
               <div className="flex items-center space-x-3 pl-2 border-l border-slate-200 dark:border-slate-700">
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-900 leading-tight max-w-[180px] truncate">
-                    {user.prenom} {user.nom}
-                  </p>
-                  <span
-                    className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                      isAdmin
-                        ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30"
-                        : "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30"
-                    }`}
-                  >
-                    {user.role}
-                  </span>
+            <p className="text-xs font-bold text-slate-900 leading-tight max-w-[130px] truncate">
+              {user.prenom} {user.nom}
+            </p>
+            <span
+              className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded-full max-w-[110px] truncate ${
+                isAdmin
+                  ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30"
+                  : "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30"
+              }`}
+              title={user.role}
+            >
+              {user.role}
+            </span>
                 </div>
                 <button
                   onClick={onLogout}
@@ -236,6 +259,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Mobile Hamburger Button */}
           <div className="flex items-center lg:hidden space-x-2">
+            <button
+              onClick={handleBack}
+              className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title="Page précédente"
+              aria-label="Page précédente"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
