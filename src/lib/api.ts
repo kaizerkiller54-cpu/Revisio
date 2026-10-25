@@ -18,15 +18,41 @@ const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+async function parseJsonResponse<T = any>(
+  res: Response,
+  defaultErrorMessage = "Erreur de communication avec le serveur"
+): Promise<T> {
+  const contentType = res.headers.get("content-type") || "";
+  let data: any = null;
+
+  if (contentType.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    const rawText = await res.text().catch(() => "");
+    const cleanText = rawText.replace(/<[^>]*>?/gm, "").trim();
+    if (!res.ok) {
+      throw new Error(cleanText || `${defaultErrorMessage} (Code HTTP ${res.status})`);
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.message || `${defaultErrorMessage} (Code HTTP ${res.status})`);
+  }
+
+  return data as T;
+}
+
 export async function loginApi(email: string, motDePasse: string, masterKey?: string) {
   const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, motDePasse, masterKey }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de connexion.");
-  return data;
+  return parseJsonResponse(res, "Échec de connexion.");
 }
 
 export async function registerApi(
@@ -43,18 +69,20 @@ export async function registerApi(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nom, prenom, email, motDePasse, role, masterKey, telephone }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de l'inscription.");
-  return data;
+  return parseJsonResponse(res, "Échec de l'inscription.");
 }
 
 export async function getMeApi() {
-  const res = await fetch("/api/auth/me", {
-    headers: { ...getAuthHeader() },
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.user as User;
+  try {
+    const res = await fetch("/api/auth/me", {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) return null;
+    const data = await parseJsonResponse<{ user: User }>(res, "Erreur session");
+    return data.user as User;
+  } catch {
+    return null;
+  }
 }
 
 export async function logoutApi(): Promise<void> {
@@ -83,9 +111,7 @@ export async function updateUserProfileApi(data: {
     },
     body: JSON.stringify(data),
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de mettre à jour le profil.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de mettre à jour le profil.");
 }
 
 export async function sendContactMessageApi(contactData: {
@@ -100,9 +126,7 @@ export async function sendContactMessageApi(contactData: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(contactData),
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible d'envoyer le message.");
-  return resData;
+  return parseJsonResponse(res, "Impossible d'envoyer le message.");
 }
 
 export async function downloadFeedbackApi(): Promise<{ blob: Blob; filename: string } | null> {
@@ -122,8 +146,7 @@ export async function downloadFeedbackApi(): Promise<{ blob: Blob; filename: str
 
 export async function getSubjectsApi(): Promise<MatiereModel[]> {
   const res = await fetch("/api/subjects");
-  if (!res.ok) throw new Error("Impossible de charger les matières.");
-  return res.json();
+  return parseJsonResponse<MatiereModel[]>(res, "Impossible de charger les matières.");
 }
 
 export async function getDocumentsApi(params?: {
@@ -143,8 +166,7 @@ export async function getDocumentsApi(params?: {
     });
   }
   const res = await fetch(url.toString());
-  if (!res.ok) throw new Error("Impossible de charger les épreuves.");
-  return res.json();
+  return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves.");
 }
 
 export interface DocumentSearchPage {
@@ -198,8 +220,7 @@ export async function searchDocumentsApi(params: {
 } = {}): Promise<DocumentSearchPage> {
   const url = buildDocumentSearchUrl(params);
   const res = await fetch(url.toString());
-  if (!res.ok) throw new Error("Impossible d'effectuer la recherche.");
-  return res.json();
+  return parseJsonResponse<DocumentSearchPage>(res, "Impossible d'effectuer la recherche.");
 }
 
 export async function suggestDocumentsApi(q: string, limit = 6): Promise<SearchSuggestion[]> {
@@ -208,8 +229,8 @@ export async function suggestDocumentsApi(q: string, limit = 6): Promise<SearchS
   url.searchParams.append("limit", String(limit));
   const res = await fetch(url.toString());
   if (!res.ok) return [];
-  const data = await res.json();
-  return data.data ?? [];
+  const data = await parseJsonResponse<{ data: SearchSuggestion[] }>(res, "").catch(() => null);
+  return data?.data ?? [];
 }
 
 export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob; filename: string } | null> {
@@ -229,8 +250,7 @@ export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob;
 
 export async function getDocumentByIdApi(id: string): Promise<DocumentModel> {
   const res = await fetch(`/api/documents/${id}`);
-  if (!res.ok) throw new Error("Épreuve non trouvée.");
-  return res.json();
+  return parseJsonResponse<DocumentModel>(res, "Épreuve non trouvée.");
 }
 
 export async function recordDownloadApi(id: string) {
@@ -238,7 +258,7 @@ export async function recordDownloadApi(id: string) {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getAuthHeader() },
   });
-  return res.json();
+  return parseJsonResponse(res, "Impossible d'enregistrer le téléchargement.");
 }
 
 export async function submitContributionApi(payload: {
@@ -262,9 +282,7 @@ export async function submitContributionApi(payload: {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de l'envoi de la contribution.");
-  return data;
+  return parseJsonResponse(res, "Échec de l'envoi de la contribution.");
 }
 
 export async function getContributionsApi(statut?: DocumentStatut): Promise<ContributionModel[]> {
@@ -273,8 +291,7 @@ export async function getContributionsApi(statut?: DocumentStatut): Promise<Cont
   const res = await fetch(url.toString(), {
     headers: { ...getAuthHeader() },
   });
-  if (!res.ok) throw new Error("Impossible de charger les contributions.");
-  return res.json();
+  return parseJsonResponse<ContributionModel[]>(res, "Impossible de charger les contributions.");
 }
 
 export async function approveContributionApi(
@@ -295,9 +312,7 @@ export async function approveContributionApi(
     },
     body: JSON.stringify(data),
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible d'approuver le document.");
-  return resData;
+  return parseJsonResponse(res, "Impossible d'approuver le document.");
 }
 
 export async function rejectContributionApi(id: string) {
@@ -305,9 +320,7 @@ export async function rejectContributionApi(id: string) {
     method: "POST",
     headers: { ...getAuthHeader() },
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de refuser le document.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de refuser le document.");
 }
 
 export async function deleteDocumentApi(id: string) {
@@ -315,9 +328,7 @@ export async function deleteDocumentApi(id: string) {
     method: "DELETE",
     headers: { ...getAuthHeader() },
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de supprimer le document.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de supprimer le document.");
 }
 
 export async function updateDocumentApi(
@@ -332,9 +343,7 @@ export async function updateDocumentApi(
     },
     body: JSON.stringify(data),
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de mettre à jour le document.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de mettre à jour le document.");
 }
 
 export async function getAuditLogsApi(params?: {
@@ -350,16 +359,14 @@ export async function getAuditLogsApi(params?: {
   const res = await fetch(`/api/admin/audit-logs?${query.toString()}`, {
     headers: { ...getAuthHeader() },
   });
-  if (!res.ok) throw new Error("Impossible de récupérer le journal d'audit.");
-  return res.json();
+  return parseJsonResponse<AuditLog[]>(res, "Impossible de récupérer le journal d'audit.");
 }
 
 export async function getUsersApi(): Promise<User[]> {
   const res = await fetch("/api/admin/users", {
     headers: { ...getAuthHeader() },
   });
-  if (!res.ok) throw new Error("Impossible de récupérer la liste des utilisateurs.");
-  return res.json();
+  return parseJsonResponse<User[]>(res, "Impossible de récupérer la liste des utilisateurs.");
 }
 
 export async function createAdminUserApi(userData: {
@@ -377,9 +384,7 @@ export async function createAdminUserApi(userData: {
     },
     body: JSON.stringify(userData),
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de créer l'administrateur.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de créer l'administrateur.");
 }
 
 export async function deleteUserApi(userId: string): Promise<{ message: string }> {
@@ -387,9 +392,7 @@ export async function deleteUserApi(userId: string): Promise<{ message: string }
     method: "DELETE",
     headers: { ...getAuthHeader() },
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de supprimer le compte.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de supprimer le compte.");
 }
 
 export async function updateUserRoleApi(userId: string, role: UserRole): Promise<{ message: string; user: User }> {
@@ -401,17 +404,14 @@ export async function updateUserRoleApi(userId: string, role: UserRole): Promise
     },
     body: JSON.stringify({ role }),
   });
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.message || "Impossible de modifier le rôle.");
-  return resData;
+  return parseJsonResponse(res, "Impossible de modifier le rôle.");
 }
 
 export async function getAdminStatsApi(): Promise<DashboardStats> {
   const res = await fetch("/api/admin/stats", {
     headers: { ...getAuthHeader() },
   });
-  if (!res.ok) throw new Error("Impossible de charger les statistiques.");
-  return res.json();
+  return parseJsonResponse<DashboardStats>(res, "Impossible de charger les statistiques.");
 }
 
 // User Activity Logs API
@@ -432,7 +432,8 @@ export async function getUserActivitiesApi(queryString: string): Promise<UserAct
       headers: { ...getAuthHeader() },
     });
     if (!res.ok) return EMPTY_ACTIVITY_PAGE;
-    return { ...EMPTY_ACTIVITY_PAGE, ...(await res.json()) };
+    const pageData = await parseJsonResponse<UserActivityPage>(res, "").catch(() => null);
+    return pageData ? { ...EMPTY_ACTIVITY_PAGE, ...pageData } : EMPTY_ACTIVITY_PAGE;
   } catch {
     return EMPTY_ACTIVITY_PAGE;
   }
@@ -455,7 +456,7 @@ export async function logUserActivityApi(activityData: {
       body: JSON.stringify(activityData),
     });
     if (!res.ok) return null;
-    return await res.json();
+    return await parseJsonResponse<UserActivity>(res, "").catch(() => null);
   } catch {
     return null;
   }
@@ -472,7 +473,7 @@ export async function getUserNotificationsApi(currentUser?: User | null): Promis
 
     const res = await fetch("/api/notifications", { headers });
     if (!res.ok) return [];
-    return await res.json();
+    return (await parseJsonResponse<UserNotification[]>(res, "").catch(() => null)) ?? [];
   } catch {
     return [];
   }
