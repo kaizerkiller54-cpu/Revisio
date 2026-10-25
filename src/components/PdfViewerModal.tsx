@@ -53,18 +53,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     };
   }, []);
 
-  // Filigrane discret "REVISIO" + URL de la plateforme.
+  // Filigrane discret de la plateforme.
   const watermarkUrl = useMemo(() => {
     if (!doc) return null;
-    const line2 = "revisio-gilt.vercel.app";
+    const line2 = "Revisio-ISJ";
     const svg =
       `<svg xmlns='http://www.w3.org/2000/svg' width='380' height='260'>` +
-      `<text x='50%' y='44%' font-size='30' font-family='sans-serif' font-weight='900' ` +
+      `<text x='50%' y='50%' font-size='34' font-family='sans-serif' font-weight='900' ` +
       `fill='#1e3a8a' fill-opacity='0.20' text-anchor='middle' letter-spacing='4' ` +
-      `transform='rotate(-28 190 114)'>REVISIO</text>` +
-      `<text x='50%' y='58%' font-size='11' font-family='sans-serif' ` +
-      `fill='#1e3a8a' fill-opacity='0.15' text-anchor='middle' ` +
-      `transform='rotate(-28 190 151)'>${escapeXml(line2)}</text>` +
+      `transform='rotate(-28 190 130)'>${escapeXml(line2)}</text>` +
       `</svg>`;
     return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
   }, [doc, user]);

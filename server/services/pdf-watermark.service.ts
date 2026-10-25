@@ -15,7 +15,7 @@ export async function stampPdf(pdfBytes: Uint8Array): Promise<Uint8Array> {
     throw new AppError(500, "Document illisible : tatouage de traçabilité impossible.");
   }
 
-  const stamp = "REVISIO  ·  revisio-gilt.vercel.app";
+  const stamp = "Revisio-ISJ";
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
   const size = 11;
   const textWidth = font.widthOfTextAtSize(stamp, size);
@@ -33,7 +33,7 @@ export async function stampPdf(pdfBytes: Uint8Array): Promise<Uint8Array> {
     });
   }
 
-  pdf.setProducer("REVISIO — revisio-gilt.vercel.app");
+  pdf.setProducer("Revisio-ISJ");
 
   return pdf.save();
 }
