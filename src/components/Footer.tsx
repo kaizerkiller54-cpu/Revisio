@@ -23,7 +23,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="relative overflow-hidden text-slate-200">
       {/* Fondu dégradé subtil et progressif entre la page et le pied de page */}
-      <div className="absolute top-0 inset-x-0 h-28 sm:h-44 bg-gradient-to-b from-slate-50 dark:from-slate-950 via-slate-950/70 to-transparent pointer-events-none z-10" />
+      <div className="absolute top-0 inset-x-0 h-48 sm:h-64 bg-gradient-to-b from-slate-950/0 via-slate-950/65 to-transparent pointer-events-none z-10" />
 
       {/* Fond photo campus + overlay de lisibilité */}
       <div className="absolute inset-0" aria-hidden>
@@ -68,11 +68,29 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     </li>
                     <li>
                       <a
+                        href="tel:+237658965383"
+                        className="flex items-center space-x-3 hover:text-white transition-colors"
+                      >
+                        <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="font-bold">+237 658 96 53 83</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
                         href="mailto:tchapwouo2005@gmail.com"
                         className="flex items-center space-x-3 hover:text-white transition-colors"
                       >
                         <Mail className="w-4 h-4 text-amber-400 shrink-0" />
                         <span className="break-all font-semibold">tchapwouo2005@gmail.com</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="mailto:dylanessomba2009@gmail.com"
+                        className="flex items-center space-x-3 hover:text-white transition-colors"
+                      >
+                        <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="break-all">dylanessomba2009@gmail.com</span>
                       </a>
                     </li>
                     <li className="flex items-start space-x-3">
