@@ -22,9 +22,6 @@ const usefulLinks: Array<{ label: string; tab: string }> = [
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="relative overflow-hidden text-slate-200">
-      {/* Fondu dégradé subtil et progressif entre la page et le pied de page */}
-      <div className="absolute top-0 inset-x-0 h-48 sm:h-64 bg-gradient-to-b from-slate-950/0 via-slate-950/65 to-transparent pointer-events-none z-10" />
-
       {/* Fond photo campus + overlay de lisibilité */}
       <div className="absolute inset-0" aria-hidden>
         <img

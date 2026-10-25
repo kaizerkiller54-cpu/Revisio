@@ -329,9 +329,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Fondu de transition visuel vers le footer */}
-      <div aria-hidden className="relative z-10 -mb-32 h-32 pointer-events-none bg-gradient-to-b from-slate-50 via-slate-950/40 to-transparent dark:from-slate-950 dark:via-slate-950/55" />
-
       {/* Footer */}
       <Footer onNavigate={handleNavigate} />
 
