@@ -3,9 +3,20 @@ import path from "path";
 import fs from "fs";
 import { AppError } from "../utils/errors";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+import os from "os";
+
+// Sur Vercel / serverless, le dossier courant est en lecture seule (EROFS).
+// On bascule sur /tmp (os.tmpdir()) pour éviter le crash au démarrage.
+const uploadsDir = process.env.VERCEL
+  ? path.join(os.tmpdir(), "uploads")
+  : path.join(process.cwd(), "uploads");
+
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch {
+  // Ignorer l'erreur si le système de fichiers est en lecture seule
 }
 
 const storage = multer.memoryStorage();

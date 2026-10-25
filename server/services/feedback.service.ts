@@ -1,7 +1,10 @@
 import { promises as fs } from "fs";
 import path from "path";
+import os from "os";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), "data")
+  : path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "contact-messages.json");
 
 export interface FeedbackRecord {

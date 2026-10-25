@@ -20,6 +20,14 @@ export function createApp() {
 
   app.disable("x-powered-by");
 
+  // Normalise l'URL pour assurer que les routes /api/* matchent même si Vercel transmet sans /api
+  app.use((req, _res, next) => {
+    if (req.url && !req.url.startsWith("/api")) {
+      req.url = `/api${req.url.startsWith("/") ? "" : "/"}${req.url}`;
+    }
+    next();
+  });
+
   // Ne révèle l'adresse IP réelle que si l'app est derrière un reverse proxy
   // configuré (TRUST_PROXY_HOPS) — évite le contournement des rate limiters.
   if (env.trustProxy > 0) {
