@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma/client";
@@ -179,14 +179,6 @@ async function loadDocumentPdf(url: string): Promise<Buffer> {
     return Buffer.from(await data.arrayBuffer());
   }
 
-  if (/^https:\/\//i.test(url)) {
-    const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(20_000) });
-    if (!response.ok || !response.body) throw notFound("Fichier épreuve introuvable.");
-    const declared = Number(response.headers.get("content-length") ?? 0);
-    if (declared > MAX_DOWNLOAD_BYTES) throw notFound("Fichier épreuve introuvable.");
-    return Buffer.from(await response.arrayBuffer());
-  }
-
   throw notFound("Fichier épreuve introuvable.");
 }
 
@@ -312,7 +304,6 @@ router.post(
       telechargementsCount: updated.telechargementsCount,
       // L'URL brute du stockage n'est exposée qu'aux admins : les autres
       // rôles téléchargent exclusivement via GET (copie tatouée).
-      ...(isAdminUser(req.user) ? { fichierUrl: doc.fichierUrl } : {}),
       fichierNom: doc.fichierNom,
     });
   })
@@ -322,6 +313,7 @@ router.post(
   "/",
   authenticateJWT,
   requireRole("Administrateur", "SuperAdministrateur"),
+  express.json({ limit: "22mb" }),
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const { titre, matiere, semestre, typeEpreuve, anneeAcademique, fichierUrl, fichierNom } = req.body;

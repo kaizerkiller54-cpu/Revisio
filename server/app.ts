@@ -1,5 +1,4 @@
 import express from "express";
-import { uploadsDirPath } from "./config/upload";
 import authRoutes from "./routes/auth";
 import documentRoutes from "./routes/documents";
 import contributionRoutes from "./routes/contributions";
@@ -14,6 +13,7 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { securityHeaders, apiNotFound } from "./middlewares/security";
 import { apiLimiter } from "./middlewares/rateLimit";
 import { env } from "./config/env";
+import { ensureBucket } from "./services/supabase";
 
 export function createApp() {
   const app = express();
@@ -35,8 +35,16 @@ export function createApp() {
   }
 
   app.use(securityHeaders());
-  app.use(express.json({ limit: "25mb" }));
-  app.use("/uploads", express.static(uploadsDirPath));
+  const standardJsonParser = express.json({ limit: "1mb" });
+  app.use((req, res, next) => {
+    const isLargePdfJsonUpload = req.method === "POST" && /^\/api\/(documents|contributions)\/?$/.test(req.path);
+    if (isLargePdfJsonUpload) return next();
+    return standardJsonParser(req, res, next);
+  });
+  // Secure any existing public bucket before API routes can serve files.
+  app.use("/api", (_req, _res, next) => {
+    ensureBucket().then(() => next()).catch(next);
+  });
 
   app.use("/api", apiLimiter);
   app.use("/api/contact", contactRoutes);

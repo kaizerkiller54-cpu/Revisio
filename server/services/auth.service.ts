@@ -48,26 +48,37 @@ async function getJwksPems(): Promise<Record<string, string>> {
 
 export async function verifyAccessToken(token: string): Promise<JwtPayload> {
   try {
+    const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
+    const verifyClaims = (payload: { sub?: string; role?: string; aud?: string | string[] }) => {
+      const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+      if (!payload.sub || payload.role !== "authenticated" || !audiences.includes("authenticated")) {
+        throw new Error("Claims de session invalides");
+      }
+      return { userId: payload.sub, role: payload.role, tokenType: "access" as const };
+    };
     const header = JSON.parse(Buffer.from(token.split(".")[0], "base64url").toString()) as {
       alg?: string;
       kid?: string;
     };
 
     if (header.alg === "HS256") {
-      const payload = jwt.verify(token, env.supabase.jwtSecret, { algorithms: ["HS256"] }) as {
+      const payload = jwt.verify(token, env.supabase.jwtSecret, { algorithms: ["HS256"], issuer }) as {
         sub?: string;
         role?: string;
+        aud?: string | string[];
       };
-      if (!payload.sub) throw new Error("sub manquant");
-      return { userId: payload.sub, role: payload.role ?? "authenticated", tokenType: "access" };
+      return verifyClaims(payload);
     }
 
     const pems = await getJwksPems();
     const key = header.kid ? pems[header.kid] : Object.values(pems)[0];
     if (!key) throw new Error("clé JWKS introuvable");
-    const payload = jwt.verify(token, key, { algorithms: ["ES256"] }) as { sub?: string; role?: string };
-    if (!payload.sub) throw new Error("sub manquant");
-    return { userId: payload.sub, role: payload.role ?? "authenticated", tokenType: "access" };
+    const payload = jwt.verify(token, key, { algorithms: ["ES256"], issuer }) as {
+      sub?: string;
+      role?: string;
+      aud?: string | string[];
+    };
+    return verifyClaims(payload);
   } catch {
     throw new AppError(401, "Session expirée ou invalide.");
   }

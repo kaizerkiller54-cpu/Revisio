@@ -27,7 +27,10 @@ const profileSchema = z.object({
   prenom: z.string().min(2).max(80).optional(),
   email: z.string().email().max(200).optional(),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
-  nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128).optional(),
+  nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
+    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
+    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
+    .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial.").optional(),
 });
 
 const createUserSchema = z.object({
@@ -36,7 +39,7 @@ const createUserSchema = z.object({
   email: z.string().email().max(200),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
-  motDePasse: z.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9]/).optional(),
+  motDePasse: z.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9\s]/).optional(),
 });
 
 const updateRoleSchema = z.object({
@@ -118,7 +121,7 @@ router.post(
     const trimmedTelephone = telephone?.trim() || null;
     // Pas de mot de passe par défaut codé en dur : un mot de passe fort
     // aléatoire est généré et renvoyé une seule fois à l'administrateur.
-    const temporaryPassword = motDePasse?.trim() || randomBytes(18).toString("base64");
+    const temporaryPassword = motDePasse?.trim() || `${randomBytes(18).toString("base64url")}aA1!`;
     const authId = await createSupabaseUser(trimmedEmail, temporaryPassword, trimmedTelephone ?? undefined);
     const user = await prisma.user.create({
       data: {

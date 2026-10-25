@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma/client";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -8,14 +8,16 @@ import { authenticateJWT } from "../middlewares/authenticate";
 import { requireRole } from "../middlewares/authorize";
 import { validate } from "../middlewares/validate";
 import { uploadPdf } from "../config/upload";
-import { deleteStorageFileByUrl, resolvePdfUrl, uploadPdfBuffer } from "../services/supabase";
+import { deleteStorageFileByUrl, isSupabaseStorageUrl, resolvePdfUrl, supabaseAdmin, uploadPdfBuffer } from "../services/supabase";
 import { logUserActivity } from "../services/activity.service";
 import { logAdminAction } from "../services/audit.service";
 import { createNotification } from "../services/notification.service";
+import { stampPdf } from "../services/pdf-watermark.service";
 
 const router = Router();
 
 const uuidParam = z.object({ id: z.string().uuid("Identifiant invalide.") });
+const MAX_PREVIEW_BYTES = 25 * 1024 * 1024;
 
 const submitSchema = z.object({
   anneeAcademique: z.string().max(20).optional(),
@@ -40,6 +42,34 @@ const approveSchema = z.object({
 });
 
 router.get(
+  "/:id/preview",
+  authenticateJWT,
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const contribution = await prisma.contribution.findUnique({ where: { id: req.params.id } });
+    if (!contribution || (contribution.utilisateurId !== req.user!.id && !["Administrateur", "SuperAdministrateur"].includes(req.user!.role))) {
+      throw notFound("Contribution introuvable.");
+    }
+    if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
+    const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
+    if (!storagePath) throw notFound("Fichier introuvable.");
+    const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+    if (!data) throw notFound("Fichier introuvable.");
+    const buffer = Buffer.from(await data.arrayBuffer());
+    if (buffer.length > MAX_PREVIEW_BYTES || !buffer.subarray(0, 1029).includes(Buffer.from("%PDF-"))) {
+      throw notFound("Fichier introuvable.");
+    }
+    const stamped = Buffer.from(await stampPdf(buffer));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Content-Length", String(stamped.length));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(stamped);
+  })
+);
+
+router.get(
   "/my",
   authenticateJWT,
   asyncHandler(async (req, res) => {
@@ -54,6 +84,7 @@ router.get(
 router.post(
   "/",
   authenticateJWT,
+  express.json({ limit: "22mb" }),
   uploadPdf.single("fichier"),
   validate(submitSchema),
   asyncHandler(async (req, res) => {

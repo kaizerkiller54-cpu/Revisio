@@ -19,7 +19,13 @@ function isPdfMagic(buffer: Buffer): boolean {
 }
 
 export function isSupabaseStorageUrl(url: string): boolean {
-  return url.startsWith(`${env.supabase.url}/storage/`);
+  try {
+    const candidate = new URL(url);
+    return candidate.origin === new URL(env.supabase.url).origin &&
+      candidate.pathname.startsWith(`/storage/v1/object/public/${BUCKET}/`);
+  } catch {
+    return false;
+  }
 }
 
 function publicStorageUrl(path: string): string {
@@ -36,12 +42,22 @@ let bucketReady = false;
 export async function ensureBucket() {
   if (bucketReady) return;
   const { error } = await supabaseAdmin.storage.getBucket(BUCKET);
-  if (error && /not found/i.test(error.message)) {
+  if (error && !/not found/i.test(error.message)) {
+    throw new AppError(500, `Impossible de vérifier le stockage des PDF : ${error.message}`);
+  }
+  if (error) {
     const { error: createError } = await supabaseAdmin.storage.createBucket(BUCKET, {
-      public: true,
+      public: false,
+      fileSizeLimit: `${MAX_PDF_SIZE}`,
+      allowedMimeTypes: ["application/pdf"],
     });
     if (createError) {
       throw new AppError(500, `Impossible de créer le bucket de stockage : ${createError.message}`);
+    }
+  } else if (!error) {
+    const { error: updateError } = await supabaseAdmin.storage.updateBucket(BUCKET, { public: false });
+    if (updateError) {
+      throw new AppError(500, `Impossible de sécuriser le stockage des PDF : ${updateError.message}`);
     }
   }
   bucketReady = true;

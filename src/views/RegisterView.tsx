@@ -30,7 +30,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   const hasMinLength = motDePasse.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(motDePasse);
   const hasDigit = /[0-9]/.test(motDePasse);
-  const hasSpecial = /[^a-zA-Z0-9]/.test(motDePasse);
+  const hasSpecial = /[^a-zA-Z0-9\s]/.test(motDePasse);
   const isPasswordValid = hasMinLength && hasLetter && hasDigit && hasSpecial;
 
   // Indicatif +237 prédéfini : l'utilisateur ne saisit que ses 9 chiffres.

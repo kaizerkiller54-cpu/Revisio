@@ -134,7 +134,7 @@ function mapRow(row: SearchRow) {
     semestre: semestreFromDb(row.semestre),
     typeEpreuve: row.typeEpreuve,
     anneeAcademique: row.anneeAcademique,
-    fichierUrl: row.fichierUrl,
+    fichierUrl: "",
     fichierNom: row.fichierNom,
     statut: statutFromDb(row.statut),
     datePublication: row.datePublication ? row.datePublication.toISOString() : undefined,
@@ -297,7 +297,7 @@ export async function suggestDocuments(q: string, limit = 6): Promise<SearchSugg
       typeEpreuve: r.typeEpreuve,
       semestre: semestreFromDb(r.semestre),
       anneeAcademique: r.anneeAcademique,
-      fichierUrl: r.fichierUrl,
+      fichierUrl: "",
       score: r.score,
     }));
   }
@@ -330,7 +330,7 @@ export async function suggestDocuments(q: string, limit = 6): Promise<SearchSugg
     typeEpreuve: r.typeEpreuve,
     semestre: semestreFromDb(r.semestre),
     anneeAcademique: r.anneeAcademique,
-    fichierUrl: r.fichierUrl,
+    fichierUrl: "",
     score: 0,
   }));
 }

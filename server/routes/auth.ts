@@ -37,7 +37,7 @@ const registerSchema = z.object({
   motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
     .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
     .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
-    .regex(/[^a-zA-Z0-9]/, "Le mot de passe doit contenir un caractère spécial."),
+    .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial."),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
   masterKey: z.string().max(256).optional(),
 });

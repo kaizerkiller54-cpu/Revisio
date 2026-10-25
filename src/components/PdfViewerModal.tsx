@@ -32,6 +32,47 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [concealed, setConcealed] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
+
+  useEffect(() => {
+    if (!doc) {
+      setPreviewUrl(null);
+      setPreviewError(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let objectUrl: string | null = null;
+    setPreviewUrl(null);
+    setPreviewError(false);
+    const token = localStorage.getItem("isj_auth_token");
+
+    const previewEndpoint = doc.statut === "En attente"
+      ? `/api/contributions/${doc.id}/preview`
+      : `/api/documents/${doc.id}/preview`;
+    fetch(previewEndpoint, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Impossible de charger l’aperçu PDF.");
+        return response.blob();
+      })
+      .then((blob) => {
+        if (controller.signal.aborted) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPreviewUrl(objectUrl);
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") setPreviewError(true);
+      });
+
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [doc?.id]);
 
   // Réaffiche l'aperçu à chaque changement de document
   useEffect(() => {
@@ -141,11 +182,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-slate-100 dark:bg-slate-950">
           {/* Main PDF View Area */}
           <div className="flex-1 relative bg-slate-200 dark:bg-slate-800 flex flex-col overflow-hidden">
-            <iframe
-              src={`/api/documents/${doc.id}/preview`}
-              title={doc.titre}
-              className="w-full h-full border-none"
-            />
+            {previewUrl ? (
+              <iframe src={previewUrl} title={doc.titre} className="w-full h-full border-none" />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  {previewError ? "Impossible de charger ce document. Réessayez ou téléchargez le PDF." : "Chargement du document…"}
+                </p>
+              </div>
+            )}
             {/* Filigrane nominatif en mosaïque par-dessus l'aperçu */}
             {watermarkUrl && !concealed && (
               <div

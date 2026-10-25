@@ -30,7 +30,9 @@ export const mapDocument = (d: Document & { matiere?: Matiere }) => ({
   semestre: semestreFromDb(d.semestre),
   typeEpreuve: d.typeEpreuve,
   anneeAcademique: d.anneeAcademique,
-  fichierUrl: d.fichierUrl,
+  // Keep private storage paths out of API responses; serve PDFs only through
+  // authenticated preview and download routes.
+  fichierUrl: "",
   fichierNom: d.fichierNom,
   statut: statutFromDb(d.statut),
   datePublication: d.datePublication ? d.datePublication.toISOString() : undefined,
@@ -50,7 +52,7 @@ export const mapContribution = (c: Contribution) => ({
   typeEpreuve: c.typeEpreuve,
   titre: c.titre ?? undefined,
   commentaire: c.commentaire ?? undefined,
-  fichierUrl: c.fichierUrl,
+  fichierUrl: "",
   fichierNom: c.fichierNom,
   statut: statutFromDb(c.statut),
   dateEnvoi: c.dateEnvoi.toISOString(),
