@@ -40,7 +40,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
   const [matiere, setMatiere] = useState("Analyse Mathématique I");
   const [semestre, setSemestre] = useState<Semestre>("Semestre 1");
   const [typeEpreuve, setTypeEpreuve] = useState<EpreuveType>("SN");
-  const [anneeAcademique, setAnneeAcademique] = useState("2023-2024");
+  const [anneeAcademique, setAnneeAcademique] = useState("2026-2027");
   const [isApproveLoading, setIsApproveLoading] = useState(false);
 
   // Edit Published Doc Modal State
@@ -242,7 +242,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                           matiere: "En attente",
                           semestre: "Semestre 1",
                           typeEpreuve: "SN",
-                          anneeAcademique: "2023-2024",
+                          anneeAcademique: "2026-2027",
                           fichierUrl: contrib.fichierUrl,
                           fichierNom: contrib.fichierNom,
                           statut: "En attente",

@@ -35,6 +35,7 @@ const MATIERES_S2 = [
 ];
 
 const ANNEES_OPTIONS = [
+  "2026-2027",
   "2025-2026",
   "2024-2025",
   "2023-2024",

@@ -184,7 +184,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
     <div
-      className={`min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-300 ${
+      className={`min-h-[100svh] w-full overflow-x-clip flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-300 ${
         isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >

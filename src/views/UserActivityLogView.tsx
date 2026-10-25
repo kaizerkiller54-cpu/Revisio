@@ -287,7 +287,7 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
       </div>
 
       {/* Main Container */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+      <div className="w-full min-w-0 max-w-full overflow-hidden bg-white border border-slate-200 rounded-3xl p-3 sm:p-6 shadow-sm space-y-6">
         {/* Filters and Controls */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b border-slate-100">
           {/* Search Field */}
@@ -311,7 +311,7 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
           </div>
 
           {/* Category Tabs & User Filter (SuperAdmin only) */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-2 w-full md:w-auto min-w-0 max-w-full">
             {isSuperAdmin && (
               <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-2xl text-xs">
                 <UserIcon className="w-3.5 h-3.5 text-slate-500" />
@@ -320,10 +320,10 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
             )}
 
             {/* Category Buttons */}
-            <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-2xl text-xs">
+            <div className="flex w-full md:w-auto max-w-full items-center gap-1 overflow-x-auto overscroll-x-contain bg-slate-100 p-1 rounded-2xl text-[10px] sm:text-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
                 onClick={() => { setActionCategory("all"); setPage(1); }}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-xl font-bold transition-all ${
                   actionCategory === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -331,28 +331,28 @@ export const UserActivityLogView: React.FC<UserActivityLogViewProps> = ({
               </button>
               <button
                 onClick={() => { setActionCategory("download"); setPage(1); }}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-xl font-bold transition-all ${
                   actionCategory === "download" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                Téléchargements
+                <span className="sm:hidden">PDF</span><span className="hidden sm:inline">Téléchargements</span>
               </button>
               <button
                 onClick={() => { setActionCategory("submit"); setPage(1); }}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-xl font-bold transition-all ${
                   actionCategory === "submit" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                Soumissions
+                <span className="sm:hidden">Dépôts</span><span className="hidden sm:inline">Soumissions</span>
               </button>
               {isSuperAdmin && (
                 <button
                   onClick={() => { setActionCategory("moderation"); setPage(1); }}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                  className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-xl font-bold transition-all ${
                     actionCategory === "moderation" ? "bg-amber-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Modération
+                  <span className="sm:hidden">Modér.</span><span className="hidden sm:inline">Modération</span>
                 </button>
               )}
             </div>
