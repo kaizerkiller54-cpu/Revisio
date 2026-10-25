@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { registerApi } from "../lib/api";
 import { User } from "../types";
-import { UserPlus, AlertCircle, ArrowLeft } from "lucide-react";
+import { UserPlus, AlertCircle, ArrowLeft, Check, X } from "lucide-react";
 import { AppLogo } from "../components/AppLogo";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { motion } from "motion/react";
@@ -26,6 +26,13 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Critères de mot de passe interactifs
+  const hasMinLength = motDePasse.length >= 8;
+  const hasLetter = /[a-zA-Z]/.test(motDePasse);
+  const hasDigit = /[0-9]/.test(motDePasse);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(motDePasse);
+  const isPasswordValid = hasMinLength && hasLetter && hasDigit && hasSpecial;
+
   // Indicatif +237 prédéfini : l'utilisateur ne saisit que ses 9 chiffres.
   const telephone = phoneDigits ? `+237${phoneDigits}` : "";
   const telephoneIsValid = phoneDigits === "" || /^[0-9]{9}$/.test(phoneDigits);
@@ -35,6 +42,10 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
     e.preventDefault();
     if (!telephoneIsValid) {
       setErrorMsg("Numéro incomplet : composez vos 9 chiffres après +237.");
+      return;
+    }
+    if (!isPasswordValid) {
+      setErrorMsg("Le mot de passe doit respecter tous les 4 critères de sécurité.");
       return;
     }
     if (passwordsMismatch) {
@@ -166,12 +177,56 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             <input
               type="password"
               required
-              minLength={6}
+              minLength={8}
               value={motDePasse}
               onChange={(e) => setMotDePasse(e.target.value)}
-              placeholder="6 caractères minimum"
+              placeholder="8 caractères minimum, chiffres, lettres, symbole"
               className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
             />
+
+            {/* Checklist des critères de mot de passe */}
+            <div className="mt-2.5 p-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 text-xs">
+              <span className="font-bold text-slate-600 dark:text-slate-400 block text-[10px] uppercase tracking-wider">
+                Exigences de sécurité :
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div className={`flex items-center space-x-1.5 transition-colors ${hasMinLength ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                  {hasMinLength ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                  )}
+                  <span>Au moins 8 caractères</span>
+                </div>
+
+                <div className={`flex items-center space-x-1.5 transition-colors ${hasLetter ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                  {hasLetter ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                  )}
+                  <span>Contient des lettres</span>
+                </div>
+
+                <div className={`flex items-center space-x-1.5 transition-colors ${hasDigit ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                  {hasDigit ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                  )}
+                  <span>Contient des chiffres</span>
+                </div>
+
+                <div className={`flex items-center space-x-1.5 transition-colors ${hasSpecial ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                  {hasSpecial ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                  )}
+                  <span>Caractère spécial (!@#$...)</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -193,9 +248,9 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             )}
           </div>
 
-          <button
+      <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !isPasswordValid || passwordsMismatch}
             className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center space-x-2 active:scale-[0.99] ${
               isLoading ? "opacity-80 cursor-wait" : ""
             }`}

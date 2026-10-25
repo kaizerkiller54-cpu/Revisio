@@ -44,7 +44,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     selectedAnnee !== "Toutes";
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4">
+    <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-950/30 space-y-3.5 sm:space-y-4">
       {/* Search Bar Input */}
       <SearchSuggest
         value={searchQuery}
@@ -52,7 +52,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         onSubmit={() => {/* nothing needed, filter is live */}}
         onPick={onPickSuggestion}
         placeholder="Recherche instantanée : nom d'épreuve, matière, année..."
-        inputClassName="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-800 transition-all"
+        inputClassName="w-full h-11 pl-10 pr-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl sm:rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/70 focus:bg-white dark:focus:bg-slate-800 transition-all"
       />
 
       {/* Select Filters Grid */}

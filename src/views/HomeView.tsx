@@ -45,7 +45,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const s2Matieres = matieres.filter((m) => m.semestre === "Semestre 2");
 
   return (
-    <div className="space-y-10 pb-12">
+      <div className="space-y-8 sm:space-y-10 pb-12">
       {/* Hero Section - Scrolling Background Carousel */}
       <Reveal y={10}>
       <section className="relative rounded-3xl shadow-lg">
@@ -53,22 +53,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
           className="text-white rounded-3xl"
           overlayClassName="bg-gradient-to-b from-slate-950/30 via-slate-950/15 to-slate-950/35"
         >
-          <div className="relative max-w-3xl space-y-6 p-6 sm:p-10 lg:p-12">
+          <div className="relative max-w-3xl space-y-4 sm:space-y-6 p-5 sm:p-10 lg:p-12">
             <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-semibold backdrop-blur max-w-full overflow-hidden">
               <GraduationCap className="w-4 h-4 shrink-0" />
               <span className="truncate min-w-0">Institut Universitaire Saint Jean • Première Année Ingénieur</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight drop-shadow-lg">
+            <h1 className="text-[1.7rem] sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.12] drop-shadow-lg">
               Plateforme des Anciennes Épreuves Académiques
             </h1>
 
-            <p className="text-blue-50 text-sm sm:text-base leading-relaxed max-w-2xl">
+            <p className="text-blue-50 text-[13px] sm:text-base leading-relaxed max-w-2xl line-clamp-4 sm:line-clamp-none">
               Consultez et téléchargez les épreuves de <strong className="text-white font-bold">Contrôle Continu (CC)</strong>, <strong className="text-white font-bold">Session Normale (SN)</strong>, <strong className="text-white font-bold">Session de Rattrapage (SR)</strong>, <strong className="text-white font-bold">Travaux Dirigés (TD)</strong> et <strong className="text-white font-bold">Travaux Pratiques (TP)</strong> ainsi que les <strong className="text-white font-bold">Cours</strong> pour optimiser vos révisions.
             </p>
 
-            <form onSubmit={handleSearchSubmit} className="pt-2">
-              <div className="flex flex-col sm:flex-row gap-2 max-w-2xl bg-white/95 p-1.5 sm:p-2 rounded-full shadow-xl text-slate-900 backdrop-blur-sm">
+            <form onSubmit={handleSearchSubmit} className="pt-1 sm:pt-2">
+              <div className="flex flex-row items-center max-w-2xl bg-white dark:bg-slate-900 p-1 sm:p-1.5 rounded-2xl shadow-xl shadow-blue-950/25 border border-white/60 dark:border-slate-700/80 text-slate-900 dark:text-slate-100 backdrop-blur-md ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-blue-500/50">
                 <div className="flex-1 min-w-0">
                   <SearchSuggest
                     value={searchTerm}
@@ -76,14 +76,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     onSubmit={() => onNavigate("exams", { search: searchTerm })}
                     onPick={(s) => onNavigate("exams", { search: s.titre })}
                     placeholder="Rechercher une épreuve, une matière..."
-                    inputClassName="w-full pl-9 pr-3 py-2 bg-transparent text-slate-900 placeholder-slate-400 text-sm focus:outline-none"
+                    inputClassName="w-full min-w-0 h-10 sm:h-11 pl-9 pr-2 bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-[11px] sm:text-sm font-medium focus:outline-none"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-full transition-all shadow-lg flex items-center justify-center space-x-1.5 shrink-0"
+                  className="h-10 sm:h-11 px-3 sm:px-5 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-800 hover:to-blue-950 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-1.5 shrink-0 active:scale-95 cursor-pointer"
                 >
-                  <span className="hidden xs:inline">Rechercher</span>
+                  <span className="hidden sm:inline">Rechercher</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -193,18 +193,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <Reveal key={m.id} delay={Math.min(i * 0.05, 0.3)} y={14}>
                 <div
                   onClick={() => onNavigate("exams", { matiere: m.nom, semestre: "Semestre 1" })}
-                  className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-between group"
+                  className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-between gap-2 group overflow-hidden"
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-mono shrink-0">
+                  <div className="flex items-center space-x-2.5 min-w-0 flex-1 mr-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-mono shrink-0">
                       {m.code}
                     </span>
-                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors min-w-0 truncate">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors truncate">
                       {m.nom}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-0.5 rounded-full font-medium shrink-0">
-                    {m.countDocs} épreuves
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded-full font-medium shrink-0 ml-auto whitespace-nowrap">
+                    <span className="sm:hidden">{m.countDocs} {m.countDocs > 1 ? "docs" : "doc"}</span>
+                    <span className="hidden sm:inline">{m.countDocs} {m.countDocs > 1 ? "épreuves" : "épreuve"}</span>
                   </span>
                 </div>
                 </Reveal>
@@ -228,18 +229,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <Reveal key={m.id} delay={Math.min(i * 0.05, 0.3)} y={14}>
                 <div
                   onClick={() => onNavigate("exams", { matiere: m.nom, semestre: "Semestre 2" })}
-                  className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-between group"
+                  className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-200 transition-colors cursor-pointer flex items-center justify-between gap-2 group overflow-hidden"
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-mono shrink-0">
+                  <div className="flex items-center space-x-2.5 min-w-0 flex-1 mr-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-mono shrink-0">
                       {m.code}
                     </span>
-                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors min-w-0 truncate">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors truncate">
                       {m.nom}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-0.5 rounded-full font-medium shrink-0">
-                    {m.countDocs} épreuves
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded-full font-medium shrink-0 ml-auto whitespace-nowrap">
+                    <span className="sm:hidden">{m.countDocs} {m.countDocs > 1 ? "docs" : "doc"}</span>
+                    <span className="hidden sm:inline">{m.countDocs} {m.countDocs > 1 ? "épreuves" : "épreuve"}</span>
                   </span>
                 </div>
                 </Reveal>

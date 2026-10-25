@@ -175,6 +175,16 @@ const approveHandler = asyncHandler(async (req, res) => {
     }),
   ]);
 
+  await prisma.userNotification.create({
+    data: {
+      userId: "ALL",
+      titre: "Nouvelle épreuve disponible",
+      message: `${doc.titre} — ${body.matiere}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+      type: "info",
+      linkTab: "exams",
+    },
+  });
+
   await logAdminAction({
     adminId: req.user!.id,
     adminNom: `${req.user!.prenom} ${req.user!.nom}`,

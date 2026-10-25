@@ -36,7 +36,7 @@ const createUserSchema = z.object({
   email: z.string().email().max(200),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
-  motDePasse: z.string().min(8).max(128).optional(),
+  motDePasse: z.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9]/).optional(),
 });
 
 const updateRoleSchema = z.object({

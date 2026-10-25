@@ -15,7 +15,9 @@ import { Settings,
   Laptop,
   Shield,
   LifeBuoy,
-  Download
+  Download,
+  Check,
+  X
 } from "lucide-react";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 
@@ -43,6 +45,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
+
+  const hasMinLength = nouveauMotDePasse.length >= 8;
+  const hasLetter = /[a-zA-Z]/.test(nouveauMotDePasse);
+  const hasDigit = /[0-9]/.test(nouveauMotDePasse);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(nouveauMotDePasse);
+  const isNewPasswordValid = !nouveauMotDePasse.trim() || (hasMinLength && hasLetter && hasDigit && hasSpecial);
 
   const telephoneIsValid = /^\+237[0-9]{9}$/.test(telephone.trim());
 
@@ -94,6 +102,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
     if (telephone.trim() && !telephoneIsValid) {
       setProfileErrorMsg("Format invalide : +237XXXXXXXXX (9 chiffres après +237).");
+      return;
+    }
+    if (!isNewPasswordValid) {
+      setProfileErrorMsg("Le nouveau mot de passe doit comporter au moins 8 caractères, des chiffres, des lettres et un caractère spécial.");
       return;
     }
 
@@ -308,8 +320,53 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     placeholder="Saisissez un nouveau mot de passe"
                     value={nouveauMotDePasse}
                     onChange={(e) => setNouveauMotDePasse(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
+
+                  {nouveauMotDePasse.length > 0 && (
+                    <div className="mt-2.5 p-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 text-xs animate-fadeIn">
+                      <span className="font-bold text-slate-600 dark:text-slate-400 block text-[10px] uppercase tracking-wider">
+                        Exigences de sécurité :
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        <div className={`flex items-center space-x-1.5 transition-colors ${hasMinLength ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                          {hasMinLength ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                          )}
+                          <span>Au moins 8 caractères</span>
+                        </div>
+
+                        <div className={`flex items-center space-x-1.5 transition-colors ${hasLetter ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                          {hasLetter ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                          )}
+                          <span>Contient des lettres</span>
+                        </div>
+
+                        <div className={`flex items-center space-x-1.5 transition-colors ${hasDigit ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                          {hasDigit ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                          )}
+                          <span>Contient des chiffres</span>
+                        </div>
+
+                        <div className={`flex items-center space-x-1.5 transition-colors ${hasSpecial ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400"}`}>
+                          {hasSpecial ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                          )}
+                          <span>Caractère spécial (!@#$...)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2">

@@ -12,7 +12,7 @@ import { downloadRateLimiter, searchRateLimiter, suggestRateLimiter } from "../m
 import { logUserActivity } from "../services/activity.service";
 import { logAdminAction } from "../services/audit.service";
 import { deleteStorageFileByUrl, isSupabaseStorageUrl, resolvePdfUrl, supabaseAdmin } from "../services/supabase";
-import { stampPdfWithOwner } from "../services/pdf-watermark.service";
+import { stampPdf } from "../services/pdf-watermark.service";
 import { ensureSearchIndexes, searchDocuments, suggestDocuments } from "../services/search.service";
 
 const router = Router();
@@ -170,6 +170,26 @@ function isAdminUser(user: { role: string } | undefined): boolean {
 
 const MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024;
 
+async function loadDocumentPdf(url: string): Promise<Buffer> {
+  if (isSupabaseStorageUrl(url)) {
+    const storagePath = url.split(`/storage/v1/object/public/epreuves/`)[1];
+    if (!storagePath) throw notFound("Fichier épreuve introuvable.");
+    const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+    if (!data) throw notFound("Fichier épreuve introuvable.");
+    return Buffer.from(await data.arrayBuffer());
+  }
+
+  if (/^https:\/\//i.test(url)) {
+    const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(20_000) });
+    if (!response.ok || !response.body) throw notFound("Fichier épreuve introuvable.");
+    const declared = Number(response.headers.get("content-length") ?? 0);
+    if (declared > MAX_DOWNLOAD_BYTES) throw notFound("Fichier épreuve introuvable.");
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  throw notFound("Fichier épreuve introuvable.");
+}
+
 function isPdfBuffer(buffer: Buffer): boolean {
   // Certains PDF valides contiennent des octets de tête avant "%PDF-"
   // (BOM, commentaires). On tolère jusqu'à 1024 octets de préambule.
@@ -181,6 +201,26 @@ function buildAttachmentHeader(safeName: string): string {
   const asciiName = safeName.replace(/[^\x00-\x7F]/g, "_").replace(/["\\]/g, "_") || "epreuve.pdf";
   return `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(safeName)}`;
 }
+
+router.get(
+  "/:id/preview",
+  authenticateJWT,
+  downloadRateLimiter,
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
+    if (!doc || (doc.statut !== "Publie" && !isAdminUser(req.user))) throw notFound("Épreuve non trouvée.");
+    const buffer = await loadDocumentPdf(doc.fichierUrl);
+    if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier épreuve introuvable.");
+    const stamped = Buffer.from(await stampPdf(buffer));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Content-Length", String(stamped.length));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(stamped);
+  })
+);
 
 router.get(
   "/:id/download",
@@ -196,48 +236,13 @@ router.get(
     const fileName = doc.fichierNom || `${doc.titre}.pdf`;
     const safeName = fileName.replace(/[^\w.\-éèêëàâîïôûùçÉÈÊËÀÂÎÏÔÛÙÇ]+/g, "_").slice(0, 180) || "epreuve.pdf";
 
-    let buffer: Buffer;
-
-    if (isSupabaseStorageUrl(doc.fichierUrl)) {
-      const storagePath = doc.fichierUrl.split(`/storage/v1/object/public/epreuves/`)[1];
-      if (!storagePath) {
-        throw notFound("Fichier épreuve introuvable.");
-      }
-      const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
-      if (!data) {
-        throw notFound("Fichier épreuve introuvable.");
-      }
-      buffer = Buffer.from(await data.arrayBuffer());
-    } else if (/^https:\/\//i.test(doc.fichierUrl)) {
-      const response = await fetch(doc.fichierUrl, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!response.ok || !response.body) {
-        throw notFound("Fichier épreuve introuvable.");
-      }
-      const declared = Number(response.headers.get("content-length") ?? 0);
-      if (declared > MAX_DOWNLOAD_BYTES) {
-        throw notFound("Fichier épreuve introuvable.");
-      }
-      buffer = Buffer.from(await response.arrayBuffer());
-    } else {
-      // Seul un PDF signé (Supabase) ou une URL https sécurisée est servi :
-      // aucune URL arbitraire/SSRF pour le téléchargement public.
-      throw notFound("Fichier épreuve introuvable.");
-    }
+    const buffer = await loadDocumentPdf(doc.fichierUrl);
 
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) {
       throw notFound("Fichier épreuve introuvable.");
     }
 
-    // Traçabilité anti-diffusion : les non-admins reçoivent une copie
-    // tatouée à leur identité ; les admins reçoivent le fichier brut.
-    let outBuffer: Buffer = buffer;
-    if (!isAdminUser(req.user)) {
-      const ownerName = `${req.user!.prenom} ${req.user!.nom}`.trim() || "ISJ";
-      outBuffer = Buffer.from(await stampPdfWithOwner(buffer, ownerName, req.user!.email));
-    }
+    const outBuffer = Buffer.from(await stampPdf(buffer));
 
     const updated = await prisma.document.update({
       where: { id: doc.id },
@@ -334,6 +339,16 @@ router.post(
         fichierNom,
         statut: "Publie",
         datePublication: new Date(),
+      },
+    });
+
+    await prisma.userNotification.create({
+      data: {
+        userId: "ALL",
+        titre: "Nouvelle épreuve disponible",
+        message: `${doc.titre} — ${matiereRow.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+        type: "info",
+        linkTab: "exams",
       },
     });
 

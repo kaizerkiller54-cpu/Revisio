@@ -81,6 +81,30 @@ export default function App() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!user || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    const token = localStorage.getItem("isj_auth_token");
+    if (!token) return;
+    const seenKey = `revisio_seen_publications_${user.id}`;
+    let cancelled = false;
+
+    fetch("/api/notifications", { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => response.ok ? response.json() : [])
+      .then((items: Array<{ id: string; titre: string; message: string; userId: string; date: string }>) => {
+        if (cancelled) return;
+        const seen = new Set<string>(JSON.parse(localStorage.getItem(seenKey) || "[]"));
+        const fresh = items.filter((item) => item.userId === "ALL" && !seen.has(item.id) && Date.now() - new Date(item.date).getTime() < 30 * 24 * 60 * 60 * 1000);
+        if (fresh.length) {
+          const latest = fresh[0];
+          new Notification(latest.titre, { body: fresh.length > 1 ? `${latest.message} (+${fresh.length - 1} autre(s))` : latest.message });
+          const updated = new Set([...seen, ...fresh.map((item) => item.id)]);
+          localStorage.setItem(seenKey, JSON.stringify([...updated].slice(-200)));
+        }
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   const handleNavigate = (tab: string, filterState?: any) => {
     if (!user && tab !== "login" && tab !== "register") {
       setAuthNotice("Connexion Obligatoire : Veuillez vous connecter ou créer un compte pour accéder aux ressources d'épreuves.");
@@ -267,6 +291,9 @@ export default function App() {
                 onLoginSuccess={(loggedUser, token) => {
                   setUser(loggedUser);
                   localStorage.setItem("isj_auth_token", token);
+                  if (typeof Notification !== "undefined" && Notification.permission === "default") {
+                    Notification.requestPermission().catch(() => undefined);
+                  }
                   loadData();
                   setActiveTab("home");
                   setAuthNotice(null);
@@ -285,6 +312,9 @@ export default function App() {
                 onRegisterSuccess={(registeredUser, token) => {
                   setUser(registeredUser);
                   localStorage.setItem("isj_auth_token", token);
+                  if (typeof Notification !== "undefined" && Notification.permission === "default") {
+                    Notification.requestPermission().catch(() => undefined);
+                  }
                   loadData();
                   setActiveTab("home");
                   setAuthNotice(null);
@@ -298,6 +328,9 @@ export default function App() {
           </AnimatePresence>
         )}
       </main>
+
+      {/* Fondu de transition visuel vers le footer */}
+      <div className="h-24 -mb-24 bg-gradient-to-b from-slate-50 via-slate-50/75 to-transparent dark:from-slate-950 dark:via-slate-950/75 pointer-events-none relative z-10" />
 
       {/* Footer */}
       <Footer onNavigate={handleNavigate} />

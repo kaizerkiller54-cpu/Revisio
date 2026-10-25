@@ -53,10 +53,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     };
   }, []);
 
-  // Filigrane "REVISIO" en mosaïque + e-mail discret (traçabilité anti-fuite)
+  // Filigrane discret "REVISIO" + URL de la plateforme.
   const watermarkUrl = useMemo(() => {
     if (!doc) return null;
-    const line2 = user?.email || "Apercu protege";
+    const line2 = "revisio-gilt.vercel.app";
     const svg =
       `<svg xmlns='http://www.w3.org/2000/svg' width='380' height='260'>` +
       `<text x='50%' y='44%' font-size='30' font-family='sans-serif' font-weight='900' ` +
@@ -145,7 +145,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           {/* Main PDF View Area */}
           <div className="flex-1 relative bg-slate-200 dark:bg-slate-800 flex flex-col overflow-hidden">
             <iframe
-              src={doc.fichierUrl}
+              src={`/api/documents/${doc.id}/preview`}
               title={doc.titre}
               className="w-full h-full border-none"
             />

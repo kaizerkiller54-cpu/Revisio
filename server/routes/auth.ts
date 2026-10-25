@@ -34,7 +34,10 @@ const registerSchema = z.object({
   prenom: z.string().min(2, "Le prénom est requis.").max(80, "Le prénom est trop long."),
   email: z.string().email("Adresse e-mail invalide.").max(200),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional(),
-  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128),
+  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
+    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
+    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
+    .regex(/[^a-zA-Z0-9]/, "Le mot de passe doit contenir un caractère spécial."),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
   masterKey: z.string().max(256).optional(),
 });

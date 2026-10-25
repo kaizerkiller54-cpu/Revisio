@@ -22,6 +22,9 @@ const usefulLinks: Array<{ label: string; tab: string }> = [
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="relative overflow-hidden text-slate-200">
+      {/* Fondu dégradé subtil et progressif entre la page et le pied de page */}
+      <div className="absolute top-0 inset-x-0 h-28 sm:h-44 bg-gradient-to-b from-slate-50 dark:from-slate-950 via-slate-950/70 to-transparent pointer-events-none z-10" />
+
       {/* Fond photo campus + overlay de lisibilité */}
       <div className="absolute inset-0" aria-hidden>
         <img
@@ -29,8 +32,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           alt=""
           className="w-full h-full object-cover object-center animate-isj-footer-zoom"
         />
-        <div className="absolute inset-0 bg-slate-950/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-transparent to-slate-950/80" />
+        <div className="absolute inset-0 bg-slate-950/75" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/40 to-slate-950/90" />
       </div>
 
       <div className="relative min-h-[70vh] flex flex-col">
@@ -56,38 +59,20 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   <ul className="space-y-3 text-sm">
                     <li>
                       <a
-                        href="tel:+237658965383"
+                        href="tel:+237650897459"
                         className="flex items-center space-x-3 hover:text-white transition-colors"
                       >
                         <Phone className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span className="font-bold">+237 658 96 53 83</span>
+                        <span className="font-bold">+237 6 50 89 74 59</span>
                       </a>
                     </li>
                     <li>
                       <a
-                        href="tel:+237651957994"
-                        className="flex items-center space-x-3 hover:text-white transition-colors"
-                      >
-                        <Phone className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span className="font-bold">+237 651 95 79 94</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="mailto:dylanessomba2009@gmail.com"
+                        href="mailto:tchapwouo2005@gmail.com"
                         className="flex items-center space-x-3 hover:text-white transition-colors"
                       >
                         <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span className="break-all">dylanessomba2009@gmail.com</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="mailto:kaizerkiller54@gmail.com"
-                        className="flex items-center space-x-3 hover:text-white transition-colors"
-                      >
-                        <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span className="break-all">kaizerkiller54@gmail.com</span>
+                        <span className="break-all font-semibold">tchapwouo2005@gmail.com</span>
                       </a>
                     </li>
                     <li className="flex items-start space-x-3">

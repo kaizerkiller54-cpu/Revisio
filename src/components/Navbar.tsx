@@ -233,10 +233,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 <button
                   onClick={onLogout}
-                  title="Déconnexion"
-                  className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                  title="Déconnexion du compte"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 font-semibold text-xs border border-red-200/80 dark:border-red-500/30 transition-all shadow-sm active:scale-95 cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Déconnexion</span>
                 </button>
               </div>
             ) : (
@@ -257,26 +258,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
+          {/* Mobile Actions: Notifications & Menu */}
           <div className="flex items-center lg:hidden space-x-2">
-            <button
-              onClick={handleBack}
-              className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              title="Page précédente"
-              aria-label="Page précédente"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
             <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg focus:outline-none"
+              className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg focus:outline-none transition-colors"
+              aria-label="Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Bouton de retour flottant (non statique) */}
+      {activeTab !== "home" && (
+        <div className="fixed top-[5.25rem] left-3 sm:left-6 z-40 animate-fadeIn">
+          <button
+            onClick={handleBack}
+            className="flex items-center space-x-1.5 p-3 sm:px-4 sm:py-2.5 rounded-full bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 shadow-xl hover:shadow-2xl border border-slate-200/90 dark:border-slate-700/80 backdrop-blur-md transition-all hover:scale-105 active:scale-95 group ring-1 ring-black/5 cursor-pointer"
+            title="Page précédente"
+            aria-label="Page précédente"
+          >
+            <ArrowLeft className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:-translate-x-1 transition-transform shrink-0" />
+            <span className="hidden sm:inline text-xs font-bold tracking-tight">Retour</span>
+          </button>
+        </div>
+      )}
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
