@@ -62,7 +62,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
     "Réflexion humaine",
     "Géométrie",
     "Analyse 2",
-    "Électrostatique/magnétostatique",
+    "Électro/magnéto",
     "Chimie",
     "Algorithmique",
     "IDFOT",
