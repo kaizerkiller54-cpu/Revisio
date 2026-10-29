@@ -1,47 +1,5 @@
 // server/app.ts
-import express from "express";
-
-// server/config/upload.ts
-import multer from "multer";
-import path from "path";
-import fs from "fs";
-
-// server/utils/errors.ts
-var AppError = class extends Error {
-  constructor(statusCode, message, details) {
-    super(message);
-    this.name = "AppError";
-    this.statusCode = statusCode;
-    this.details = details;
-  }
-};
-var badRequest = (message, details) => new AppError(400, message, details);
-var unauthorized = (message = "Non authentifi\xE9.") => new AppError(401, message);
-var forbidden = (message = "Acc\xE8s refus\xE9 : privil\xE8ges insuffisants.") => new AppError(403, message);
-var notFound = (message = "Ressource introuvable.") => new AppError(404, message);
-
-// server/config/upload.ts
-import os from "os";
-var uploadsDir = process.env.VERCEL ? path.join(os.tmpdir(), "uploads") : path.join(process.cwd(), "uploads");
-try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-} catch {
-}
-var storage = multer.memoryStorage();
-var uploadPdf = multer({
-  storage,
-  limits: { fileSize: 15 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype !== "application/pdf") {
-      cb(new AppError(400, "Seuls les fichiers PDF (application/pdf) sont accept\xE9s."));
-      return;
-    }
-    cb(null, true);
-  }
-});
-var uploadsDirPath = uploadsDir;
+import express3 from "express";
 
 // server/routes/auth.ts
 import { Router } from "express";
@@ -53,9 +11,9 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 // server/config/env.ts
-import path2 from "path";
+import path from "path";
 import { config as loadEnv } from "dotenv";
-loadEnv({ path: path2.join(process.cwd(), ".env") });
+loadEnv({ path: path.join(process.cwd(), ".env") });
 function required(name) {
   const value = process.env[name];
   if (!value) {
@@ -88,6 +46,20 @@ var asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+// server/utils/errors.ts
+var AppError = class extends Error {
+  constructor(statusCode, message, details) {
+    super(message);
+    this.name = "AppError";
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+};
+var badRequest = (message, details) => new AppError(400, message, details);
+var unauthorized = (message = "Non authentifi\xE9.") => new AppError(401, message);
+var forbidden = (message = "Acc\xE8s refus\xE9 : privil\xE8ges insuffisants.") => new AppError(403, message);
+var notFound = (message = "Ressource introuvable.") => new AppError(404, message);
+
 // server/utils/mappers.ts
 var semestreToDb = (s) => s === "Semestre 2" ? "Semestre_2" : "Semestre_1";
 var semestreFromDb = (s) => s === "Semestre_2" ? "Semestre 2" : "Semestre 1";
@@ -110,7 +82,9 @@ var mapDocument = (d) => ({
   semestre: semestreFromDb(d.semestre),
   typeEpreuve: d.typeEpreuve,
   anneeAcademique: d.anneeAcademique,
-  fichierUrl: d.fichierUrl,
+  // Keep private storage paths out of API responses; serve PDFs only through
+  // authenticated preview and download routes.
+  fichierUrl: "",
   fichierNom: d.fichierNom,
   statut: statutFromDb(d.statut),
   datePublication: d.datePublication ? d.datePublication.toISOString() : void 0,
@@ -129,7 +103,7 @@ var mapContribution = (c) => ({
   typeEpreuve: c.typeEpreuve,
   titre: c.titre ?? void 0,
   commentaire: c.commentaire ?? void 0,
-  fichierUrl: c.fichierUrl,
+  fichierUrl: "",
   fichierNom: c.fichierNom,
   statut: statutFromDb(c.statut),
   dateEnvoi: c.dateEnvoi.toISOString()
@@ -195,7 +169,12 @@ function isPdfMagic(buffer) {
   return buffer.length >= 5 && buffer.subarray(0, 5).toString("latin1") === "%PDF-";
 }
 function isSupabaseStorageUrl(url) {
-  return url.startsWith(`${env.supabase.url}/storage/`);
+  try {
+    const candidate = new URL(url);
+    return candidate.origin === new URL(env.supabase.url).origin && candidate.pathname.startsWith(`/storage/v1/object/public/${BUCKET}/`);
+  } catch {
+    return false;
+  }
 }
 function publicStorageUrl(path5) {
   return `${env.supabase.url}/storage/v1/object/public/${BUCKET}/${path5}`;
@@ -208,12 +187,22 @@ var bucketReady = false;
 async function ensureBucket() {
   if (bucketReady) return;
   const { error } = await supabaseAdmin.storage.getBucket(BUCKET);
-  if (error && /not found/i.test(error.message)) {
+  if (error && !/not found/i.test(error.message)) {
+    throw new AppError(500, `Impossible de v\xE9rifier le stockage des PDF : ${error.message}`);
+  }
+  if (error) {
     const { error: createError } = await supabaseAdmin.storage.createBucket(BUCKET, {
-      public: true
+      public: false,
+      fileSizeLimit: `${MAX_PDF_SIZE}`,
+      allowedMimeTypes: ["application/pdf"]
     });
     if (createError) {
       throw new AppError(500, `Impossible de cr\xE9er le bucket de stockage : ${createError.message}`);
+    }
+  } else if (!error) {
+    const { error: updateError } = await supabaseAdmin.storage.updateBucket(BUCKET, { public: false });
+    if (updateError) {
+      throw new AppError(500, `Impossible de s\xE9curiser le stockage des PDF : ${updateError.message}`);
     }
   }
   bucketReady = true;
@@ -288,18 +277,24 @@ async function getJwksPems() {
 }
 async function verifyAccessToken(token) {
   try {
+    const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
+    const verifyClaims = (payload2) => {
+      const audiences = Array.isArray(payload2.aud) ? payload2.aud : [payload2.aud];
+      if (!payload2.sub || payload2.role !== "authenticated" || !audiences.includes("authenticated")) {
+        throw new Error("Claims de session invalides");
+      }
+      return { userId: payload2.sub, role: payload2.role, tokenType: "access" };
+    };
     const header = JSON.parse(Buffer.from(token.split(".")[0], "base64url").toString());
     if (header.alg === "HS256") {
-      const payload2 = jwt.verify(token, env.supabase.jwtSecret, { algorithms: ["HS256"] });
-      if (!payload2.sub) throw new Error("sub manquant");
-      return { userId: payload2.sub, role: payload2.role ?? "authenticated", tokenType: "access" };
+      const payload2 = jwt.verify(token, env.supabase.jwtSecret, { algorithms: ["HS256"], issuer });
+      return verifyClaims(payload2);
     }
     const pems = await getJwksPems();
     const key = header.kid ? pems[header.kid] : Object.values(pems)[0];
     if (!key) throw new Error("cl\xE9 JWKS introuvable");
-    const payload = jwt.verify(token, key, { algorithms: ["ES256"] });
-    if (!payload.sub) throw new Error("sub manquant");
-    return { userId: payload.sub, role: payload.role ?? "authenticated", tokenType: "access" };
+    const payload = jwt.verify(token, key, { algorithms: ["ES256"], issuer });
+    return verifyClaims(payload);
   } catch {
     throw new AppError(401, "Session expir\xE9e ou invalide.");
   }
@@ -492,8 +487,8 @@ async function logUserActivity(input) {
 }
 
 // server/config/superadmin.ts
-import path3 from "path";
-import fs2 from "fs";
+import path2 from "path";
+import fs from "fs";
 function tryGetSuperAdminMasterKey() {
   return readSuperAdminMasterKey();
 }
@@ -501,9 +496,9 @@ function readSuperAdminMasterKey() {
   const fromEnv = process.env.SUPERADMIN_MASTER_KEY?.trim();
   if (fromEnv) return fromEnv;
   try {
-    const configPath = path3.join(process.cwd(), "superadmin.config.json");
-    if (fs2.existsSync(configPath)) {
-      const data = fs2.readFileSync(configPath, "utf-8");
+    const configPath = path2.join(process.cwd(), "superadmin.config.json");
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, "utf-8");
       const parsed = JSON.parse(data);
       if (parsed.superadminMasterKey) {
         return String(parsed.superadminMasterKey).trim();
@@ -528,7 +523,7 @@ var registerSchema = z.object({
   prenom: z.string().min(2, "Le pr\xE9nom est requis.").max(80, "Le pr\xE9nom est trop long."),
   email: z.string().email("Adresse e-mail invalide.").max(200),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional(),
-  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128),
+  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial."),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
   masterKey: z.string().max(256).optional()
 });
@@ -727,7 +722,7 @@ function forbiddenRole() {
 var auth_default = router;
 
 // server/routes/documents.ts
-import { Router as Router2 } from "express";
+import express, { Router as Router2 } from "express";
 import { z as z2 } from "zod";
 
 // server/middlewares/authorize.ts
@@ -766,30 +761,30 @@ async function logAdminAction(input) {
 
 // server/services/pdf-watermark.service.ts
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-async function stampPdfWithOwner(pdfBytes, ownerName, ownerEmail) {
+async function stampPdf(pdfBytes) {
   let pdf;
   try {
     pdf = await PDFDocument.load(pdfBytes);
   } catch {
     throw new AppError(500, "Document illisible : tatouage de tra\xE7abilit\xE9 impossible.");
   }
-  const stamp = `${ownerName} \u2014 ${ownerEmail} \u2014 ISJ Revisio`.slice(0, 140);
+  const stamp = "Revisio-ISJ";
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const size = 14;
-  const textWidth = font.widthOfTextAtSize(stamp, size);
   for (const page of pdf.getPages()) {
     const { width, height } = page.getSize();
+    const size = Math.min(24, Math.max(16, width * 0.04));
+    const textWidth = font.widthOfTextAtSize(stamp, size);
     page.drawText(stamp, {
       x: width / 2 - textWidth / 2,
-      y: height / 2,
+      y: height / 2 - size / 2,
       size,
       font,
-      color: rgb(0.12, 0.23, 0.54),
-      opacity: 0.22,
+      color: rgb(0.18, 0.22, 0.3),
+      opacity: 0.18,
       rotate: degrees(-30)
     });
   }
-  pdf.setProducer(`ISJ Revisio \u2014 copie tracee de ${ownerEmail}`.slice(0, 200));
+  pdf.setProducer("Revisio-ISJ");
   return pdf.save();
 }
 
@@ -813,7 +808,7 @@ function mapRow(row) {
     semestre: semestreFromDb(row.semestre),
     typeEpreuve: row.typeEpreuve,
     anneeAcademique: row.anneeAcademique,
-    fichierUrl: row.fichierUrl,
+    fichierUrl: "",
     fichierNom: row.fichierNom,
     statut: statutFromDb(row.statut),
     datePublication: row.datePublication ? row.datePublication.toISOString() : void 0,
@@ -947,7 +942,7 @@ async function suggestDocuments(q, limit = 6) {
       typeEpreuve: r.typeEpreuve,
       semestre: semestreFromDb(r.semestre),
       anneeAcademique: r.anneeAcademique,
-      fichierUrl: r.fichierUrl,
+      fichierUrl: "",
       score: r.score
     }));
   }
@@ -979,7 +974,7 @@ async function suggestDocuments(q, limit = 6) {
     typeEpreuve: r.typeEpreuve,
     semestre: semestreFromDb(r.semestre),
     anneeAcademique: r.anneeAcademique,
-    fichierUrl: r.fichierUrl,
+    fichierUrl: "",
     score: 0
   }));
 }
@@ -1106,10 +1101,33 @@ router2.get(
     res.json({ data: suggestions });
   })
 );
+router2.get(
+  "/embargoed",
+  authenticateJWT,
+  requireRole("SuperAdministrateur"),
+  asyncHandler(async (_req, res) => {
+    const rows = await prisma.document.findMany({
+      where: { anneeAcademique: "2026-2027", statut: "En_attente" },
+      include: { matiere: true },
+      orderBy: { createdAt: "desc" }
+    });
+    res.json(rows.map(mapDocument));
+  })
+);
 function isAdminUser(user) {
   return user !== void 0 && (user.role === "Administrateur" || user.role === "SuperAdministrateur");
 }
 var MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024;
+async function loadDocumentPdf(url) {
+  if (isSupabaseStorageUrl(url)) {
+    const storagePath = url.split(`/storage/v1/object/public/epreuves/`)[1];
+    if (!storagePath) throw notFound("Fichier \xE9preuve introuvable.");
+    const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+    if (!data) throw notFound("Fichier \xE9preuve introuvable.");
+    return Buffer.from(await data.arrayBuffer());
+  }
+  throw notFound("Fichier \xE9preuve introuvable.");
+}
 function isPdfBuffer(buffer) {
   const head = buffer.subarray(0, Math.min(buffer.length, 1024 + 5));
   return head.includes(Buffer.from("%PDF-"));
@@ -1119,52 +1137,43 @@ function buildAttachmentHeader(safeName) {
   return `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(safeName)}`;
 }
 router2.get(
+  "/:id/preview",
+  authenticateJWT,
+  downloadRateLimiter,
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
+    const canPreviewHidden = req.user?.role === "SuperAdministrateur";
+    if (!doc || doc.statut !== "Publie" && !canPreviewHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user))) throw notFound("\xC9preuve non trouv\xE9e.");
+    const buffer = await loadDocumentPdf(doc.fichierUrl);
+    if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier \xE9preuve introuvable.");
+    const stamped = Buffer.from(await stampPdf(buffer));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Content-Length", String(stamped.length));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(stamped);
+  })
+);
+router2.get(
   "/:id/download",
   authenticateJWT,
   downloadRateLimiter,
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    if (!doc || doc.statut !== "Publie" && !isAdminUser(req.user)) {
+    const canDownloadHidden = req.user?.role === "SuperAdministrateur";
+    if (!doc || doc.statut !== "Publie" && !canDownloadHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user))) {
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
     const fileName = doc.fichierNom || `${doc.titre}.pdf`;
     const safeName = fileName.replace(/[^\w.\-éèêëàâîïôûùçÉÈÊËÀÂÎÏÔÛÙÇ]+/g, "_").slice(0, 180) || "epreuve.pdf";
-    let buffer;
-    if (isSupabaseStorageUrl(doc.fichierUrl)) {
-      const storagePath = doc.fichierUrl.split(`/storage/v1/object/public/epreuves/`)[1];
-      if (!storagePath) {
-        throw notFound("Fichier \xE9preuve introuvable.");
-      }
-      const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
-      if (!data) {
-        throw notFound("Fichier \xE9preuve introuvable.");
-      }
-      buffer = Buffer.from(await data.arrayBuffer());
-    } else if (/^https:\/\//i.test(doc.fichierUrl)) {
-      const response = await fetch(doc.fichierUrl, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(2e4)
-      });
-      if (!response.ok || !response.body) {
-        throw notFound("Fichier \xE9preuve introuvable.");
-      }
-      const declared = Number(response.headers.get("content-length") ?? 0);
-      if (declared > MAX_DOWNLOAD_BYTES) {
-        throw notFound("Fichier \xE9preuve introuvable.");
-      }
-      buffer = Buffer.from(await response.arrayBuffer());
-    } else {
-      throw notFound("Fichier \xE9preuve introuvable.");
-    }
+    const buffer = await loadDocumentPdf(doc.fichierUrl);
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) {
       throw notFound("Fichier \xE9preuve introuvable.");
     }
-    let outBuffer = buffer;
-    if (!isAdminUser(req.user)) {
-      const ownerName = `${req.user.prenom} ${req.user.nom}`.trim() || "ISJ";
-      outBuffer = Buffer.from(await stampPdfWithOwner(buffer, ownerName, req.user.email));
-    }
+    const outBuffer = Buffer.from(await stampPdf(buffer));
     const updated = await prisma.document.update({
       where: { id: doc.id },
       data: { telechargementsCount: { increment: 1 } }
@@ -1205,7 +1214,8 @@ router2.post(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    if (!doc || doc.statut !== "Publie" && !isAdminUser(req.user)) {
+    const canRecordHiddenDownload = req.user?.role === "SuperAdministrateur";
+    if (!doc || doc.statut !== "Publie" && !canRecordHiddenDownload && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user))) {
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
     const updated = await prisma.document.update({
@@ -1227,7 +1237,6 @@ router2.post(
       telechargementsCount: updated.telechargementsCount,
       // L'URL brute du stockage n'est exposée qu'aux admins : les autres
       // rôles téléchargent exclusivement via GET (copie tatouée).
-      ...isAdminUser(req.user) ? { fichierUrl: doc.fichierUrl } : {},
       fichierNom: doc.fichierNom
     });
   })
@@ -1236,6 +1245,7 @@ router2.post(
   "/",
   authenticateJWT,
   requireRole("Administrateur", "SuperAdministrateur"),
+  express.json({ limit: "22mb" }),
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const { titre, matiere, semestre, typeEpreuve, anneeAcademique, fichierUrl, fichierNom } = req.body;
@@ -1250,20 +1260,70 @@ router2.post(
         anneeAcademique,
         fichierUrl: fichierStorageUrl,
         fichierNom,
-        statut: "Publie",
-        datePublication: /* @__PURE__ */ new Date()
+        statut: anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
+        datePublication: anneeAcademique === "2026-2027" ? null : /* @__PURE__ */ new Date()
+      }
+    });
+    if (doc.statut === "Publie") {
+      await prisma.userNotification.create({
+        data: {
+          userId: "ALL",
+          titre: "Nouvelle \xE9preuve disponible",
+          message: `${doc.titre} \u2014 ${matiereRow.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+          type: "info",
+          linkTab: "exams"
+        }
+      });
+    }
+    await logAdminAction({
+      adminId: req.user.id,
+      adminNom: `${req.user.prenom} ${req.user.nom}`,
+      adminEmail: req.user.email,
+      action: "CREATE_DOCUMENT",
+      details: doc.statut === "Publie" ? `A cr\xE9\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}).` : `A ajout\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}), masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.`,
+      targetId: doc.id,
+      targetName: doc.titre
+    });
+    res.status(201).json({
+      message: doc.statut === "Publie" ? "Document cr\xE9\xE9 et publi\xE9 avec succ\xE8s." : "\xC9preuve 2026-2027 ajout\xE9e et masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.",
+      document: mapDocument({ ...doc, matiere: matiereRow })
+    });
+  })
+);
+router2.post(
+  "/:id/release",
+  authenticateJWT,
+  requireRole("SuperAdministrateur"),
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
+    if (!existing || existing.anneeAcademique !== "2026-2027" || existing.statut !== "En_attente") {
+      throw notFound("\xC9preuve 2026-2027 masqu\xE9e introuvable.");
+    }
+    const doc = await prisma.document.update({
+      where: { id: existing.id },
+      data: { statut: "Publie", datePublication: /* @__PURE__ */ new Date() },
+      include: { matiere: true }
+    });
+    await prisma.userNotification.create({
+      data: {
+        userId: "ALL",
+        titre: "Nouvelle \xE9preuve disponible",
+        message: `${doc.titre} \u2014 ${doc.matiere.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+        type: "info",
+        linkTab: "exams"
       }
     });
     await logAdminAction({
       adminId: req.user.id,
       adminNom: `${req.user.prenom} ${req.user.nom}`,
       adminEmail: req.user.email,
-      action: "CREATE_DOCUMENT",
-      details: `A cr\xE9\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}).`,
+      action: "UPDATE_DOCUMENT",
+      details: `A d\xE9masqu\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${doc.matiere.nom} ${doc.anneeAcademique}).`,
       targetId: doc.id,
       targetName: doc.titre
     });
-    res.status(201).json({ message: "Document cr\xE9\xE9 et publi\xE9 avec succ\xE8s.", document: mapDocument({ ...doc, matiere: matiereRow }) });
+    res.json({ message: "\xC9preuve 2026-2027 publi\xE9e et d\xE9sormais visible.", document: mapDocument(doc) });
   })
 );
 router2.put(
@@ -1276,6 +1336,9 @@ router2.put(
     const existing = await prisma.document.findUnique({ where: { id: req.params.id } });
     if (!existing) {
       throw notFound("Document non trouv\xE9.");
+    }
+    if (existing.anneeAcademique === "2026-2027" && existing.statut === "En_attente" && req.user.role !== "SuperAdministrateur") {
+      throw forbidden("Seul un super administrateur peut modifier une \xE9preuve 2026-2027 masqu\xE9e.");
     }
     const { titre, matiere, semestre, typeEpreuve, anneeAcademique } = req.body;
     let matiereId = existing.matiereId;
@@ -1290,7 +1353,8 @@ router2.put(
         matiereId,
         semestre: semestre ? semestreToDb(semestre) : existing.semestre,
         typeEpreuve: typeEpreuve ?? existing.typeEpreuve,
-        anneeAcademique: anneeAcademique ?? existing.anneeAcademique
+        anneeAcademique: anneeAcademique ?? existing.anneeAcademique,
+        ...anneeAcademique === "2026-2027" && existing.anneeAcademique !== "2026-2027" ? { statut: "En_attente", datePublication: null } : {}
       },
       include: { matiere: true }
     });
@@ -1333,8 +1397,33 @@ router2.delete(
 var documents_default = router2;
 
 // server/routes/contributions.ts
-import { Router as Router3 } from "express";
+import express2, { Router as Router3 } from "express";
 import { z as z3 } from "zod";
+
+// server/config/upload.ts
+import multer from "multer";
+import path3 from "path";
+import fs2 from "fs";
+import os from "os";
+var uploadsDir = process.env.VERCEL ? path3.join(os.tmpdir(), "uploads") : path3.join(process.cwd(), "uploads");
+try {
+  if (!fs2.existsSync(uploadsDir)) {
+    fs2.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch {
+}
+var storage = multer.memoryStorage();
+var uploadPdf = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype !== "application/pdf") {
+      cb(new AppError(400, "Seuls les fichiers PDF (application/pdf) sont accept\xE9s."));
+      return;
+    }
+    cb(null, true);
+  }
+});
 
 // server/services/notification.service.ts
 async function createNotification(userId, titre, message, type = "info", linkTab) {
@@ -1346,6 +1435,7 @@ async function createNotification(userId, titre, message, type = "info", linkTab
 // server/routes/contributions.ts
 var router3 = Router3();
 var uuidParam2 = z3.object({ id: z3.string().uuid("Identifiant invalide.") });
+var MAX_PREVIEW_BYTES = 25 * 1024 * 1024;
 var submitSchema = z3.object({
   anneeAcademique: z3.string().max(20).optional(),
   matiere: z3.string().max(120).optional(),
@@ -1364,6 +1454,39 @@ var approveSchema = z3.object({
   anneeAcademique: z3.string().min(4, "L'ann\xE9e acad\xE9mique est requise.").max(20)
 });
 router3.get(
+  "/:id/preview",
+  authenticateJWT,
+  validate(uuidParam2, "params"),
+  asyncHandler(async (req, res) => {
+    const contribution = await prisma.contribution.findUnique({
+      where: { id: req.params.id },
+      include: { document: true }
+    });
+    if (!contribution || contribution.utilisateurId !== req.user.id && !["Administrateur", "SuperAdministrateur"].includes(req.user.role)) {
+      throw notFound("Contribution introuvable.");
+    }
+    if (contribution.document?.anneeAcademique === "2026-2027" && contribution.document.statut === "En_attente" && req.user.role !== "SuperAdministrateur") {
+      throw notFound("\xC9preuve 2026-2027 masqu\xE9e.");
+    }
+    if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
+    const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
+    if (!storagePath) throw notFound("Fichier introuvable.");
+    const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+    if (!data) throw notFound("Fichier introuvable.");
+    const buffer = Buffer.from(await data.arrayBuffer());
+    if (buffer.length > MAX_PREVIEW_BYTES || !buffer.subarray(0, 1029).includes(Buffer.from("%PDF-"))) {
+      throw notFound("Fichier introuvable.");
+    }
+    const stamped = Buffer.from(await stampPdf(buffer));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Content-Length", String(stamped.length));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(stamped);
+  })
+);
+router3.get(
   "/my",
   authenticateJWT,
   asyncHandler(async (req, res) => {
@@ -1377,6 +1500,7 @@ router3.get(
 router3.post(
   "/",
   authenticateJWT,
+  express2.json({ limit: "22mb" }),
   uploadPdf.single("fichier"),
   validate(submitSchema),
   asyncHandler(async (req, res) => {
@@ -1479,31 +1603,42 @@ var approveHandler = asyncHandler(async (req, res) => {
         anneeAcademique: body.anneeAcademique,
         fichierUrl: contribution.fichierUrl,
         fichierNom: contribution.fichierNom,
-        statut: "Publie",
-        datePublication: /* @__PURE__ */ new Date(),
+        statut: body.anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
+        datePublication: body.anneeAcademique === "2026-2027" ? null : /* @__PURE__ */ new Date(),
         contributionId: contribution.id
       },
       include: { matiere: true }
     })
   ]);
+  if (doc.statut === "Publie") {
+    await prisma.userNotification.create({
+      data: {
+        userId: "ALL",
+        titre: "Nouvelle \xE9preuve disponible",
+        message: `${doc.titre} \u2014 ${body.matiere}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+        type: "info",
+        linkTab: "exams"
+      }
+    });
+  }
   await logAdminAction({
     adminId: req.user.id,
     adminNom: `${req.user.prenom} ${req.user.nom}`,
     adminEmail: req.user.email,
     action: "APPROVE_CONTRIBUTION",
-    details: `A approuv\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.`,
+    details: doc.statut === "Publie" ? `A approuv\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.` : `A valid\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}; elle reste masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.`,
     targetId: doc.id,
     targetName: doc.titre
   });
   await createNotification(
     contribution.utilisateurId,
-    "\xC9preuve Approuv\xE9e & Publi\xE9e !",
-    `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9 par l'administration et est d\xE9sormais disponible en ligne.`,
+    doc.statut === "Publie" ? "\xC9preuve approuv\xE9e et publi\xE9e" : "\xC9preuve valid\xE9e \u2014 publication \xE0 venir",
+    doc.statut === "Publie" ? `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9 par l'administration et est d\xE9sormais disponible en ligne.` : `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9. Il sera visible apr\xE8s publication par un super administrateur.`,
     "success",
     "exams"
   );
   res.json({
-    message: "Document approuv\xE9 et publi\xE9 avec succ\xE8s sur la plateforme !",
+    message: doc.statut === "Publie" ? "Document approuv\xE9 et publi\xE9 avec succ\xE8s sur la plateforme !" : "\xC9preuve 2026-2027 approuv\xE9e et masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.",
     document: mapDocument(doc),
     contribution: mapContribution(updated)
   });
@@ -1644,7 +1779,7 @@ var profileSchema = z5.object({
   prenom: z5.string().min(2).max(80).optional(),
   email: z5.string().email().max(200).optional(),
   telephone: z5.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional().nullable(),
-  nouveauMotDePasse: z5.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).optional()
+  nouveauMotDePasse: z5.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial.").optional()
 });
 var createUserSchema = z5.object({
   nom: z5.string().min(2).max(80),
@@ -1652,7 +1787,7 @@ var createUserSchema = z5.object({
   email: z5.string().email().max(200),
   role: z5.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
   telephone: z5.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional().nullable(),
-  motDePasse: z5.string().min(8).max(128).optional()
+  motDePasse: z5.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9\s]/).optional()
 });
 var updateRoleSchema = z5.object({
   role: z5.enum(["Etudiant", "Administrateur", "SuperAdministrateur"])
@@ -1720,7 +1855,7 @@ router5.post(
     }
     const assignedRole = role ?? "Administrateur";
     const trimmedTelephone = telephone?.trim() || null;
-    const temporaryPassword = motDePasse?.trim() || randomBytes(18).toString("base64");
+    const temporaryPassword = motDePasse?.trim() || `${randomBytes(18).toString("base64url")}aA1!`;
     const authId = await createSupabaseUser(trimmedEmail, temporaryPassword, trimmedTelephone ?? void 0);
     const user = await prisma.user.create({
       data: {
@@ -2250,7 +2385,7 @@ function apiNotFound(_req, res, _next) {
 
 // server/app.ts
 function createApp() {
-  const app2 = express();
+  const app2 = express3();
   app2.disable("x-powered-by");
   app2.use((req, _res, next) => {
     if (req.url && !req.url.startsWith("/api")) {
@@ -2262,8 +2397,15 @@ function createApp() {
     app2.set("trust proxy", env.trustProxy);
   }
   app2.use(securityHeaders());
-  app2.use(express.json({ limit: "25mb" }));
-  app2.use("/uploads", express.static(uploadsDirPath));
+  const standardJsonParser = express3.json({ limit: "1mb" });
+  app2.use((req, res, next) => {
+    const isLargePdfJsonUpload = req.method === "POST" && /^\/api\/(documents|contributions)\/?$/.test(req.path);
+    if (isLargePdfJsonUpload) return next();
+    return standardJsonParser(req, res, next);
+  });
+  app2.use("/api", (_req, _res, next) => {
+    ensureBucket().then(() => next()).catch(next);
+  });
   app2.use("/api", apiLimiter);
   app2.use("/api/contact", contact_default);
   app2.use("/api/auth", auth_default);

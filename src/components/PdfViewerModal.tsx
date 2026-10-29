@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { DocumentModel, User } from "../types";
+import React, { useEffect, useState } from "react";
+import { DocumentModel } from "../types";
 import {
   X,
   Download,
@@ -12,21 +12,12 @@ import {
 
 interface PdfViewerModalProps {
   document: DocumentModel | null;
-  user?: User | null;
   onClose: () => void;
   onDownload: (doc: DocumentModel) => void;
 }
 
-const escapeXml = (s: string) =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
 export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   document: doc,
-  user,
   onClose,
   onDownload,
 }) => {
@@ -48,15 +39,21 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     setPreviewError(false);
     const token = localStorage.getItem("isj_auth_token");
 
-    const previewEndpoint = doc.statut === "En attente"
+    const previewEndpoint = doc.isContributionPreview
       ? `/api/contributions/${doc.id}/preview`
       : `/api/documents/${doc.id}/preview`;
     fetch(previewEndpoint, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       signal: controller.signal,
     })
-      .then((response) => {
-        if (!response.ok) throw new Error("Impossible de charger l’aperçu PDF.");
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message || `Erreur HTTP ${response.status}`);
+        }
+        if (!response.headers.get("content-type")?.includes("application/pdf")) {
+          throw new Error("Le serveur n’a pas renvoyé un fichier PDF.");
+        }
         return response.blob();
       })
       .then((blob) => {
@@ -65,7 +62,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         setPreviewUrl(objectUrl);
       })
       .catch((error) => {
-        if (error.name !== "AbortError") setPreviewError(true);
+        if (error.name !== "AbortError") {
+          console.error("Échec du chargement de l’aperçu PDF :", error);
+          setPreviewError(true);
+        }
       });
 
     return () => {
@@ -93,19 +93,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
       window.removeEventListener("focus", onFocus);
     };
   }, []);
-
-  // Filigrane discret de la plateforme.
-  const watermarkUrl = useMemo(() => {
-    if (!doc) return null;
-    const line2 = "Revisio-ISJ";
-    const svg =
-      `<svg xmlns='http://www.w3.org/2000/svg' width='380' height='260'>` +
-      `<text x='50%' y='50%' font-size='34' font-family='sans-serif' font-weight='900' ` +
-      `fill='#1e3a8a' fill-opacity='0.20' text-anchor='middle' letter-spacing='4' ` +
-      `transform='rotate(-28 190 130)'>${escapeXml(line2)}</text>` +
-      `</svg>`;
-    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-  }, [doc, user]);
 
   if (!doc) return null;
 
@@ -190,14 +177,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                   {previewError ? "Impossible de charger ce document. Réessayez ou téléchargez le PDF." : "Chargement du document…"}
                 </p>
               </div>
-            )}
-            {/* Filigrane nominatif en mosaïque par-dessus l'aperçu */}
-            {watermarkUrl && !concealed && (
-              <div
-                aria-hidden
-                className="absolute inset-0 z-10 pointer-events-none"
-                style={{ backgroundImage: watermarkUrl, backgroundRepeat: "repeat" }}
-              />
             )}
             {/* Voile de masquage quand l'onglet perd le focus */}
             {concealed && (

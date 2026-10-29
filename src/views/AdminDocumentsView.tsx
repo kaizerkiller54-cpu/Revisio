@@ -4,7 +4,8 @@ import {
   approveContributionApi,
   rejectContributionApi,
   deleteDocumentApi,
-  updateDocumentApi
+  updateDocumentApi,
+  releaseEmbargoedDocumentApi,
 } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import {
@@ -22,6 +23,8 @@ import {
 interface AdminDocumentsViewProps {
   contributions: ContributionModel[];
   documents: DocumentModel[];
+  embargoedDocuments: DocumentModel[];
+  isSuperAdmin: boolean;
   onRefreshData: () => void;
   onPreviewPdf: (doc: DocumentModel) => void;
 }
@@ -29,10 +32,12 @@ interface AdminDocumentsViewProps {
 export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
   contributions,
   documents,
+  embargoedDocuments,
+  isSuperAdmin,
   onRefreshData,
   onPreviewPdf,
 }) => {
-  const [activeTab, setActiveTab] = useState<"pending" | "published">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "published" | "embargoed">("pending");
   const [selectedContrib, setSelectedContrib] = useState<ContributionModel | null>(null);
 
   // Approval Form fields for admin
@@ -127,6 +132,16 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
     }
   };
 
+  const handleReleaseDocument = async (doc: DocumentModel) => {
+    if (!window.confirm(`Rendre « ${doc.titre} » visible et téléchargeable pour tous les utilisateurs ?`)) return;
+    try {
+      await releaseEmbargoedDocumentApi(doc.id);
+      onRefreshData();
+    } catch (err: any) {
+      alert(err.message || "Erreur lors de la publication.");
+    }
+  };
+
   const handleSaveDocEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDoc) return;
@@ -185,6 +200,19 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
             <CheckCircle2 className="w-4 h-4" />
             <span>Publiés ({documents.length})</span>
           </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab("embargoed")}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                activeTab === "embargoed"
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span>Masquées ({embargoedDocuments.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -248,6 +276,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                           statut: "En attente",
                           dateAjout: contrib.dateEnvoi,
                           telechargementsCount: 0,
+                          isContributionPreview: true,
                         })
                       }
                       className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center space-x-1.5"
@@ -280,8 +309,13 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
       )}
 
       {/* TAB 2: PUBLISHED DOCUMENTS MANAGER */}
-      {activeTab === "published" && (
+      {(activeTab === "published" || (activeTab === "embargoed" && isSuperAdmin)) && (
         <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+          {activeTab === "embargoed" && (
+            <div className="px-5 py-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-900">
+              Ces épreuves 2026-2027 restent privées jusqu'à leur publication par un super administrateur.
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
@@ -296,7 +330,13 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {documents.map((doc) => (
+                {(activeTab === "embargoed" ? embargoedDocuments : documents).length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-10 text-center text-slate-500">
+                      {activeTab === "embargoed" ? "Aucune épreuve 2026-2027 masquée à publier." : "Aucune épreuve publiée."}
+                    </td>
+                  </tr>
+                ) : (activeTab === "embargoed" ? embargoedDocuments : documents).map((doc) => (
                   <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-bold text-slate-900 max-w-xs truncate">
                       {doc.titre}
@@ -320,20 +360,32 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => setEditingDoc(doc)}
-                        title="Modifier classification"
-                        className="p-2 text-slate-600 hover:text-blue-900 bg-slate-100 rounded-xl"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDocument(doc.id)}
-                        title="Supprimer"
-                        className="p-2 text-slate-600 hover:text-red-700 bg-slate-100 rounded-xl"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {activeTab === "embargoed" ? (
+                        <button
+                          onClick={() => handleReleaseDocument(doc)}
+                          title="Publier pour tous les utilisateurs"
+                          className="px-3 py-2 text-amber-900 hover:bg-amber-100 bg-amber-50 rounded-xl font-bold"
+                        >
+                          Démasquer
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setEditingDoc(doc)}
+                            title="Modifier classification"
+                            className="p-2 text-slate-600 hover:text-blue-900 bg-slate-100 rounded-xl"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            title="Supprimer"
+                            className="p-2 text-slate-600 hover:text-red-700 bg-slate-100 rounded-xl"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -435,9 +487,14 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                   required
                   value={anneeAcademique}
                   onChange={(e) => setAnneeAcademique(e.target.value)}
-                  placeholder="Ex: 2023-2024"
+                  placeholder="Ex: 2026-2027"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
+                {anneeAcademique === "2026-2027" && (
+                  <p className="mt-2 text-[11px] font-medium text-amber-800">
+                    L'épreuve sera validée mais restera masquée. Seul un super administrateur pourra la publier.
+                  </p>
+                )}
               </div>
 
               <div className="pt-3 flex justify-end space-x-2">
@@ -459,7 +516,7 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                       <span>Publication...</span>
                     </>
                   ) : (
-                    <span>Approuver et Publier</span>
+                    <span>{anneeAcademique === "2026-2027" ? "Valider et masquer" : "Approuver et publier"}</span>
                   )}
                 </button>
               </div>

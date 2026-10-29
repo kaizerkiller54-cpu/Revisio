@@ -50,6 +50,7 @@ export interface DocumentModel {
   dateAjout: string;
   telechargementsCount: number;
   contributionId?: string;
+  isContributionPreview?: boolean;
 }
 
 export interface ContributionModel {

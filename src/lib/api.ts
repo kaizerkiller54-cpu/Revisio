@@ -169,6 +169,21 @@ export async function getDocumentsApi(params?: {
   return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves.");
 }
 
+export async function getEmbargoedDocumentsApi(): Promise<DocumentModel[]> {
+  const res = await fetch("/api/documents/embargoed", {
+    headers: { ...getAuthHeader() },
+  });
+  return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves masquées.");
+}
+
+export async function releaseEmbargoedDocumentApi(id: string) {
+  const res = await fetch(`/api/documents/${id}/release`, {
+    method: "POST",
+    headers: { ...getAuthHeader() },
+  });
+  return parseJsonResponse(res, "Impossible de publier cette épreuve.");
+}
+
 export interface DocumentSearchPage {
   data: DocumentModel[];
   total: number;

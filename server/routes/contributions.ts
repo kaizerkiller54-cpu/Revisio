@@ -46,9 +46,19 @@ router.get(
   authenticateJWT,
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
-    const contribution = await prisma.contribution.findUnique({ where: { id: req.params.id } });
+    const contribution = await prisma.contribution.findUnique({
+      where: { id: req.params.id },
+      include: { document: true },
+    });
     if (!contribution || (contribution.utilisateurId !== req.user!.id && !["Administrateur", "SuperAdministrateur"].includes(req.user!.role))) {
       throw notFound("Contribution introuvable.");
+    }
+    if (
+      contribution.document?.anneeAcademique === "2026-2027" &&
+      contribution.document.statut === "En_attente" &&
+      req.user!.role !== "SuperAdministrateur"
+    ) {
+      throw notFound("Épreuve 2026-2027 masquée.");
     }
     if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
     const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
@@ -198,44 +208,52 @@ const approveHandler = asyncHandler(async (req, res) => {
         anneeAcademique: body.anneeAcademique,
         fichierUrl: contribution.fichierUrl,
         fichierNom: contribution.fichierNom,
-        statut: "Publie",
-        datePublication: new Date(),
+        statut: body.anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
+        datePublication: body.anneeAcademique === "2026-2027" ? null : new Date(),
         contributionId: contribution.id,
       },
       include: { matiere: true },
     }),
   ]);
 
-  await prisma.userNotification.create({
-    data: {
-      userId: "ALL",
-      titre: "Nouvelle épreuve disponible",
-      message: `${doc.titre} — ${body.matiere}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
-      type: "info",
-      linkTab: "exams",
-    },
-  });
+  if (doc.statut === "Publie") {
+    await prisma.userNotification.create({
+      data: {
+        userId: "ALL",
+        titre: "Nouvelle épreuve disponible",
+        message: `${doc.titre} — ${body.matiere}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+        type: "info",
+        linkTab: "exams",
+      },
+    });
+  }
 
   await logAdminAction({
     adminId: req.user!.id,
     adminNom: `${req.user!.prenom} ${req.user!.nom}`,
     adminEmail: req.user!.email,
     action: "APPROVE_CONTRIBUTION",
-    details: `A approuvé et publié l'épreuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.`,
+    details: doc.statut === "Publie"
+      ? `A approuvé et publié l'épreuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.`
+      : `A validé l'épreuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}; elle reste masquée jusqu'à sa publication par un super administrateur.`,
     targetId: doc.id,
     targetName: doc.titre,
   });
 
   await createNotification(
     contribution.utilisateurId,
-    "Épreuve Approuvée & Publiée !",
-    `Félicitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a été validé par l'administration et est désormais disponible en ligne.`,
+    doc.statut === "Publie" ? "Épreuve approuvée et publiée" : "Épreuve validée — publication à venir",
+    doc.statut === "Publie"
+      ? `Félicitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a été validé par l'administration et est désormais disponible en ligne.`
+      : `Félicitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a été validé. Il sera visible après publication par un super administrateur.`,
     "success",
     "exams"
   );
 
   res.json({
-    message: "Document approuvé et publié avec succès sur la plateforme !",
+    message: doc.statut === "Publie"
+      ? "Document approuvé et publié avec succès sur la plateforme !"
+      : "Épreuve 2026-2027 approuvée et masquée jusqu'à sa publication par un super administrateur.",
     document: mapDocument(doc),
     contribution: mapContribution(updated),
   });

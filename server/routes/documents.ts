@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma/client";
 import { asyncHandler } from "../utils/asyncHandler";
-import { badRequest, notFound } from "../utils/errors";
+import { badRequest, forbidden, notFound } from "../utils/errors";
 import { mapDocument, semestreToDb, statutToDb } from "../utils/mappers";
 import { authenticateJWT } from "../middlewares/authenticate";
 import { requireRole } from "../middlewares/authorize";
@@ -164,6 +164,22 @@ router.get(
   })
 );
 
+// Les épreuves 2026-2027 restent invisibles jusqu'à leur ouverture par un
+// super administrateur. Cette liste n'est donc jamais accessible aux admins.
+router.get(
+  "/embargoed",
+  authenticateJWT,
+  requireRole("SuperAdministrateur"),
+  asyncHandler(async (_req, res) => {
+    const rows = await prisma.document.findMany({
+      where: { anneeAcademique: "2026-2027", statut: "En_attente" },
+      include: { matiere: true },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(rows.map(mapDocument));
+  })
+);
+
 function isAdminUser(user: { role: string } | undefined): boolean {
   return user !== undefined && (user.role === "Administrateur" || user.role === "SuperAdministrateur");
 }
@@ -201,7 +217,8 @@ router.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    if (!doc || (doc.statut !== "Publie" && !isAdminUser(req.user))) throw notFound("Épreuve non trouvée.");
+    const canPreviewHidden = req.user?.role === "SuperAdministrateur";
+    if (!doc || (doc.statut !== "Publie" && !canPreviewHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user)))) throw notFound("Épreuve non trouvée.");
     const buffer = await loadDocumentPdf(doc.fichierUrl);
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier épreuve introuvable.");
     const stamped = Buffer.from(await stampPdf(buffer));
@@ -221,7 +238,8 @@ router.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    if (!doc || (doc.statut !== "Publie" && !isAdminUser(req.user))) {
+    const canDownloadHidden = req.user?.role === "SuperAdministrateur";
+    if (!doc || (doc.statut !== "Publie" && !canDownloadHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user)))) {
       throw notFound("Épreuve non trouvée.");
     }
 
@@ -280,7 +298,8 @@ router.post(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    if (!doc || (doc.statut !== "Publie" && !isAdminUser(req.user))) {
+    const canRecordHiddenDownload = req.user?.role === "SuperAdministrateur";
+    if (!doc || (doc.statut !== "Publie" && !canRecordHiddenDownload && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user)))) {
       throw notFound("Épreuve non trouvée.");
     }
     const updated = await prisma.document.update({
@@ -329,32 +348,79 @@ router.post(
         anneeAcademique,
         fichierUrl: fichierStorageUrl,
         fichierNom,
-        statut: "Publie",
-        datePublication: new Date(),
+        statut: anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
+        datePublication: anneeAcademique === "2026-2027" ? null : new Date(),
       },
     });
 
-    await prisma.userNotification.create({
-      data: {
-        userId: "ALL",
-        titre: "Nouvelle épreuve disponible",
-        message: `${doc.titre} — ${matiereRow.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
-        type: "info",
-        linkTab: "exams",
-      },
-    });
+    if (doc.statut === "Publie") {
+      await prisma.userNotification.create({
+        data: {
+          userId: "ALL",
+          titre: "Nouvelle épreuve disponible",
+          message: `${doc.titre} — ${matiereRow.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+          type: "info",
+          linkTab: "exams",
+        },
+      });
+    }
 
     await logAdminAction({
       adminId: req.user!.id,
       adminNom: `${req.user!.prenom} ${req.user!.nom}`,
       adminEmail: req.user!.email,
       action: "CREATE_DOCUMENT",
-      details: `A créé et publié l'épreuve '${doc.titre}' (${matiere} ${anneeAcademique}).`,
+      details: doc.statut === "Publie"
+        ? `A créé et publié l'épreuve '${doc.titre}' (${matiere} ${anneeAcademique}).`
+        : `A ajouté l'épreuve '${doc.titre}' (${matiere} ${anneeAcademique}), masquée jusqu'à sa publication par un super administrateur.`,
       targetId: doc.id,
       targetName: doc.titre,
     });
 
-    res.status(201).json({ message: "Document créé et publié avec succès.", document: mapDocument({ ...doc, matiere: matiereRow }) });
+    res.status(201).json({
+      message: doc.statut === "Publie"
+        ? "Document créé et publié avec succès."
+        : "Épreuve 2026-2027 ajoutée et masquée jusqu'à sa publication par un super administrateur.",
+      document: mapDocument({ ...doc, matiere: matiereRow }),
+    });
+  })
+);
+
+router.post(
+  "/:id/release",
+  authenticateJWT,
+  requireRole("SuperAdministrateur"),
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
+    if (!existing || existing.anneeAcademique !== "2026-2027" || existing.statut !== "En_attente") {
+      throw notFound("Épreuve 2026-2027 masquée introuvable.");
+    }
+
+    const doc = await prisma.document.update({
+      where: { id: existing.id },
+      data: { statut: "Publie", datePublication: new Date() },
+      include: { matiere: true },
+    });
+    await prisma.userNotification.create({
+      data: {
+        userId: "ALL",
+        titre: "Nouvelle épreuve disponible",
+        message: `${doc.titre} — ${doc.matiere.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+        type: "info",
+        linkTab: "exams",
+      },
+    });
+    await logAdminAction({
+      adminId: req.user!.id,
+      adminNom: `${req.user!.prenom} ${req.user!.nom}`,
+      adminEmail: req.user!.email,
+      action: "UPDATE_DOCUMENT",
+      details: `A démasqué et publié l'épreuve '${doc.titre}' (${doc.matiere.nom} ${doc.anneeAcademique}).`,
+      targetId: doc.id,
+      targetName: doc.titre,
+    });
+    res.json({ message: "Épreuve 2026-2027 publiée et désormais visible.", document: mapDocument(doc) });
   })
 );
 
@@ -368,6 +434,13 @@ router.put(
     const existing = await prisma.document.findUnique({ where: { id: req.params.id } });
     if (!existing) {
       throw notFound("Document non trouvé.");
+    }
+    if (
+      existing.anneeAcademique === "2026-2027" &&
+      existing.statut === "En_attente" &&
+      req.user!.role !== "SuperAdministrateur"
+    ) {
+      throw forbidden("Seul un super administrateur peut modifier une épreuve 2026-2027 masquée.");
     }
     const { titre, matiere, semestre, typeEpreuve, anneeAcademique } = req.body;
 
@@ -385,6 +458,9 @@ router.put(
         semestre: semestre ? semestreToDb(semestre) : existing.semestre,
         typeEpreuve: typeEpreuve ?? existing.typeEpreuve,
         anneeAcademique: anneeAcademique ?? existing.anneeAcademique,
+        ...(anneeAcademique === "2026-2027" && existing.anneeAcademique !== "2026-2027"
+          ? { statut: "En_attente" as const, datePublication: null }
+          : {}),
       },
       include: { matiere: true },
     });
