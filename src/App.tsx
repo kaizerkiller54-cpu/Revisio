@@ -7,7 +7,7 @@ import {
   logoutApi,
   getSubjectsApi,
   getDocumentsApi,
-  getEmbargoedDocumentsApi,
+  getHiddenDocumentsApi,
   getContributionsApi,
   getAdminStatsApi,
   downloadDocumentFileApi
@@ -39,7 +39,7 @@ export default function App() {
   });
 
   const [documents, setDocuments] = useState<DocumentModel[]>([]);
-  const [embargoedDocuments, setEmbargoedDocuments] = useState<DocumentModel[]>([]);
+  const [hiddenDocuments, setHiddenDocuments] = useState<DocumentModel[]>([]);
   const [matieres, setMatieres] = useState<MatiereModel[]>([]);
   const [contributions, setContributions] = useState<ContributionModel[]>([]);
   const [adminStats, setAdminStats] = useState<DashboardStats | null>(null);
@@ -61,16 +61,16 @@ export default function App() {
         setActiveTab("login");
       }
 
-      const [docsData, subjectsData, contribsData, statsData, embargoedData] = await Promise.all([
+      const [docsData, subjectsData, contribsData, statsData, hiddenData] = await Promise.all([
         getDocumentsApi({ statut: "Publié" }),
         getSubjectsApi(),
         getContributionsApi().catch(() => []),
         getAdminStatsApi().catch(() => null),
-        me?.role === "SuperAdministrateur" ? getEmbargoedDocumentsApi().catch(() => []) : Promise.resolve([]),
+        me?.role === "SuperAdministrateur" ? getHiddenDocumentsApi().catch(() => []) : Promise.resolve([]),
       ]);
 
       setDocuments(docsData);
-      setEmbargoedDocuments(embargoedData);
+      setHiddenDocuments(hiddenData);
       setMatieres(subjectsData);
       setContributions(contribsData);
       if (statsData) setAdminStats(statsData);
@@ -262,7 +262,7 @@ export default function App() {
               <AdminDocumentsView
                 contributions={contributions}
                 documents={documents}
-                embargoedDocuments={embargoedDocuments}
+                hiddenDocuments={hiddenDocuments}
                 isSuperAdmin={user?.role === "SuperAdministrateur"}
                 onRefreshData={loadData}
                 onPreviewPdf={(doc) => setPreviewDocument(doc)}

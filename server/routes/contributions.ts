@@ -54,11 +54,10 @@ router.get(
       throw notFound("Contribution introuvable.");
     }
     if (
-      contribution.document?.anneeAcademique === "2026-2027" &&
-      contribution.document.statut === "En_attente" &&
+      contribution.document?.visible === false &&
       req.user!.role !== "SuperAdministrateur"
     ) {
-      throw notFound("Épreuve 2026-2027 masquée.");
+      throw notFound("Épreuve masquée.");
     }
     if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
     const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
@@ -208,15 +207,16 @@ const approveHandler = asyncHandler(async (req, res) => {
         anneeAcademique: body.anneeAcademique,
         fichierUrl: contribution.fichierUrl,
         fichierNom: contribution.fichierNom,
-        statut: body.anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
-        datePublication: body.anneeAcademique === "2026-2027" ? null : new Date(),
+        statut: "Publie",
+        visible: body.anneeAcademique !== "2026-2027",
+        datePublication: new Date(),
         contributionId: contribution.id,
       },
       include: { matiere: true },
     }),
   ]);
 
-  if (doc.statut === "Publie") {
+  if (doc.visible) {
     await prisma.userNotification.create({
       data: {
         userId: "ALL",
@@ -233,7 +233,7 @@ const approveHandler = asyncHandler(async (req, res) => {
     adminNom: `${req.user!.prenom} ${req.user!.nom}`,
     adminEmail: req.user!.email,
     action: "APPROVE_CONTRIBUTION",
-    details: doc.statut === "Publie"
+    details: doc.visible
       ? `A approuvé et publié l'épreuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.`
       : `A validé l'épreuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}; elle reste masquée jusqu'à sa publication par un super administrateur.`,
     targetId: doc.id,
@@ -242,8 +242,8 @@ const approveHandler = asyncHandler(async (req, res) => {
 
   await createNotification(
     contribution.utilisateurId,
-    doc.statut === "Publie" ? "Épreuve approuvée et publiée" : "Épreuve validée — publication à venir",
-    doc.statut === "Publie"
+    doc.visible ? "Épreuve approuvée et publiée" : "Épreuve validée — publication à venir",
+    doc.visible
       ? `Félicitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a été validé par l'administration et est désormais disponible en ligne.`
       : `Félicitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a été validé. Il sera visible après publication par un super administrateur.`,
     "success",
@@ -251,7 +251,7 @@ const approveHandler = asyncHandler(async (req, res) => {
   );
 
   res.json({
-    message: doc.statut === "Publie"
+    message: doc.visible
       ? "Document approuvé et publié avec succès sur la plateforme !"
       : "Épreuve 2026-2027 approuvée et masquée jusqu'à sa publication par un super administrateur.",
     document: mapDocument(doc),

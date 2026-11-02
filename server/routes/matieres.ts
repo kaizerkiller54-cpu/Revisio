@@ -28,7 +28,7 @@ router.get(
     const matieres = await prisma.matiere.findMany({ orderBy: [{ semestre: "asc" }, { nom: "asc" }] });
     const docsByMatiere = await prisma.document.groupBy({
       by: ["matiereId"],
-      where: { statut: "Publie" },
+      where: { statut: "Publie", visible: true },
       _count: { _all: true },
     });
     const countMap = new Map(docsByMatiere.map((d) => [d.matiereId, d._count._all]));

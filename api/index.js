@@ -87,6 +87,7 @@ var mapDocument = (d) => ({
   fichierUrl: "",
   fichierNom: d.fichierNom,
   statut: statutFromDb(d.statut),
+  visible: d.visible,
   datePublication: d.datePublication ? d.datePublication.toISOString() : void 0,
   dateAjout: d.createdAt.toISOString(),
   telechargementsCount: d.telechargementsCount,
@@ -829,7 +830,7 @@ async function searchDocuments(params = {}) {
     return { data: [], total: 0, page, pageSize };
   }
   const likeTerm = hasSearch ? `%${escapeLike(search.toLowerCase())}%` : null;
-  const where = [`d."statut" = $1`];
+  const where = [`d."statut" = $1`, `d."visible" = TRUE`];
   const values = [statutDb];
   let idx = 2;
   let searchParam = 0;
@@ -925,6 +926,7 @@ async function suggestDocuments(q, limit = 6) {
         FROM "documents" d
         JOIN "matieres" m ON m."id" = d."matiereId"
         WHERE d."statut" = 'Publie'
+          AND d."visible" = TRUE
           AND (
             to_tsvector('simple', public.unaccent_text(d."titre")) @@ to_tsquery('simple', $1)
             OR to_tsvector('simple', public.unaccent_text(m."nom")) @@ to_tsquery('simple', $1)
@@ -956,6 +958,7 @@ async function suggestDocuments(q, limit = 6) {
       FROM "documents" d
       JOIN "matieres" m ON m."id" = d."matiereId"
       WHERE d."statut" = 'Publie'
+        AND d."visible" = TRUE
         AND (
           LOWER(d."titre") LIKE $1
           OR LOWER(m."nom") LIKE $1
@@ -996,6 +999,7 @@ var suggestQuerySchema = z2.object({
   q: z2.string().min(2).max(200),
   limit: z2.coerce.number().int().positive().max(10).optional()
 });
+var visibilitySchema = z2.object({ visible: z2.boolean() });
 var createSchema = z2.object({
   titre: z2.string().min(2, "Le titre est requis.").max(200),
   matiere: z2.string().min(2, "La mati\xE8re est requise.").max(120),
@@ -1036,7 +1040,7 @@ router2.get(
   validate(listQuerySchema, "query"),
   asyncHandler(async (req, res) => {
     const { search, matiere, semestre, typeEpreuve, anneeAcademique, statut, page, pageSize } = req.query;
-    const where = {};
+    const where = { visible: true };
     const isAdmin = req.user !== void 0 && (req.user.role === "Administrateur" || req.user.role === "SuperAdministrateur");
     where.statut = isAdmin && statut ? statutToDb(statut) : "Publie";
     if (search) {
@@ -1102,21 +1106,18 @@ router2.get(
   })
 );
 router2.get(
-  "/embargoed",
+  "/hidden",
   authenticateJWT,
   requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     const rows = await prisma.document.findMany({
-      where: { anneeAcademique: "2026-2027", statut: "En_attente" },
+      where: { visible: false },
       include: { matiere: true },
       orderBy: { createdAt: "desc" }
     });
     res.json(rows.map(mapDocument));
   })
 );
-function isAdminUser(user) {
-  return user !== void 0 && (user.role === "Administrateur" || user.role === "SuperAdministrateur");
-}
 var MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024;
 async function loadDocumentPdf(url) {
   if (isSupabaseStorageUrl(url)) {
@@ -1144,7 +1145,7 @@ router2.get(
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
     const canPreviewHidden = req.user?.role === "SuperAdministrateur";
-    if (!doc || doc.statut !== "Publie" && !canPreviewHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user))) throw notFound("\xC9preuve non trouv\xE9e.");
+    if (!doc || (!doc.visible || doc.statut !== "Publie") && !canPreviewHidden) throw notFound("\xC9preuve non trouv\xE9e.");
     const buffer = await loadDocumentPdf(doc.fichierUrl);
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier \xE9preuve introuvable.");
     const stamped = Buffer.from(await stampPdf(buffer));
@@ -1164,7 +1165,7 @@ router2.get(
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
     const canDownloadHidden = req.user?.role === "SuperAdministrateur";
-    if (!doc || doc.statut !== "Publie" && !canDownloadHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user))) {
+    if (!doc || (!doc.visible || doc.statut !== "Publie") && !canDownloadHidden) {
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
     const fileName = doc.fichierNom || `${doc.titre}.pdf`;
@@ -1201,7 +1202,7 @@ router2.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
-    if (!doc || doc.statut !== "Publie") {
+    if (!doc || doc.statut !== "Publie" || !doc.visible) {
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
     res.json(mapDocument(doc));
@@ -1215,7 +1216,7 @@ router2.post(
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
     const canRecordHiddenDownload = req.user?.role === "SuperAdministrateur";
-    if (!doc || doc.statut !== "Publie" && !canRecordHiddenDownload && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user))) {
+    if (!doc || (!doc.visible || doc.statut !== "Publie") && !canRecordHiddenDownload) {
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
     const updated = await prisma.document.update({
@@ -1260,11 +1261,12 @@ router2.post(
         anneeAcademique,
         fichierUrl: fichierStorageUrl,
         fichierNom,
-        statut: anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
-        datePublication: anneeAcademique === "2026-2027" ? null : /* @__PURE__ */ new Date()
+        statut: "Publie",
+        visible: anneeAcademique !== "2026-2027",
+        datePublication: /* @__PURE__ */ new Date()
       }
     });
-    if (doc.statut === "Publie") {
+    if (doc.visible) {
       await prisma.userNotification.create({
         data: {
           userId: "ALL",
@@ -1280,50 +1282,59 @@ router2.post(
       adminNom: `${req.user.prenom} ${req.user.nom}`,
       adminEmail: req.user.email,
       action: "CREATE_DOCUMENT",
-      details: doc.statut === "Publie" ? `A cr\xE9\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}).` : `A ajout\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}), masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.`,
+      details: doc.visible ? `A cr\xE9\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}).` : `A ajout\xE9 l'\xE9preuve '${doc.titre}' (${matiere} ${anneeAcademique}), masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.`,
       targetId: doc.id,
       targetName: doc.titre
     });
     res.status(201).json({
-      message: doc.statut === "Publie" ? "Document cr\xE9\xE9 et publi\xE9 avec succ\xE8s." : "\xC9preuve 2026-2027 ajout\xE9e et masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.",
+      message: doc.visible ? "Document cr\xE9\xE9 et publi\xE9 avec succ\xE8s." : "\xC9preuve ajout\xE9e et masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.",
       document: mapDocument({ ...doc, matiere: matiereRow })
     });
   })
 );
-router2.post(
-  "/:id/release",
+router2.put(
+  "/:id/visibility",
   authenticateJWT,
   requireRole("SuperAdministrateur"),
   validate(uuidParam, "params"),
+  validate(visibilitySchema),
   asyncHandler(async (req, res) => {
     const existing = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
-    if (!existing || existing.anneeAcademique !== "2026-2027" || existing.statut !== "En_attente") {
-      throw notFound("\xC9preuve 2026-2027 masqu\xE9e introuvable.");
-    }
+    if (!existing) throw notFound("\xC9preuve introuvable.");
+    const { visible } = req.body;
+    if (visible && existing.statut === "Refuse") throw badRequest("Une \xE9preuve refus\xE9e ne peut pas \xEAtre rendue visible.");
     const doc = await prisma.document.update({
       where: { id: existing.id },
-      data: { statut: "Publie", datePublication: /* @__PURE__ */ new Date() },
+      data: {
+        visible,
+        ...visible && existing.statut !== "Publie" ? { statut: "Publie", datePublication: /* @__PURE__ */ new Date() } : {}
+      },
       include: { matiere: true }
     });
-    await prisma.userNotification.create({
-      data: {
-        userId: "ALL",
-        titre: "Nouvelle \xE9preuve disponible",
-        message: `${doc.titre} \u2014 ${doc.matiere.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
-        type: "info",
-        linkTab: "exams"
-      }
-    });
+    if (visible && !existing.visible) {
+      await prisma.userNotification.create({
+        data: {
+          userId: "ALL",
+          titre: "Nouvelle \xE9preuve disponible",
+          message: `${doc.titre} \u2014 ${doc.matiere.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+          type: "info",
+          linkTab: "exams"
+        }
+      });
+    }
     await logAdminAction({
       adminId: req.user.id,
       adminNom: `${req.user.prenom} ${req.user.nom}`,
       adminEmail: req.user.email,
       action: "UPDATE_DOCUMENT",
-      details: `A d\xE9masqu\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${doc.matiere.nom} ${doc.anneeAcademique}).`,
+      details: `${visible ? "A d\xE9masqu\xE9" : "A masqu\xE9"} l'\xE9preuve '${doc.titre}' (${doc.matiere.nom} ${doc.anneeAcademique}).`,
       targetId: doc.id,
       targetName: doc.titre
     });
-    res.json({ message: "\xC9preuve 2026-2027 publi\xE9e et d\xE9sormais visible.", document: mapDocument(doc) });
+    res.json({
+      message: visible ? "\xC9preuve publi\xE9e et d\xE9sormais visible." : "\xC9preuve masqu\xE9e pour les utilisateurs.",
+      document: mapDocument(doc)
+    });
   })
 );
 router2.put(
@@ -1337,8 +1348,8 @@ router2.put(
     if (!existing) {
       throw notFound("Document non trouv\xE9.");
     }
-    if (existing.anneeAcademique === "2026-2027" && existing.statut === "En_attente" && req.user.role !== "SuperAdministrateur") {
-      throw forbidden("Seul un super administrateur peut modifier une \xE9preuve 2026-2027 masqu\xE9e.");
+    if (!existing.visible && req.user.role !== "SuperAdministrateur") {
+      throw forbidden("Seul un super administrateur peut modifier une \xE9preuve masqu\xE9e.");
     }
     const { titre, matiere, semestre, typeEpreuve, anneeAcademique } = req.body;
     let matiereId = existing.matiereId;
@@ -1354,7 +1365,7 @@ router2.put(
         semestre: semestre ? semestreToDb(semestre) : existing.semestre,
         typeEpreuve: typeEpreuve ?? existing.typeEpreuve,
         anneeAcademique: anneeAcademique ?? existing.anneeAcademique,
-        ...anneeAcademique === "2026-2027" && existing.anneeAcademique !== "2026-2027" ? { statut: "En_attente", datePublication: null } : {}
+        ...anneeAcademique === "2026-2027" && existing.anneeAcademique !== "2026-2027" && existing.visible ? { visible: false } : {}
       },
       include: { matiere: true }
     });
@@ -1379,6 +1390,9 @@ router2.delete(
     const existing = await prisma.document.findUnique({ where: { id: req.params.id } });
     if (!existing) {
       throw notFound("Document non trouv\xE9.");
+    }
+    if (!existing.visible && req.user.role !== "SuperAdministrateur") {
+      throw forbidden("Seul un super administrateur peut supprimer une \xE9preuve masqu\xE9e.");
     }
     await prisma.document.delete({ where: { id: existing.id } });
     await deleteStorageFileByUrl(existing.fichierUrl ?? "");
@@ -1465,8 +1479,8 @@ router3.get(
     if (!contribution || contribution.utilisateurId !== req.user.id && !["Administrateur", "SuperAdministrateur"].includes(req.user.role)) {
       throw notFound("Contribution introuvable.");
     }
-    if (contribution.document?.anneeAcademique === "2026-2027" && contribution.document.statut === "En_attente" && req.user.role !== "SuperAdministrateur") {
-      throw notFound("\xC9preuve 2026-2027 masqu\xE9e.");
+    if (contribution.document?.visible === false && req.user.role !== "SuperAdministrateur") {
+      throw notFound("\xC9preuve masqu\xE9e.");
     }
     if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
     const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
@@ -1603,14 +1617,15 @@ var approveHandler = asyncHandler(async (req, res) => {
         anneeAcademique: body.anneeAcademique,
         fichierUrl: contribution.fichierUrl,
         fichierNom: contribution.fichierNom,
-        statut: body.anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
-        datePublication: body.anneeAcademique === "2026-2027" ? null : /* @__PURE__ */ new Date(),
+        statut: "Publie",
+        visible: body.anneeAcademique !== "2026-2027",
+        datePublication: /* @__PURE__ */ new Date(),
         contributionId: contribution.id
       },
       include: { matiere: true }
     })
   ]);
-  if (doc.statut === "Publie") {
+  if (doc.visible) {
     await prisma.userNotification.create({
       data: {
         userId: "ALL",
@@ -1626,19 +1641,19 @@ var approveHandler = asyncHandler(async (req, res) => {
     adminNom: `${req.user.prenom} ${req.user.nom}`,
     adminEmail: req.user.email,
     action: "APPROVE_CONTRIBUTION",
-    details: doc.statut === "Publie" ? `A approuv\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.` : `A valid\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}; elle reste masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.`,
+    details: doc.visible ? `A approuv\xE9 et publi\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}.` : `A valid\xE9 l'\xE9preuve '${doc.titre}' (${body.matiere} - ${body.typeEpreuve} ${body.anneeAcademique}) soumise par ${contribution.utilisateurNom}; elle reste masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.`,
     targetId: doc.id,
     targetName: doc.titre
   });
   await createNotification(
     contribution.utilisateurId,
-    doc.statut === "Publie" ? "\xC9preuve approuv\xE9e et publi\xE9e" : "\xC9preuve valid\xE9e \u2014 publication \xE0 venir",
-    doc.statut === "Publie" ? `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9 par l'administration et est d\xE9sormais disponible en ligne.` : `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9. Il sera visible apr\xE8s publication par un super administrateur.`,
+    doc.visible ? "\xC9preuve approuv\xE9e et publi\xE9e" : "\xC9preuve valid\xE9e \u2014 publication \xE0 venir",
+    doc.visible ? `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9 par l'administration et est d\xE9sormais disponible en ligne.` : `F\xE9licitations ! Votre sujet '${doc.titre}' pour ${body.matiere} a \xE9t\xE9 valid\xE9. Il sera visible apr\xE8s publication par un super administrateur.`,
     "success",
     "exams"
   );
   res.json({
-    message: doc.statut === "Publie" ? "Document approuv\xE9 et publi\xE9 avec succ\xE8s sur la plateforme !" : "\xC9preuve 2026-2027 approuv\xE9e et masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.",
+    message: doc.visible ? "Document approuv\xE9 et publi\xE9 avec succ\xE8s sur la plateforme !" : "\xC9preuve 2026-2027 approuv\xE9e et masqu\xE9e jusqu'\xE0 sa publication par un super administrateur.",
     document: mapDocument(doc),
     contribution: mapContribution(updated)
   });
@@ -1695,7 +1710,7 @@ router4.get(
     const matieres = await prisma.matiere.findMany({ orderBy: [{ semestre: "asc" }, { nom: "asc" }] });
     const docsByMatiere = await prisma.document.groupBy({
       by: ["matiereId"],
-      where: { statut: "Publie" },
+      where: { statut: "Publie", visible: true },
       _count: { _all: true }
     });
     const countMap = new Map(docsByMatiere.map((d) => [d.matiereId, d._count._all]));
@@ -2154,7 +2169,7 @@ async function computeStats() {
   const [totalUsers, totalDocuments, documentsPublies, documentsEnAttente, totalContributions, totalAuditLogs] = await Promise.all([
     prisma.user.count(),
     prisma.document.count(),
-    prisma.document.count({ where: { statut: "Publie" } }),
+    prisma.document.count({ where: { statut: "Publie", visible: true } }),
     prisma.contribution.count({ where: { statut: "En_attente" } }),
     prisma.contribution.count(),
     prisma.auditLog.count()

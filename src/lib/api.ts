@@ -169,19 +169,20 @@ export async function getDocumentsApi(params?: {
   return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves.");
 }
 
-export async function getEmbargoedDocumentsApi(): Promise<DocumentModel[]> {
-  const res = await fetch("/api/documents/embargoed", {
+export async function getHiddenDocumentsApi(): Promise<DocumentModel[]> {
+  const res = await fetch("/api/documents/hidden", {
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves masquées.");
 }
 
-export async function releaseEmbargoedDocumentApi(id: string) {
-  const res = await fetch(`/api/documents/${id}/release`, {
-    method: "POST",
-    headers: { ...getAuthHeader() },
+export async function setDocumentVisibilityApi(id: string, visible: boolean) {
+  const res = await fetch(`/api/documents/${id}/visibility`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify({ visible }),
   });
-  return parseJsonResponse(res, "Impossible de publier cette épreuve.");
+  return parseJsonResponse(res, "Impossible de modifier la visibilité de cette épreuve.");
 }
 
 export interface DocumentSearchPage {

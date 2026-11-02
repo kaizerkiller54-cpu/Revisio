@@ -169,7 +169,7 @@ export async function searchDocuments(params: DocSearchParams = {}): Promise<Sea
   }
   const likeTerm = hasSearch ? `%${escapeLike(search.toLowerCase())}%` : null;
 
-  const where: string[] = [`d."statut" = $1`];
+  const where: string[] = [`d."statut" = $1`, `d."visible" = TRUE`];
   const values: unknown[] = [statutDb];
   let idx = 2;
   let searchParam = 0;
@@ -280,6 +280,7 @@ export async function suggestDocuments(q: string, limit = 6): Promise<SearchSugg
         FROM "documents" d
         JOIN "matieres" m ON m."id" = d."matiereId"
         WHERE d."statut" = 'Publie'
+          AND d."visible" = TRUE
           AND (
             to_tsvector('simple', public.unaccent_text(d."titre")) @@ to_tsquery('simple', $1)
             OR to_tsvector('simple', public.unaccent_text(m."nom")) @@ to_tsquery('simple', $1)
@@ -312,6 +313,7 @@ export async function suggestDocuments(q: string, limit = 6): Promise<SearchSugg
       FROM "documents" d
       JOIN "matieres" m ON m."id" = d."matiereId"
       WHERE d."statut" = 'Publie'
+        AND d."visible" = TRUE
         AND (
           LOWER(d."titre") LIKE $1
           OR LOWER(m."nom") LIKE $1

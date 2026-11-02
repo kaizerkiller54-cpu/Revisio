@@ -35,6 +35,7 @@ export const mapDocument = (d: Document & { matiere?: Matiere }) => ({
   fichierUrl: "",
   fichierNom: d.fichierNom,
   statut: statutFromDb(d.statut),
+  visible: d.visible,
   datePublication: d.datePublication ? d.datePublication.toISOString() : undefined,
   dateAjout: d.createdAt.toISOString(),
   telechargementsCount: d.telechargementsCount,

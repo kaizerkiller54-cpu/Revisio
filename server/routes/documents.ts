@@ -35,6 +35,8 @@ const suggestQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(10).optional(),
 });
 
+const visibilitySchema = z.object({ visible: z.boolean() });
+
 const createSchema = z.object({
   titre: z.string().min(2, "Le titre est requis.").max(200),
   matiere: z.string().min(2, "La matière est requise.").max(120),
@@ -84,7 +86,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { search, matiere, semestre, typeEpreuve, anneeAcademique, statut, page, pageSize } = req.query as z.infer<typeof listQuerySchema>;
 
-    const where: Prisma.DocumentWhereInput = {};
+    const where: Prisma.DocumentWhereInput = { visible: true };
     // Le public ne voit que les documents publiés : le statut est imposé,
     // quel que soit le filtre envoyé par le client.
     const isAdmin =
@@ -164,15 +166,15 @@ router.get(
   })
 );
 
-// Les épreuves 2026-2027 restent invisibles jusqu'à leur ouverture par un
-// super administrateur. Cette liste n'est donc jamais accessible aux admins.
+// Les épreuves masquées sont exclusivement visibles dans cette liste
+// réservée au super administrateur.
 router.get(
-  "/embargoed",
+  "/hidden",
   authenticateJWT,
   requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     const rows = await prisma.document.findMany({
-      where: { anneeAcademique: "2026-2027", statut: "En_attente" },
+      where: { visible: false },
       include: { matiere: true },
       orderBy: { createdAt: "desc" },
     });
@@ -218,7 +220,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
     const canPreviewHidden = req.user?.role === "SuperAdministrateur";
-    if (!doc || (doc.statut !== "Publie" && !canPreviewHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user)))) throw notFound("Épreuve non trouvée.");
+    if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canPreviewHidden)) throw notFound("Épreuve non trouvée.");
     const buffer = await loadDocumentPdf(doc.fichierUrl);
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier épreuve introuvable.");
     const stamped = Buffer.from(await stampPdf(buffer));
@@ -239,7 +241,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
     const canDownloadHidden = req.user?.role === "SuperAdministrateur";
-    if (!doc || (doc.statut !== "Publie" && !canDownloadHidden && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user)))) {
+    if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canDownloadHidden)) {
       throw notFound("Épreuve non trouvée.");
     }
 
@@ -284,7 +286,7 @@ router.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
-    if (!doc || doc.statut !== "Publie") {
+    if (!doc || doc.statut !== "Publie" || !doc.visible) {
       throw notFound("Épreuve non trouvée.");
     }
     res.json(mapDocument(doc));
@@ -299,7 +301,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
     const canRecordHiddenDownload = req.user?.role === "SuperAdministrateur";
-    if (!doc || (doc.statut !== "Publie" && !canRecordHiddenDownload && (doc.anneeAcademique === "2026-2027" || !isAdminUser(req.user)))) {
+    if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canRecordHiddenDownload)) {
       throw notFound("Épreuve non trouvée.");
     }
     const updated = await prisma.document.update({
@@ -348,12 +350,13 @@ router.post(
         anneeAcademique,
         fichierUrl: fichierStorageUrl,
         fichierNom,
-        statut: anneeAcademique === "2026-2027" ? "En_attente" : "Publie",
-        datePublication: anneeAcademique === "2026-2027" ? null : new Date(),
+        statut: "Publie",
+        visible: anneeAcademique !== "2026-2027",
+        datePublication: new Date(),
       },
     });
 
-    if (doc.statut === "Publie") {
+    if (doc.visible) {
       await prisma.userNotification.create({
         data: {
           userId: "ALL",
@@ -370,7 +373,7 @@ router.post(
       adminNom: `${req.user!.prenom} ${req.user!.nom}`,
       adminEmail: req.user!.email,
       action: "CREATE_DOCUMENT",
-      details: doc.statut === "Publie"
+      details: doc.visible
         ? `A créé et publié l'épreuve '${doc.titre}' (${matiere} ${anneeAcademique}).`
         : `A ajouté l'épreuve '${doc.titre}' (${matiere} ${anneeAcademique}), masquée jusqu'à sa publication par un super administrateur.`,
       targetId: doc.id,
@@ -378,49 +381,60 @@ router.post(
     });
 
     res.status(201).json({
-      message: doc.statut === "Publie"
+      message: doc.visible
         ? "Document créé et publié avec succès."
-        : "Épreuve 2026-2027 ajoutée et masquée jusqu'à sa publication par un super administrateur.",
+        : "Épreuve ajoutée et masquée jusqu'à sa publication par un super administrateur.",
       document: mapDocument({ ...doc, matiere: matiereRow }),
     });
   })
 );
 
-router.post(
-  "/:id/release",
+router.put(
+  "/:id/visibility",
   authenticateJWT,
   requireRole("SuperAdministrateur"),
   validate(uuidParam, "params"),
+  validate(visibilitySchema),
   asyncHandler(async (req, res) => {
     const existing = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
-    if (!existing || existing.anneeAcademique !== "2026-2027" || existing.statut !== "En_attente") {
-      throw notFound("Épreuve 2026-2027 masquée introuvable.");
-    }
+    if (!existing) throw notFound("Épreuve introuvable.");
+    const { visible } = req.body as z.infer<typeof visibilitySchema>;
+    if (visible && existing.statut === "Refuse") throw badRequest("Une épreuve refusée ne peut pas être rendue visible.");
 
     const doc = await prisma.document.update({
       where: { id: existing.id },
-      data: { statut: "Publie", datePublication: new Date() },
+      data: {
+        visible,
+        ...(visible && existing.statut !== "Publie"
+          ? { statut: "Publie" as const, datePublication: new Date() }
+          : {}),
+      },
       include: { matiere: true },
     });
-    await prisma.userNotification.create({
-      data: {
-        userId: "ALL",
-        titre: "Nouvelle épreuve disponible",
-        message: `${doc.titre} — ${doc.matiere.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
-        type: "info",
-        linkTab: "exams",
-      },
-    });
+    if (visible && !existing.visible) {
+      await prisma.userNotification.create({
+        data: {
+          userId: "ALL",
+          titre: "Nouvelle épreuve disponible",
+          message: `${doc.titre} — ${doc.matiere.nom}, ${doc.typeEpreuve} (${doc.anneeAcademique}).`,
+          type: "info",
+          linkTab: "exams",
+        },
+      });
+    }
     await logAdminAction({
       adminId: req.user!.id,
       adminNom: `${req.user!.prenom} ${req.user!.nom}`,
       adminEmail: req.user!.email,
       action: "UPDATE_DOCUMENT",
-      details: `A démasqué et publié l'épreuve '${doc.titre}' (${doc.matiere.nom} ${doc.anneeAcademique}).`,
+      details: `${visible ? "A démasqué" : "A masqué"} l'épreuve '${doc.titre}' (${doc.matiere.nom} ${doc.anneeAcademique}).`,
       targetId: doc.id,
       targetName: doc.titre,
     });
-    res.json({ message: "Épreuve 2026-2027 publiée et désormais visible.", document: mapDocument(doc) });
+    res.json({
+      message: visible ? "Épreuve publiée et désormais visible." : "Épreuve masquée pour les utilisateurs.",
+      document: mapDocument(doc),
+    });
   })
 );
 
@@ -436,11 +450,10 @@ router.put(
       throw notFound("Document non trouvé.");
     }
     if (
-      existing.anneeAcademique === "2026-2027" &&
-      existing.statut === "En_attente" &&
+      !existing.visible &&
       req.user!.role !== "SuperAdministrateur"
     ) {
-      throw forbidden("Seul un super administrateur peut modifier une épreuve 2026-2027 masquée.");
+      throw forbidden("Seul un super administrateur peut modifier une épreuve masquée.");
     }
     const { titre, matiere, semestre, typeEpreuve, anneeAcademique } = req.body;
 
@@ -458,8 +471,8 @@ router.put(
         semestre: semestre ? semestreToDb(semestre) : existing.semestre,
         typeEpreuve: typeEpreuve ?? existing.typeEpreuve,
         anneeAcademique: anneeAcademique ?? existing.anneeAcademique,
-        ...(anneeAcademique === "2026-2027" && existing.anneeAcademique !== "2026-2027"
-          ? { statut: "En_attente" as const, datePublication: null }
+        ...(anneeAcademique === "2026-2027" && existing.anneeAcademique !== "2026-2027" && existing.visible
+          ? { visible: false }
           : {}),
       },
       include: { matiere: true },
@@ -488,6 +501,9 @@ router.delete(
     const existing = await prisma.document.findUnique({ where: { id: req.params.id } });
     if (!existing) {
       throw notFound("Document non trouvé.");
+    }
+    if (!existing.visible && req.user!.role !== "SuperAdministrateur") {
+      throw forbidden("Seul un super administrateur peut supprimer une épreuve masquée.");
     }
 
     await prisma.document.delete({ where: { id: existing.id } });

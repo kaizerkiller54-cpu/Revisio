@@ -11,7 +11,7 @@ async function computeStats() {
     await Promise.all([
       prisma.user.count(),
       prisma.document.count(),
-      prisma.document.count({ where: { statut: "Publie" } }),
+      prisma.document.count({ where: { statut: "Publie", visible: true } }),
       prisma.contribution.count({ where: { statut: "En_attente" } }),
       prisma.contribution.count(),
       prisma.auditLog.count(),

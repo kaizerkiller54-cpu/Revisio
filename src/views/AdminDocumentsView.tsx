@@ -5,7 +5,7 @@ import {
   rejectContributionApi,
   deleteDocumentApi,
   updateDocumentApi,
-  releaseEmbargoedDocumentApi,
+  setDocumentVisibilityApi,
 } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import {
@@ -23,7 +23,7 @@ import {
 interface AdminDocumentsViewProps {
   contributions: ContributionModel[];
   documents: DocumentModel[];
-  embargoedDocuments: DocumentModel[];
+  hiddenDocuments: DocumentModel[];
   isSuperAdmin: boolean;
   onRefreshData: () => void;
   onPreviewPdf: (doc: DocumentModel) => void;
@@ -32,12 +32,12 @@ interface AdminDocumentsViewProps {
 export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
   contributions,
   documents,
-  embargoedDocuments,
+  hiddenDocuments,
   isSuperAdmin,
   onRefreshData,
   onPreviewPdf,
 }) => {
-  const [activeTab, setActiveTab] = useState<"pending" | "published" | "embargoed">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "published" | "hidden">("pending");
   const [selectedContrib, setSelectedContrib] = useState<ContributionModel | null>(null);
 
   // Approval Form fields for admin
@@ -132,13 +132,16 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
     }
   };
 
-  const handleReleaseDocument = async (doc: DocumentModel) => {
-    if (!window.confirm(`Rendre « ${doc.titre} » visible et téléchargeable pour tous les utilisateurs ?`)) return;
+  const handleSetVisibility = async (doc: DocumentModel, visible: boolean) => {
+    if (!window.confirm(visible
+      ? `Rendre « ${doc.titre} » visible et téléchargeable pour tous les utilisateurs ?`
+      : `Masquer « ${doc.titre} » aux étudiants et aux administrateurs ?`
+    )) return;
     try {
-      await releaseEmbargoedDocumentApi(doc.id);
+      await setDocumentVisibilityApi(doc.id, visible);
       onRefreshData();
     } catch (err: any) {
-      alert(err.message || "Erreur lors de la publication.");
+      alert(err.message || "Erreur lors du changement de visibilité.");
     }
   };
 
@@ -202,15 +205,15 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
           </button>
           {isSuperAdmin && (
             <button
-              onClick={() => setActiveTab("embargoed")}
+              onClick={() => setActiveTab("hidden")}
               className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 ${
-                activeTab === "embargoed"
+                activeTab === "hidden"
                   ? "bg-amber-600 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Clock className="w-4 h-4" />
-              <span>Masquées ({embargoedDocuments.length})</span>
+              <span>Masquées ({hiddenDocuments.length})</span>
             </button>
           )}
         </div>
@@ -309,11 +312,11 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
       )}
 
       {/* TAB 2: PUBLISHED DOCUMENTS MANAGER */}
-      {(activeTab === "published" || (activeTab === "embargoed" && isSuperAdmin)) && (
+      {(activeTab === "published" || (activeTab === "hidden" && isSuperAdmin)) && (
         <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-          {activeTab === "embargoed" && (
+          {activeTab === "hidden" && (
             <div className="px-5 py-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-900">
-              Ces épreuves 2026-2027 restent privées jusqu'à leur publication par un super administrateur.
+              Ces épreuves sont masquées pour tous les utilisateurs. Seul un super administrateur peut changer leur visibilité.
             </div>
           )}
           <div className="overflow-x-auto">
@@ -330,13 +333,13 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {(activeTab === "embargoed" ? embargoedDocuments : documents).length === 0 ? (
+                {(activeTab === "hidden" ? hiddenDocuments : documents).length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-10 text-center text-slate-500">
-                      {activeTab === "embargoed" ? "Aucune épreuve 2026-2027 masquée à publier." : "Aucune épreuve publiée."}
+                      {activeTab === "hidden" ? "Aucune épreuve masquée." : "Aucune épreuve publiée."}
                     </td>
                   </tr>
-                ) : (activeTab === "embargoed" ? embargoedDocuments : documents).map((doc) => (
+                ) : (activeTab === "hidden" ? hiddenDocuments : documents).map((doc) => (
                   <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-bold text-slate-900 max-w-xs truncate">
                       {doc.titre}
@@ -360,9 +363,9 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      {activeTab === "embargoed" ? (
+                      {activeTab === "hidden" ? (
                         <button
-                          onClick={() => handleReleaseDocument(doc)}
+                          onClick={() => handleSetVisibility(doc, true)}
                           title="Publier pour tous les utilisateurs"
                           className="px-3 py-2 text-amber-900 hover:bg-amber-100 bg-amber-50 rounded-xl font-bold"
                         >
@@ -370,6 +373,15 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
                         </button>
                       ) : (
                         <>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => handleSetVisibility(doc, false)}
+                              title="Masquer aux utilisateurs"
+                              className="px-3 py-2 text-amber-900 hover:bg-amber-100 bg-amber-50 rounded-xl font-bold"
+                            >
+                              Masquer
+                            </button>
+                          )}
                           <button
                             onClick={() => setEditingDoc(doc)}
                             title="Modifier classification"

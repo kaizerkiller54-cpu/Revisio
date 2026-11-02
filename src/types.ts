@@ -46,6 +46,7 @@ export interface DocumentModel {
   fichierUrl: string;
   fichierNom: string;
   statut: DocumentStatut;
+  visible?: boolean;
   datePublication?: string;
   dateAjout: string;
   telechargementsCount: number;

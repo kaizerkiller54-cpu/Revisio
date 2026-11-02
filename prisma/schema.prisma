@@ -79,6 +79,7 @@ model Document {
   fichierUrl           String
   fichierNom           String
   statut               Statut     @default(Publie)
+  visible              Boolean    @default(true)
   datePublication      DateTime?
   telechargementsCount Int        @default(0)
   contributionId       String?    @unique
@@ -88,6 +89,7 @@ model Document {
 
   @@index([matiereId, typeEpreuve, semestre])
   @@index([statut, anneeAcademique])
+  @@index([visible, anneeAcademique])
   @@index([semestre, typeEpreuve, statut])
   @@index([titre])
   @@map("documents")
