@@ -42,6 +42,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [email, setEmail] = useState(user?.email || "");
   const [telephone, setTelephone] = useState(user?.telephone || "");
   const [nouveauMotDePasse, setNouveauMotDePasse] = useState("");
+  const [currentMotDePasse, setCurrentMotDePasse] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
@@ -51,6 +52,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const hasDigit = /[0-9]/.test(nouveauMotDePasse);
   const hasSpecial = /[^a-zA-Z0-9]/.test(nouveauMotDePasse);
   const isNewPasswordValid = !nouveauMotDePasse.trim() || (hasMinLength && hasLetter && hasDigit && hasSpecial);
+  const requiresReauthentication = !!user && (
+    email.trim().toLowerCase() !== user.email.toLowerCase() || !!nouveauMotDePasse.trim()
+  );
 
   const telephoneIsValid = /^\+237[0-9]{9}$/.test(telephone.trim());
 
@@ -108,6 +112,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       setProfileErrorMsg("Le nouveau mot de passe doit comporter au moins 8 caractères, des chiffres, des lettres et un caractère spécial.");
       return;
     }
+    if (requiresReauthentication && !currentMotDePasse) {
+      setProfileErrorMsg("Saisissez votre mot de passe actuel pour confirmer ce changement.");
+      return;
+    }
 
     setIsUpdatingProfile(true);
     setProfileSuccessMsg(null);
@@ -120,10 +128,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         email,
         telephone: telephone.trim() || null,
         nouveauMotDePasse: nouveauMotDePasse.trim() ? nouveauMotDePasse : undefined,
+        currentMotDePasse: requiresReauthentication ? currentMotDePasse : undefined,
       });
       onUpdateUser(res.user);
       setProfileSuccessMsg(res.message || "Profil mis à jour avec succès !");
       setNouveauMotDePasse("");
+      setCurrentMotDePasse("");
     } catch (err: any) {
       setProfileErrorMsg(err.message || "Erreur lors de la mise à jour des informations.");
     } finally {
@@ -368,6 +378,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                   )}
                 </div>
+
+                {requiresReauthentication && (
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-slate-100 mb-1">
+                      Mot de passe actuel pour confirmer
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      value={currentMotDePasse}
+                      onChange={(e) => setCurrentMotDePasse(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                )}
 
                 <div className="pt-2">
                   <button

@@ -41,12 +41,13 @@ export function createApp() {
     if (isLargePdfJsonUpload) return next();
     return standardJsonParser(req, res, next);
   });
+  app.use("/api", apiLimiter);
+
   // Secure any existing public bucket before API routes can serve files.
   app.use("/api", (_req, _res, next) => {
     ensureBucket().then(() => next()).catch(next);
   });
 
-  app.use("/api", apiLimiter);
   app.use("/api/contact", contactRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/documents", documentRoutes);

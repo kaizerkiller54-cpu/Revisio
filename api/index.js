@@ -318,7 +318,7 @@ async function findSupabaseUserByEmail(email) {
   const user = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
   return user ? { id: user.id } : null;
 }
-async function createSupabaseUser(email, password, phone) {
+async function createSupabaseUser(email, password, phone, reuseExistingAuthUser = false) {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
@@ -328,8 +328,11 @@ async function createSupabaseUser(email, password, phone) {
   });
   if (error) {
     if (/already (been )?registered/i.test(error.message)) {
-      const existing = await findSupabaseUserByEmail(email);
-      if (existing) return existing.id;
+      if (reuseExistingAuthUser) {
+        const existing = await findSupabaseUserByEmail(email);
+        if (existing) return existing.id;
+      }
+      throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 li\xE9e \xE0 un compte d'authentification.");
     }
     throw new AppError(400, `Impossible de cr\xE9er le compte : ${error.message}`);
   }
@@ -525,9 +528,9 @@ var registerSchema = z.object({
   email: z.string().email("Adresse e-mail invalide.").max(200),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional(),
   motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial."),
-  role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
-  masterKey: z.string().max(256).optional()
-});
+  // Public registration can never assign privileged roles.
+  role: z.literal("Etudiant").optional()
+}).strict();
 var loginSchema = z.object({
   email: z.string().email("Adresse e-mail invalide.").max(200),
   motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
@@ -541,20 +544,12 @@ router.post(
   authRateLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { nom, prenom, email, telephone, motDePasse, role, masterKey } = req.body;
+    const { nom, prenom, email, telephone, motDePasse } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedTelephone = telephone?.trim() || null;
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
     if (existing) {
       throw badRequest("Cette adresse e-mail est d\xE9j\xE0 utilis\xE9e.");
-    }
-    let assignedRole = "Etudiant";
-    if (role === "Administrateur" || role === "SuperAdministrateur") {
-      const currentMasterKey = tryGetSuperAdminMasterKey();
-      if (!masterKeyMatches(masterKey, currentMasterKey)) {
-        throw forbiddenRole();
-      }
-      assignedRole = role;
     }
     const authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? void 0);
     const user = await prisma.user.create({
@@ -564,7 +559,7 @@ router.post(
         prenom: prenom.trim(),
         email: trimmedEmail,
         telephone: trimmedTelephone,
-        role: assignedRole
+        role: "Etudiant"
       }
     });
     const session = await signInSupabase(trimmedEmail, motDePasse);
@@ -592,22 +587,28 @@ router.post(
     const { email, motDePasse, masterKey } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const currentMasterKey = tryGetSuperAdminMasterKey();
-    if (currentMasterKey && (masterKeyMatches(masterKey, currentMasterKey) || masterKeyMatches(motDePasse, currentMasterKey))) {
-      const result = await ensureSuperAdminSession(trimmedEmail, motDePasse);
-      await logUserActivity({
-        userId: result.user.id,
-        userNom: `${result.user.prenom} ${result.user.nom}`,
-        userEmail: result.user.email,
-        userRole: result.user.role,
-        actionType: "LOGIN",
-        description: "S'est connect\xE9 \xE0 la plateforme ISJ Revisio."
-      });
-      return res.json({
-        token: result.session.accessToken,
-        refreshToken: result.session.refreshToken,
-        user: mapUser(result.user),
-        message: "Connexion r\xE9ussie en tant que SuperAdministrateur !"
-      });
+    if (currentMasterKey && masterKeyMatches(masterKey, currentMasterKey)) {
+      const [existingProfile, existingSuperAdmin] = await Promise.all([
+        prisma.user.findUnique({ where: { email: trimmedEmail } }),
+        prisma.user.findFirst({ where: { role: "SuperAdministrateur" }, select: { id: true } })
+      ]);
+      if (!existingProfile && !existingSuperAdmin) {
+        const result = await bootstrapFirstSuperAdmin(trimmedEmail, motDePasse);
+        await logUserActivity({
+          userId: result.user.id,
+          userNom: `${result.user.prenom} ${result.user.nom}`,
+          userEmail: result.user.email,
+          userRole: result.user.role,
+          actionType: "LOGIN",
+          description: "A initialis\xE9 le premier compte SuperAdministrateur."
+        });
+        return res.json({
+          token: result.session.accessToken,
+          refreshToken: result.session.refreshToken,
+          user: mapUser(result.user),
+          message: "Compte SuperAdministrateur initialis\xE9 avec succ\xE8s."
+        });
+      }
     }
     const session = await signInSupabase(trimmedEmail, motDePasse);
     const user = await prisma.user.findUnique({ where: { id: session.userId } });
@@ -678,47 +679,35 @@ router.get(
     res.json({ user: mapUser(user) });
   })
 );
-async function ensureSuperAdminSession(email, password) {
-  let session = null;
-  try {
-    session = await signInSupabase(email, password);
-  } catch {
-    session = null;
+var bootstrapPasswordSchema = z.string().min(12).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9\s]/);
+async function bootstrapFirstSuperAdmin(email, password) {
+  if (!bootstrapPasswordSchema.safeParse(password).success) {
+    throw badRequest("Le premier mot de passe SuperAdministrateur doit contenir au moins 12 caract\xE8res, une lettre, un chiffre et un caract\xE8re sp\xE9cial.");
   }
-  if (!session) {
-    const existingAuth = await findSupabaseUserByEmail(email);
-    if (existingAuth) {
-      await updateSupabasePassword(existingAuth.id, password);
-    } else {
-      await createSupabaseUser(email, password);
+  const user = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(734112093)`;
+    const existingSuperAdmin = await tx.user.findFirst({ where: { role: "SuperAdministrateur" }, select: { id: true } });
+    const existingProfile = await tx.user.findUnique({ where: { email } });
+    if (existingSuperAdmin || existingProfile) {
+      throw unauthorized("Initialisation SuperAdministrateur d\xE9j\xE0 effectu\xE9e.");
     }
-    session = await signInSupabase(email, password);
-  }
-  let user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    user = await prisma.user.create({
+    const existingAuthUser = await findSupabaseUserByEmail(email);
+    if (existingAuthUser) {
+      throw unauthorized("Cette adresse e-mail est d\xE9j\xE0 associ\xE9e \xE0 un compte.");
+    }
+    const authId = await createSupabaseUser(email, password);
+    return tx.user.create({
       data: {
-        id: session.userId,
+        id: authId,
         nom: "DIRECTION",
         prenom: "Super Admin ISJ",
         email,
         role: "SuperAdministrateur"
       }
     });
-  } else if (user.role !== "SuperAdministrateur") {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: { role: "SuperAdministrateur" }
-    });
-  }
-  if (!user) throw new AppError(500, "Impossible de cr\xE9er le profil SuperAdministrateur.");
+  }, { maxWait: 1e4, timeout: 2e4 });
+  const session = await signInSupabase(email, password);
   return { user, session };
-}
-function forbiddenRole() {
-  return new AppError(
-    403,
-    "Cl\xE9 d'autorisation invalide. La cl\xE9 d'habilitation est requise pour cr\xE9er ce compte."
-  );
 }
 var auth_default = router;
 
@@ -762,12 +751,16 @@ async function logAdminAction(input) {
 
 // server/services/pdf-watermark.service.ts
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+var MAX_STAMPED_PDF_PAGES = 500;
 async function stampPdf(pdfBytes) {
   let pdf;
   try {
     pdf = await PDFDocument.load(pdfBytes);
   } catch {
     throw new AppError(500, "Document illisible : tatouage de tra\xE7abilit\xE9 impossible.");
+  }
+  if (pdf.getPageCount() > MAX_STAMPED_PDF_PAGES) {
+    throw new AppError(413, `Le document d\xE9passe la limite de ${MAX_STAMPED_PDF_PAGES} pages.`);
   }
   const stamp = "Revisio-ISJ";
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -994,6 +987,8 @@ var listQuerySchema = z2.object({
   statut: z2.string().max(20).optional(),
   page: z2.coerce.number().int().positive().optional(),
   pageSize: z2.coerce.number().int().positive().max(100).optional()
+}).refine((query) => query.page === void 0 === (query.pageSize === void 0), {
+  message: "page et pageSize doivent \xEAtre fournis ensemble."
 });
 var suggestQuerySchema = z2.object({
   q: z2.string().min(2).max(200),
@@ -1071,7 +1066,7 @@ router2.get(
       ]);
       return res.json({ data: rows2.map(mapDocument), total, page, pageSize });
     }
-    const rows = await prisma.document.findMany({ where, include: { matiere: true }, orderBy });
+    const rows = await prisma.document.findMany({ where, include: { matiere: true }, orderBy, take: 500 });
     res.json(rows.map(mapDocument));
   })
 );
@@ -1206,40 +1201,6 @@ router2.get(
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
     res.json(mapDocument(doc));
-  })
-);
-router2.post(
-  "/:id/download",
-  authenticateJWT,
-  downloadRateLimiter,
-  validate(uuidParam, "params"),
-  asyncHandler(async (req, res) => {
-    const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    const canRecordHiddenDownload = req.user?.role === "SuperAdministrateur";
-    if (!doc || (!doc.visible || doc.statut !== "Publie") && !canRecordHiddenDownload) {
-      throw notFound("\xC9preuve non trouv\xE9e.");
-    }
-    const updated = await prisma.document.update({
-      where: { id: doc.id },
-      data: { telechargementsCount: { increment: 1 } }
-    });
-    await logUserActivity({
-      userId: req.user.id,
-      userNom: `${req.user.prenom} ${req.user.nom}`,
-      userEmail: req.user.email,
-      userRole: req.user.role,
-      actionType: "DOWNLOAD_DOCUMENT",
-      description: `A t\xE9l\xE9charg\xE9 l'\xE9preuve '${doc.titre}' (${doc.matiereId}).`,
-      targetId: doc.id,
-      targetTitle: doc.titre
-    });
-    res.json({
-      success: true,
-      telechargementsCount: updated.telechargementsCount,
-      // L'URL brute du stockage n'est exposée qu'aux admins : les autres
-      // rôles téléchargent exclusivement via GET (copie tatouée).
-      fichierNom: doc.fichierNom
-    });
   })
 );
 router2.post(
@@ -1599,6 +1560,9 @@ var approveHandler = asyncHandler(async (req, res) => {
   if (!contribution) {
     throw notFound("Contribution introuvable.");
   }
+  if (contribution.statut !== "En_attente") {
+    throw badRequest("Cette contribution a d\xE9j\xE0 \xE9t\xE9 trait\xE9e.");
+  }
   const semestre = semestreToDb(body.semestre);
   let matiere = await prisma.matiere.findFirst({ where: { nom: body.matiere } });
   if (!matiere) {
@@ -1664,11 +1628,14 @@ var rejectHandler = asyncHandler(async (req, res) => {
   if (!contribution) {
     throw notFound("Contribution introuvable.");
   }
+  if (contribution.statut !== "En_attente") {
+    throw badRequest("Cette contribution a d\xE9j\xE0 \xE9t\xE9 trait\xE9e.");
+  }
   const updated = await prisma.contribution.update({
     where: { id },
     data: { statut: "Refuse" }
   });
-  await deleteStorageFileByUrl(contribution.statut === "Publie" ? "" : contribution.fichierUrl ?? "");
+  await deleteStorageFileByUrl(contribution.fichierUrl ?? "");
   await logAdminAction({
     adminId: req.user.id,
     adminNom: `${req.user.prenom} ${req.user.nom}`,
@@ -1794,6 +1761,7 @@ var profileSchema = z5.object({
   prenom: z5.string().min(2).max(80).optional(),
   email: z5.string().email().max(200).optional(),
   telephone: z5.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional().nullable(),
+  currentMotDePasse: z5.string().min(1).max(128).optional(),
   nouveauMotDePasse: z5.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial.").optional()
 });
 var createUserSchema = z5.object({
@@ -1816,7 +1784,7 @@ router5.put(
     if (!user) {
       throw notFound("Utilisateur non trouv\xE9.");
     }
-    const { nom, prenom, email, telephone, nouveauMotDePasse } = req.body;
+    const { nom, prenom, email, telephone, nouveauMotDePasse, currentMotDePasse } = req.body;
     let newEmail = user.email;
     if (email && email.trim().toLowerCase() !== user.email) {
       const existing = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
@@ -1826,15 +1794,13 @@ router5.put(
       newEmail = email.trim().toLowerCase();
     }
     const newTelephone = telephone !== void 0 ? telephone?.trim() || null : user.telephone;
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        nom: nom?.trim().toUpperCase() ?? user.nom,
-        prenom: prenom?.trim() ?? user.prenom,
-        email: newEmail,
-        telephone: newTelephone
+    const requiresReauthentication = newEmail !== user.email || !!nouveauMotDePasse;
+    if (requiresReauthentication) {
+      if (!currentMotDePasse) {
+        throw badRequest("Confirmez votre mot de passe actuel pour modifier l'e-mail ou le mot de passe.");
       }
-    });
+      await signInSupabase(user.email, currentMotDePasse);
+    }
     if (newEmail !== user.email) {
       await updateSupabaseEmail(user.id, newEmail);
     }
@@ -1844,6 +1810,15 @@ router5.put(
     if (nouveauMotDePasse) {
       await updateSupabasePassword(user.id, nouveauMotDePasse.trim());
     }
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        nom: nom?.trim().toUpperCase() ?? user.nom,
+        prenom: prenom?.trim() ?? user.prenom,
+        email: newEmail,
+        telephone: newTelephone
+      }
+    });
     res.json({ user: mapUser(updated), message: "Vos informations de profil ont \xE9t\xE9 mises \xE0 jour avec succ\xE8s !" });
   })
 );
@@ -2102,6 +2077,9 @@ function visibleIds(user) {
   }
   return [user.id, "ALL"];
 }
+function receiptKey(userId, notificationId) {
+  return { userId_notificationId: { userId, notificationId } };
+}
 router7.get(
   "/",
   authenticateJWT,
@@ -2110,18 +2088,46 @@ router7.get(
       where: { userId: { in: visibleIds(req.user) } },
       orderBy: { createdAt: "desc" }
     });
-    res.json(rows.map(mapNotification));
+    const receipts = await prisma.notificationReceipt.findMany({
+      where: { userId: req.user.id, notificationId: { in: rows.map((row) => row.id) } }
+    });
+    const receiptsByNotification = new Map(receipts.map((receipt) => [receipt.notificationId, receipt]));
+    const visibleRows = rows.flatMap((row) => {
+      const receipt = receiptsByNotification.get(row.id);
+      if (receipt?.deletedAt) return [];
+      const isShared = row.userId !== req.user.id;
+      return [mapNotification({
+        ...row,
+        lue: isShared ? !!receipt?.readAt : row.lue || !!receipt?.readAt
+      })];
+    });
+    res.json(visibleRows);
   })
 );
 router7.put(
   "/read-all",
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const results = await prisma.userNotification.updateMany({
-      where: { userId: { in: visibleIds(req.user) }, lue: false },
-      data: { lue: true }
+    const user = req.user;
+    const rows = await prisma.userNotification.findMany({
+      where: { userId: { in: visibleIds(user) } },
+      select: { id: true, userId: true }
     });
-    res.json({ message: "Toutes les notifications ont \xE9t\xE9 marqu\xE9es comme lues.", count: results.count });
+    const personalIds = rows.filter((row) => row.userId === user.id).map((row) => row.id);
+    const sharedIds = rows.filter((row) => row.userId !== user.id).map((row) => row.id);
+    const readAt = /* @__PURE__ */ new Date();
+    await prisma.$transaction([
+      prisma.userNotification.updateMany({
+        where: { id: { in: personalIds }, userId: user.id },
+        data: { lue: true }
+      }),
+      ...sharedIds.map((notificationId) => prisma.notificationReceipt.upsert({
+        where: receiptKey(user.id, notificationId),
+        create: { userId: user.id, notificationId, readAt },
+        update: { readAt, deletedAt: null }
+      }))
+    ]);
+    res.json({ message: "Toutes les notifications ont \xE9t\xE9 marqu\xE9es comme lues.", count: rows.length });
   })
 );
 router7.put(
@@ -2133,18 +2139,44 @@ router7.put(
     if (!notif || !visibleIds(req.user).includes(notif.userId)) {
       throw notFound("Notification introuvable.");
     }
-    const updated = await prisma.userNotification.update({ where: { id: notif.id }, data: { lue: true } });
-    res.json({ message: "Notification marqu\xE9e comme lue.", notification: mapNotification(updated) });
+    if (notif.userId === req.user.id) {
+      const updated = await prisma.userNotification.update({
+        where: { id: notif.id },
+        data: { lue: true }
+      });
+      return res.json({ message: "Notification marqu\xE9e comme lue.", notification: mapNotification(updated) });
+    }
+    const readAt = /* @__PURE__ */ new Date();
+    await prisma.notificationReceipt.upsert({
+      where: receiptKey(req.user.id, notif.id),
+      create: { userId: req.user.id, notificationId: notif.id, readAt },
+      update: { readAt, deletedAt: null }
+    });
+    res.json({
+      message: "Notification marqu\xE9e comme lue.",
+      notification: mapNotification({ ...notif, lue: true })
+    });
   })
 );
 router7.delete(
   "/",
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const results = await prisma.userNotification.deleteMany({
-      where: { userId: { in: visibleIds(req.user) } }
+    const user = req.user;
+    const shared = await prisma.userNotification.findMany({
+      where: { userId: { in: visibleIds(user), not: user.id } },
+      select: { id: true }
     });
-    res.json({ message: "Toutes les notifications ont \xE9t\xE9 effac\xE9es.", count: results.count });
+    const deletedAt = /* @__PURE__ */ new Date();
+    const results = await prisma.$transaction([
+      prisma.userNotification.deleteMany({ where: { userId: user.id } }),
+      ...shared.map(({ id }) => prisma.notificationReceipt.upsert({
+        where: receiptKey(user.id, id),
+        create: { userId: user.id, notificationId: id, deletedAt },
+        update: { deletedAt }
+      }))
+    ]);
+    res.json({ message: "Toutes les notifications ont \xE9t\xE9 effac\xE9es.", count: results[0].count + shared.length });
   })
 );
 router7.delete(
@@ -2156,7 +2188,16 @@ router7.delete(
     if (!notif || !visibleIds(req.user).includes(notif.userId)) {
       throw notFound("Notification introuvable.");
     }
-    await prisma.userNotification.delete({ where: { id: notif.id } });
+    if (notif.userId === req.user.id) {
+      await prisma.userNotification.delete({ where: { id: notif.id } });
+    } else {
+      const deletedAt = /* @__PURE__ */ new Date();
+      await prisma.notificationReceipt.upsert({
+        where: receiptKey(req.user.id, notif.id),
+        create: { userId: req.user.id, notificationId: notif.id, deletedAt },
+        update: { deletedAt }
+      });
+    }
     res.json({ message: "Notification supprim\xE9e." });
   })
 );
@@ -2418,10 +2459,10 @@ function createApp() {
     if (isLargePdfJsonUpload) return next();
     return standardJsonParser(req, res, next);
   });
+  app2.use("/api", apiLimiter);
   app2.use("/api", (_req, _res, next) => {
     ensureBucket().then(() => next()).catch(next);
   });
-  app2.use("/api", apiLimiter);
   app2.use("/api/contact", contact_default);
   app2.use("/api/auth", auth_default);
   app2.use("/api/documents", documents_default);

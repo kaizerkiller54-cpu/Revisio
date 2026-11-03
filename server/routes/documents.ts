@@ -28,6 +28,8 @@ const listQuerySchema = z.object({
   statut: z.string().max(20).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
+}).refine((query) => (query.page === undefined) === (query.pageSize === undefined), {
+  message: "page et pageSize doivent être fournis ensemble.",
 });
 
 const suggestQuerySchema = z.object({
@@ -125,7 +127,7 @@ router.get(
       return res.json({ data: rows.map(mapDocument), total, page, pageSize });
     }
 
-    const rows = await prisma.document.findMany({ where, include: { matiere: true }, orderBy });
+    const rows = await prisma.document.findMany({ where, include: { matiere: true }, orderBy, take: 500 });
     res.json(rows.map(mapDocument));
   })
 );
@@ -290,43 +292,6 @@ router.get(
       throw notFound("Épreuve non trouvée.");
     }
     res.json(mapDocument(doc));
-  })
-);
-
-router.post(
-  "/:id/download",
-  authenticateJWT,
-  downloadRateLimiter,
-  validate(uuidParam, "params"),
-  asyncHandler(async (req, res) => {
-    const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    const canRecordHiddenDownload = req.user?.role === "SuperAdministrateur";
-    if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canRecordHiddenDownload)) {
-      throw notFound("Épreuve non trouvée.");
-    }
-    const updated = await prisma.document.update({
-      where: { id: doc.id },
-      data: { telechargementsCount: { increment: 1 } },
-    });
-
-    await logUserActivity({
-      userId: req.user!.id,
-      userNom: `${req.user!.prenom} ${req.user!.nom}`,
-      userEmail: req.user!.email,
-      userRole: req.user!.role,
-      actionType: "DOWNLOAD_DOCUMENT",
-      description: `A téléchargé l'épreuve '${doc.titre}' (${doc.matiereId}).`,
-      targetId: doc.id,
-      targetTitle: doc.titre,
-    });
-
-    res.json({
-      success: true,
-      telechargementsCount: updated.telechargementsCount,
-      // L'URL brute du stockage n'est exposée qu'aux admins : les autres
-      // rôles téléchargent exclusivement via GET (copie tatouée).
-      fichierNom: doc.fichierNom,
-    });
   })
 );
 

@@ -19,7 +19,7 @@ Application web complète pour la gestion et le partage d'épreuves académiques
 - **JWT ES256** signés par GoTrue, vérifiés côté backend via JWKS public (kid `5b3ba3a7-...`)
 - **Refresh token** rotation (Supabase session)
 - **3 rôles** : `Etudiant`, `Administrateur`, `SuperAdministrateur`
-- **Master Key SuperAdmin** — bootstrap direct (`ISJ-SUPERADMIN-2026-KEY`) crée/upsert un compte SuperAdmin
+- **Master Key SuperAdmin** — initialise uniquement le tout premier compte SuperAdmin; cette clé doit rester secrète et ne peut pas réinitialiser un compte existant
 
 ### 📚 Gestion des épreuves (Documents)
 - **Liste paginée & filtrée** : matière, semestre, type (CC/SN/SR), année, statut
@@ -152,22 +152,17 @@ SUPABASE_JWT_SECRET="base64-jwt-secret-from-supabase"
 PORT=3000
 NODE_ENV=development
 
-# SuperAdmin bootstrap (inchangé)
-SUPERADMIN_MASTER_KEY="ISJ-SUPERADMIN-2026-KEY"
+# SuperAdmin bootstrap — générer une clé aléatoire longue et ne jamais la publier
+SUPERADMIN_MASTER_KEY="REMPLACER_PAR_UNE_CLE_ALEATOIRE_LONGUE_ET_PRIVEE"
 ```
 
 ### 5. Migrations & Seed
 ```bash
 npx prisma generate
 npx prisma migrate deploy
-npm run prisma:seed
+npm run prisma:seed # développement local uniquement; efface les données avant de recréer les exemples
 ```
-Crée 3 comptes de test :
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| SuperAdministrateur | `superadmin@isj.cm` | `SuperAdmin2026!` |
-| Administrateur | `admin@isj.cm` | `Admin2026!` |
-| Étudiant | `etudiant@isj.cm` | `Etudiant2026!` |
+Crée trois comptes de démonstration avec des mots de passe aléatoires affichés une seule fois dans la console. Le seed efface les données avant de les recréer, et refuse de s'exécuter sur Vercel ou avec `NODE_ENV=production`. N'utilisez jamais ces comptes sur une instance publique.
 
 ### 6. Lancer
 ```bash
@@ -334,7 +329,7 @@ npm run build
 # 1. Login étudiant
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"etudiant@isj.cm","motDePasse":"Etudiant2026!"}'
+  -d '{"email":"etudiant@isj.cm","motDePasse":"<mot_de_passe_genere_par_le_seed>"}'
 
 # 2. Liste documents (avec token)
 curl -H "Authorization: Bearer <token>" http://localhost:3000/api/documents

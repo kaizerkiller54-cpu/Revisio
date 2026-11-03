@@ -104,7 +104,12 @@ export async function findSupabaseUserByEmail(email: string): Promise<{ id: stri
   return user ? { id: user.id } : null;
 }
 
-export async function createSupabaseUser(email: string, password: string, phone?: string): Promise<string> {
+export async function createSupabaseUser(
+  email: string,
+  password: string,
+  phone?: string,
+  reuseExistingAuthUser = false
+): Promise<string> {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
@@ -114,8 +119,11 @@ export async function createSupabaseUser(email: string, password: string, phone?
   });
   if (error) {
     if (/already (been )?registered/i.test(error.message)) {
-      const existing = await findSupabaseUserByEmail(email);
-      if (existing) return existing.id;
+      if (reuseExistingAuthUser) {
+        const existing = await findSupabaseUserByEmail(email);
+        if (existing) return existing.id;
+      }
+      throw new AppError(409, "Cette adresse e-mail est déjà liée à un compte d'authentification.");
     }
     throw new AppError(400, `Impossible de créer le compte : ${error.message}`);
   }

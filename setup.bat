@@ -125,9 +125,10 @@ echo  INSTALLATION TERMINEE AVEC SUCCES
 echo ============================================
 echo.
 echo Comptes de test crees :
-echo   SuperAdmin : superadmin@isj.cm / SuperAdmin2026!
-echo   Admin      : admin@isj.cm       / Admin2026!
-echo   Etudiant   : etudiant@isj.cm    / Etudiant2026!
+echo   SuperAdmin : superadmin@isj.cm
+echo   Admin      : admin@isj.cm
+echo   Etudiant   : etudiant@isj.cm
+echo Les mots de passe aleatoires sont affiches une seule fois par le seed.
 echo.
 echo Pour lancer en DEVELOPPEMENT :
 echo   npm run dev

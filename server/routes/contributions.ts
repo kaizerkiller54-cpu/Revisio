@@ -186,6 +186,9 @@ const approveHandler = asyncHandler(async (req, res) => {
   if (!contribution) {
     throw notFound("Contribution introuvable.");
   }
+  if (contribution.statut !== "En_attente") {
+    throw badRequest("Cette contribution a déjà été traitée.");
+  }
 
   const semestre = semestreToDb(body.semestre);
 
@@ -265,12 +268,15 @@ const rejectHandler = asyncHandler(async (req, res) => {
   if (!contribution) {
     throw notFound("Contribution introuvable.");
   }
+  if (contribution.statut !== "En_attente") {
+    throw badRequest("Cette contribution a déjà été traitée.");
+  }
 
   const updated = await prisma.contribution.update({
     where: { id },
     data: { statut: "Refuse" },
   });
-  await deleteStorageFileByUrl(contribution.statut === "Publie" ? "" : contribution.fichierUrl ?? "");
+  await deleteStorageFileByUrl(contribution.fichierUrl ?? "");
 
   await logAdminAction({
     adminId: req.user!.id,

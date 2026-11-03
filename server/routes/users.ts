@@ -11,6 +11,7 @@ import { validate } from "../middlewares/validate";
 import {
   createSupabaseUser,
   deleteSupabaseUser,
+  signInSupabase,
   updateSupabaseEmail,
   updateSupabasePassword,
   updateSupabasePhone,
@@ -27,6 +28,7 @@ const profileSchema = z.object({
   prenom: z.string().min(2).max(80).optional(),
   email: z.string().email().max(200).optional(),
   telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
+  currentMotDePasse: z.string().min(1).max(128).optional(),
   nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
     .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
     .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
@@ -56,7 +58,7 @@ router.put(
     if (!user) {
       throw notFound("Utilisateur non trouvé.");
     }
-    const { nom, prenom, email, telephone, nouveauMotDePasse } = req.body;
+    const { nom, prenom, email, telephone, nouveauMotDePasse, currentMotDePasse } = req.body;
 
     let newEmail = user.email;
     if (email && email.trim().toLowerCase() !== user.email) {
@@ -69,15 +71,13 @@ router.put(
 
     const newTelephone = telephone !== undefined ? (telephone?.trim() || null) : user.telephone;
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        nom: nom?.trim().toUpperCase() ?? user.nom,
-        prenom: prenom?.trim() ?? user.prenom,
-        email: newEmail,
-        telephone: newTelephone,
-      },
-    });
+    const requiresReauthentication = newEmail !== user.email || !!nouveauMotDePasse;
+    if (requiresReauthentication) {
+      if (!currentMotDePasse) {
+        throw badRequest("Confirmez votre mot de passe actuel pour modifier l'e-mail ou le mot de passe.");
+      }
+      await signInSupabase(user.email, currentMotDePasse);
+    }
 
     if (newEmail !== user.email) {
       await updateSupabaseEmail(user.id, newEmail);
@@ -88,6 +88,16 @@ router.put(
     if (nouveauMotDePasse) {
       await updateSupabasePassword(user.id, nouveauMotDePasse.trim());
     }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        nom: nom?.trim().toUpperCase() ?? user.nom,
+        prenom: prenom?.trim() ?? user.prenom,
+        email: newEmail,
+        telephone: newTelephone,
+      },
+    });
 
     res.json({ user: mapUser(updated), message: "Vos informations de profil ont été mises à jour avec succès !" });
   })

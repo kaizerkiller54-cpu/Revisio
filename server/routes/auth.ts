@@ -15,8 +15,6 @@ import {
   refreshSupabaseSession,
   revokeSupabaseSession,
   signInSupabase,
-  type SupabaseSession,
-  updateSupabasePassword,
 } from "../services/auth.service";
 import { tryGetSuperAdminMasterKey } from "../config/superadmin";
 
@@ -38,9 +36,9 @@ const registerSchema = z.object({
     .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
     .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
     .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial."),
-  role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
-  masterKey: z.string().max(256).optional(),
-});
+  // Public registration can never assign privileged roles.
+  role: z.literal("Etudiant").optional(),
+}).strict();
 
 const loginSchema = z.object({
   email: z.string().email("Adresse e-mail invalide.").max(200),
@@ -57,22 +55,13 @@ router.post(
   authRateLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { nom, prenom, email, telephone, motDePasse, role, masterKey } = req.body;
+    const { nom, prenom, email, telephone, motDePasse } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedTelephone = telephone?.trim() || null;
 
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
     if (existing) {
       throw badRequest("Cette adresse e-mail est déjà utilisée.");
-    }
-
-    let assignedRole: "Etudiant" | "Administrateur" | "SuperAdministrateur" = "Etudiant";
-    if (role === "Administrateur" || role === "SuperAdministrateur") {
-      const currentMasterKey = tryGetSuperAdminMasterKey();
-      if (!masterKeyMatches(masterKey, currentMasterKey)) {
-        throw forbiddenRole();
-      }
-      assignedRole = role;
     }
 
     const authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? undefined);
@@ -83,7 +72,7 @@ router.post(
         prenom: prenom.trim(),
         email: trimmedEmail,
         telephone: trimmedTelephone,
-        role: assignedRole,
+        role: "Etudiant",
       },
     });
 
@@ -116,23 +105,30 @@ router.post(
     const trimmedEmail = email.trim().toLowerCase();
     const currentMasterKey = tryGetSuperAdminMasterKey();
 
-    // Bootstrap / connexion SuperAdmin via master key
-    if (currentMasterKey && (masterKeyMatches(masterKey, currentMasterKey) || masterKeyMatches(motDePasse, currentMasterKey))) {
-      const result = await ensureSuperAdminSession(trimmedEmail, motDePasse);
-      await logUserActivity({
-        userId: result.user.id,
-        userNom: `${result.user.prenom} ${result.user.nom}`,
-        userEmail: result.user.email,
-        userRole: result.user.role,
-        actionType: "LOGIN",
-        description: "S'est connecté à la plateforme ISJ Revisio.",
-      });
-      return res.json({
-        token: result.session.accessToken,
-        refreshToken: result.session.refreshToken,
-        user: mapUser(result.user),
-        message: "Connexion réussie en tant que SuperAdministrateur !",
-      });
+    // La clé ne sert qu'à initialiser le tout premier SuperAdmin. Elle ne
+    // remplace jamais le mot de passe d'un compte existant.
+    if (currentMasterKey && masterKeyMatches(masterKey, currentMasterKey)) {
+      const [existingProfile, existingSuperAdmin] = await Promise.all([
+        prisma.user.findUnique({ where: { email: trimmedEmail } }),
+        prisma.user.findFirst({ where: { role: "SuperAdministrateur" }, select: { id: true } }),
+      ]);
+      if (!existingProfile && !existingSuperAdmin) {
+        const result = await bootstrapFirstSuperAdmin(trimmedEmail, motDePasse);
+        await logUserActivity({
+          userId: result.user.id,
+          userNom: `${result.user.prenom} ${result.user.nom}`,
+          userEmail: result.user.email,
+          userRole: result.user.role,
+          actionType: "LOGIN",
+          description: "A initialisé le premier compte SuperAdministrateur.",
+        });
+        return res.json({
+          token: result.session.accessToken,
+          refreshToken: result.session.refreshToken,
+          user: mapUser(result.user),
+          message: "Compte SuperAdministrateur initialisé avec succès.",
+        });
+      }
     }
 
     const session = await signInSupabase(trimmedEmail, motDePasse);
@@ -213,51 +209,45 @@ router.get(
   })
 );
 
-async function ensureSuperAdminSession(email: string, password: string) {
-  let session: SupabaseSession | null = null;
-  try {
-    session = await signInSupabase(email, password);
-  } catch {
-    session = null;
+const bootstrapPasswordSchema = z.string().min(12).max(128)
+  .regex(/[a-zA-Z]/)
+  .regex(/[0-9]/)
+  .regex(/[^a-zA-Z0-9\s]/);
+
+async function bootstrapFirstSuperAdmin(email: string, password: string) {
+  if (!bootstrapPasswordSchema.safeParse(password).success) {
+    throw badRequest("Le premier mot de passe SuperAdministrateur doit contenir au moins 12 caractères, une lettre, un chiffre et un caractère spécial.");
   }
 
-  if (!session) {
-    const existingAuth = await findSupabaseUserByEmail(email);
-    if (existingAuth) {
-      await updateSupabasePassword(existingAuth.id, password);
-    } else {
-      await createSupabaseUser(email, password);
+  const user = await prisma.$transaction(async (tx) => {
+    // Sérialise le bootstrap : deux requêtes simultanées ne peuvent pas créer
+    // chacune un SuperAdministrateur initial.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(734112093)`;
+    const existingSuperAdmin = await tx.user.findFirst({ where: { role: "SuperAdministrateur" }, select: { id: true } });
+    const existingProfile = await tx.user.findUnique({ where: { email } });
+    if (existingSuperAdmin || existingProfile) {
+      throw unauthorized("Initialisation SuperAdministrateur déjà effectuée.");
     }
-    session = await signInSupabase(email, password);
-  }
 
-  let user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    user = await prisma.user.create({
+    const existingAuthUser = await findSupabaseUserByEmail(email);
+    if (existingAuthUser) {
+      throw unauthorized("Cette adresse e-mail est déjà associée à un compte.");
+    }
+
+    const authId = await createSupabaseUser(email, password);
+    return tx.user.create({
       data: {
-        id: session.userId,
+        id: authId,
         nom: "DIRECTION",
         prenom: "Super Admin ISJ",
         email,
         role: "SuperAdministrateur",
       },
     });
-  } else if (user.role !== "SuperAdministrateur") {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: { role: "SuperAdministrateur" },
-    });
-  }
+  }, { maxWait: 10000, timeout: 20000 });
 
-  if (!user) throw new AppError(500, "Impossible de créer le profil SuperAdministrateur.");
+  const session = await signInSupabase(email, password);
   return { user, session };
-}
-
-function forbiddenRole() {
-  return new AppError(
-    403,
-    "Clé d'autorisation invalide. La clé d'habilitation est requise pour créer ce compte."
-  );
 }
 
 export default router;

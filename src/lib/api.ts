@@ -102,6 +102,7 @@ export async function updateUserProfileApi(data: {
   email?: string;
   telephone?: string | null;
   nouveauMotDePasse?: string;
+  currentMotDePasse?: string;
 }) {
   const res = await fetch("/api/users/profile", {
     method: "PUT",
@@ -267,14 +268,6 @@ export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob;
 export async function getDocumentByIdApi(id: string): Promise<DocumentModel> {
   const res = await fetch(`/api/documents/${id}`);
   return parseJsonResponse<DocumentModel>(res, "Épreuve non trouvée.");
-}
-
-export async function recordDownloadApi(id: string) {
-  const res = await fetch(`/api/documents/${id}/download`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...getAuthHeader() },
-  });
-  return parseJsonResponse(res, "Impossible d'enregistrer le téléchargement.");
 }
 
 export async function submitContributionApi(payload: {

@@ -143,9 +143,22 @@ model UserNotification {
   lue       Boolean          @default(false)
   linkTab   String?
   createdAt DateTime         @default(now())
+  receipts  NotificationReceipt[]
 
   @@index([userId, lue])
   @@map("user_notifications")
+}
+
+model NotificationReceipt {
+  userId         String
+  notificationId String
+  readAt         DateTime?
+  deletedAt      DateTime?
+  notification   UserNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, notificationId])
+  @@index([notificationId])
+  @@map("notification_receipts")
 }
 
 model AuditLog {

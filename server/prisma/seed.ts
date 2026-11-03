@@ -1,7 +1,8 @@
+import { randomBytes } from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { env } from "../config/env";
-import { createSupabaseUser } from "../services/auth.service";
+import { createSupabaseUser, findSupabaseUserByEmail, updateSupabasePassword } from "../services/auth.service";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.databaseUrl }) });
 
@@ -25,6 +26,9 @@ const MATIERES = [
 ];
 
 async function main() {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    throw new Error("Le seed de développement est destructif et interdit en production.");
+  }
   console.log("🌱 Seed ISJ Revisio...");
 
   await prisma.$transaction([
@@ -37,9 +41,12 @@ async function main() {
     prisma.user.deleteMany(),
   ]);
 
-  const superadminId = await createSupabaseUser("superadmin@isj.cm", "SuperAdmin2026!");
-  const etudiantId = await createSupabaseUser("etudiant@isj.cm", "Etudiant2026!");
-  const adminId = await createSupabaseUser("admin@isj.cm", "Admin2026!");
+  const superadminPassword = `${randomBytes(24).toString("base64url")}A1!`;
+  const etudiantPassword = `${randomBytes(24).toString("base64url")}A1!`;
+  const adminPassword = `${randomBytes(24).toString("base64url")}A1!`;
+  const superadminId = await seedAuthUser("superadmin@isj.cm", superadminPassword);
+  const etudiantId = await seedAuthUser("etudiant@isj.cm", etudiantPassword);
+  const adminId = await seedAuthUser("admin@isj.cm", adminPassword);
 
   await prisma.user.create({
     data: {
@@ -73,7 +80,19 @@ async function main() {
     await prisma.matiere.create({ data: m });
   }
 
-  console.log("✅ Seed terminé. Comptes : superadmin@isj.cm / etudiant@isj.cm / admin@isj.cm");
+  console.log("✅ Seed terminé. Comptes de développement :");
+  console.log(`SuperAdministrateur superadmin@isj.cm — ${superadminPassword}`);
+  console.log(`Administrateur admin@isj.cm — ${adminPassword}`);
+  console.log(`Étudiant etudiant@isj.cm — ${etudiantPassword}`);
+}
+
+async function seedAuthUser(email: string, password: string): Promise<string> {
+  const existing = await findSupabaseUserByEmail(email);
+  if (existing) {
+    await updateSupabasePassword(existing.id, password);
+    return existing.id;
+  }
+  return createSupabaseUser(email, password);
 }
 
 main()
