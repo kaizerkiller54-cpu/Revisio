@@ -2460,9 +2460,6 @@ function createApp() {
     return standardJsonParser(req, res, next);
   });
   app2.use("/api", apiLimiter);
-  app2.use("/api", (_req, _res, next) => {
-    ensureBucket().then(() => next()).catch(next);
-  });
   app2.use("/api/contact", contact_default);
   app2.use("/api/auth", auth_default);
   app2.use("/api/documents", documents_default);

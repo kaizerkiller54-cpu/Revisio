@@ -48,6 +48,7 @@ export default function App() {
 
   const [examsFilters, setExamsFilters] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoadError, setDataLoadError] = useState(false);
   const [consentReminderKey, setConsentReminderKey] = useState(0);
 
   // Load initial datasets from API
@@ -74,8 +75,10 @@ export default function App() {
       setMatieres(subjectsData);
       setContributions(contribsData);
       if (statsData) setAdminStats(statsData);
+      setDataLoadError(false);
     } catch (err) {
       console.error("Erreur de chargement des données:", err);
+      setDataLoadError(true);
     } finally {
       setIsLoading(false);
     }
@@ -218,6 +221,7 @@ export default function App() {
               <HomeView
                 documents={documents}
                 matieres={matieres}
+                dataUnavailable={dataLoadError}
                 onNavigate={handleNavigate}
                 onViewDoc={(doc) => setPreviewDocument(doc)}
                 onDownloadDoc={handleDownloadDocument}
@@ -254,6 +258,7 @@ export default function App() {
             {(activeTab === "admin-dashboard") && (user?.role === "Administrateur" || user?.role === "SuperAdministrateur") && (
               <AdminDashboardView
                 stats={adminStats}
+                statsUnavailable={!adminStats}
                 onNavigateToModeration={() => setActiveTab("admin-documents")}
               />
             )}

@@ -19,6 +19,7 @@ import {
 interface HomeViewProps {
   documents: DocumentModel[];
   matieres: MatiereModel[];
+  dataUnavailable?: boolean;
   onNavigate: (tab: string, filterState?: any) => void;
   onViewDoc: (doc: DocumentModel) => void;
   onDownloadDoc: (doc: DocumentModel) => void;
@@ -27,6 +28,7 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({
   documents,
   matieres,
+  dataUnavailable = false,
   onNavigate,
   onViewDoc,
   onDownloadDoc,
@@ -46,6 +48,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
       <div className="space-y-8 sm:space-y-10 pb-12">
+      {dataUnavailable && (
+        <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950">
+          Les données du fonds documentaire n’ont pas pu être chargées. Les compteurs affichés ne représentent pas l’état réel des épreuves. Réessayez dans quelques instants.
+        </div>
+      )}
       {/* Hero Section - Scrolling Background Carousel */}
       <Reveal y={10}>
       <section className="relative rounded-3xl shadow-lg">
@@ -115,7 +122,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-slate-900">{documents.length}</div>
+            <div className="text-2xl font-bold text-slate-900">{dataUnavailable ? "—" : documents.length}</div>
             <div className="text-xs text-slate-500 uppercase font-medium">Épreuves Archivées</div>
           </div>
         </div>
@@ -125,7 +132,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-slate-900">{matieres.length}</div>
+            <div className="text-2xl font-bold text-slate-900">{dataUnavailable ? "—" : matieres.length}</div>
             <div className="text-xs text-slate-500 uppercase font-medium">Matières Niveau 1</div>
           </div>
         </div>
@@ -135,7 +142,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <Download className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-slate-900">{totalDownloads}</div>
+            <div className="text-2xl font-bold text-slate-900">{dataUnavailable ? "—" : totalDownloads}</div>
             <div className="text-xs text-slate-500 uppercase font-medium">Téléchargements</div>
           </div>
         </div>
@@ -185,7 +192,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <h3 className="text-lg font-bold text-slate-900">Semestre 1 (S1)</h3>
               </div>
               <span className="text-xs bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-3 py-1 rounded-full font-bold">
-                {s1Matieres.length} Matières
+              {dataUnavailable ? "—" : s1Matieres.length} Matières
               </span>
             </div>
             <div className="space-y-2.5">
@@ -221,7 +228,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <h3 className="text-lg font-bold text-slate-900">Semestre 2 (S2)</h3>
               </div>
               <span className="text-xs bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-3 py-1 rounded-full font-bold">
-                {s2Matieres.length} Matières
+              {dataUnavailable ? "—" : s2Matieres.length} Matières
               </span>
             </div>
             <div className="space-y-2.5">

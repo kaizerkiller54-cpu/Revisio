@@ -4,11 +4,13 @@ import { Users, FileText, CheckCircle2, Clock, ArrowRight, ShieldCheck, FileChec
 
 interface AdminDashboardViewProps {
   stats: DashboardStats | null;
+  statsUnavailable?: boolean;
   onNavigateToModeration: () => void;
 }
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   stats,
+  statsUnavailable = false,
   onNavigateToModeration,
 }) => {
   return (
@@ -50,7 +52,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             </div>
           </div>
           <div className="text-3xl font-black text-slate-900">
-            {stats ? stats.totalUsers : 0}
+            {stats ? stats.totalUsers : "—"}
           </div>
           <p className="text-xs text-slate-500">
             Comptes étudiants et administrateurs.
@@ -68,7 +70,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             </div>
           </div>
           <div className="text-3xl font-black text-slate-900">
-            {stats ? stats.totalDocuments : 0}
+            {stats ? stats.totalDocuments : "—"}
           </div>
           <p className="text-xs text-slate-500">
             Index complet des épreuves.
@@ -86,7 +88,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             </div>
           </div>
           <div className="text-3xl font-black text-emerald-700">
-            {stats ? stats.documentsPublies : 0}
+            {stats ? stats.documentsPublies : "—"}
           </div>
           <p className="text-xs text-slate-500">
             Épreuves validées et téléchargeables.
@@ -104,7 +106,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             </div>
           </div>
           <div className="text-3xl font-black text-amber-800">
-            {stats ? stats.documentsEnAttente : 0}
+            {stats ? stats.documentsEnAttente : "—"}
           </div>
           <p className="text-xs text-amber-800/80 font-medium">
             Soumissions en cours de modération.
@@ -113,7 +115,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       </div>
 
       {/* Moderation Alert Card */}
-      {stats && stats.documentsEnAttente > 0 ? (
+      {statsUnavailable ? (
+        <div role="alert" className="bg-amber-50 border border-amber-300 rounded-3xl p-6 text-center space-y-2 shadow-sm">
+          <Clock className="w-7 h-7 text-amber-700 mx-auto" />
+          <h3 className="text-slate-900 font-bold text-sm">Statistiques indisponibles</h3>
+          <p className="text-xs text-slate-600">Le serveur n’a pas pu charger les chiffres. Aucune donnée n’a été remplacée par des zéros.</p>
+        </div>
+      ) : stats && stats.documentsEnAttente > 0 ? (
         <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-2xl bg-amber-600 text-white flex items-center justify-center shrink-0 font-bold">

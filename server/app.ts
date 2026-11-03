@@ -13,7 +13,6 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { securityHeaders, apiNotFound } from "./middlewares/security";
 import { apiLimiter } from "./middlewares/rateLimit";
 import { env } from "./config/env";
-import { ensureBucket } from "./services/supabase";
 
 export function createApp() {
   const app = express();
@@ -42,11 +41,6 @@ export function createApp() {
     return standardJsonParser(req, res, next);
   });
   app.use("/api", apiLimiter);
-
-  // Secure any existing public bucket before API routes can serve files.
-  app.use("/api", (_req, _res, next) => {
-    ensureBucket().then(() => next()).catch(next);
-  });
 
   app.use("/api/contact", contactRoutes);
   app.use("/api/auth", authRoutes);
