@@ -25,7 +25,7 @@ Application web complète pour la gestion et le partage d'épreuves académiques
 - **Liste paginée & filtrée** : matière, semestre, type (CC/SN/SR), année, statut
 - **Téléchargement** — incrémente compteur, renvoie URL publique Supabase Storage
 - **Visualisation PDF** — modal intégrée (react-pdf / iframe)
-- **Publication** — seul Admin/SuperAdmin peut créer/publier
+- **Publication** — seul Admin/SuperAdmin peut créer/publier.
 
 ### 📤 Contributions étudiants
 - **Upload multipart** (PDF ≤ 15 Mo) → stockage direct Supabase Storage (bucket public `epreuves`)
