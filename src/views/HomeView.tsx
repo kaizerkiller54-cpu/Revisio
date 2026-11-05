@@ -23,6 +23,9 @@ interface HomeViewProps {
   onNavigate: (tab: string, filterState?: any) => void;
   onViewDoc: (doc: DocumentModel) => void;
   onDownloadDoc: (doc: DocumentModel) => void;
+  favoriteIds?: string[];
+  onToggleFavorite?: (doc: DocumentModel) => void;
+  downloadingDocId?: string | null;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -32,6 +35,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   onViewDoc,
   onDownloadDoc,
+  favoriteIds = [],
+  onToggleFavorite,
+  downloadingDocId = null,
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
 
@@ -288,6 +294,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 document={doc}
                 onView={onViewDoc}
                 onDownload={onDownloadDoc}
+                isFavorite={favoriteIds.includes(doc.id)}
+                onToggleFavorite={onToggleFavorite}
+                isDownloading={downloadingDocId === doc.id}
               />
             </Reveal>
           ))}

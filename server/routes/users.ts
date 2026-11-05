@@ -17,7 +17,9 @@ import {
   updateSupabasePhone,
 } from "../services/auth.service";
 import { logAdminAction } from "../services/audit.service";
+import { logUserActivity } from "../services/activity.service";
 import { createNotification } from "../services/notification.service";
+import { supabaseAdmin } from "../services/supabase";
 
 const router = Router();
 
@@ -47,6 +49,78 @@ const createUserSchema = z.object({
 const updateRoleSchema = z.object({
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]),
 });
+
+// GET /api/users/favorites — get authenticated user's personal favorites
+router.get(
+  "/favorites",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(req.user!.id);
+    if (error || !data.user) {
+      return res.json({ favorites: [] });
+    }
+    const raw = data.user.user_metadata?.favorites;
+    const favs = Array.isArray(raw)
+      ? raw.filter((id: any) => typeof id === "string" && id.length > 0)
+      : [];
+    res.json({ favorites: favs });
+  })
+);
+
+// POST /api/users/favorites/toggle — toggle document in authenticated user's favorites
+const toggleFavoriteSchema = z.object({
+  documentId: z.string().uuid("Identifiant de document invalide."),
+});
+
+router.post(
+  "/favorites/toggle",
+  authenticateJWT,
+  validate(toggleFavoriteSchema),
+  asyncHandler(async (req, res) => {
+    const { documentId } = req.body;
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(req.user!.id);
+    if (error || !data.user) {
+      throw notFound("Compte utilisateur introuvable.");
+    }
+    const raw = data.user.user_metadata?.favorites;
+    const currentFavs: string[] = Array.isArray(raw)
+      ? raw.filter((id: any) => typeof id === "string" && id.length > 0)
+      : [];
+
+    const isFav = currentFavs.includes(documentId);
+    const updatedFavs = isFav
+      ? currentFavs.filter((id) => id !== documentId)
+      : [...currentFavs, documentId];
+
+    const currentMeta = data.user.user_metadata || {};
+    await supabaseAdmin.auth.admin.updateUserById(req.user!.id, {
+      user_metadata: {
+        ...currentMeta,
+        favorites: updatedFavs,
+      },
+    });
+
+    const doc = await prisma.document.findUnique({ where: { id: documentId } });
+    await logUserActivity({
+      userId: req.user!.id,
+      userNom: `${req.user!.prenom} ${req.user!.nom}`,
+      userEmail: req.user!.email,
+      userRole: req.user!.role,
+      actionType: isFav ? "FAVORITE_REMOVE" : "FAVORITE_ADD",
+      description: isFav
+        ? `A retiré l'épreuve '${doc?.titre || documentId}' de ses favoris.`
+        : `A ajouté l'épreuve '${doc?.titre || documentId}' à ses favoris de révision.`,
+      targetId: documentId,
+      targetTitle: doc?.titre,
+    });
+
+    res.json({
+      favorites: updatedFavs,
+      isFavorite: !isFav,
+      message: !isFav ? "Épreuve ajoutée à vos favoris !" : "Épreuve retirée de vos favoris.",
+    });
+  })
+);
 
 // PUT /api/users/profile — update own profile
 router.put(
@@ -198,7 +272,7 @@ router.put(
       "Élévation / Modification de Rôle",
       `Félicitations ! Vos privilèges système sur la plateforme ISJ Revisio ont été mis à jour au statut '${role}'.`,
       role === "Administrateur" || role === "SuperAdministrateur" ? "success" : "info",
-      role === "Administrateur" ? "admin-dashboard" : role === "SuperAdministrateur" ? "super-admin-audit" : undefined
+      role === "Administrateur" ? "admin-documents" : role === "SuperAdministrateur" ? "super-admin-audit" : undefined
     );
 
     res.json({ message: "Le rôle a été mis à jour avec succès.", user: mapUser(updated) });

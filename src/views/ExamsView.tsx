@@ -11,6 +11,9 @@ interface ExamsViewProps {
   documents: DocumentModel[];
   onViewDoc: (doc: DocumentModel) => void;
   onDownloadDoc: (doc: DocumentModel) => void;
+  favoriteIds?: string[];
+  onToggleFavorite?: (doc: DocumentModel) => void;
+  downloadingDocId?: string | null;
   initialFilters?: {
     search?: string;
     matiere?: string;
@@ -26,6 +29,9 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
   documents,
   onViewDoc,
   onDownloadDoc,
+  favoriteIds = [],
+  onToggleFavorite,
+  downloadingDocId = null,
   initialFilters,
 }) => {
   const [searchQuery, setSearchQuery] = useState(initialFilters?.search || "");
@@ -201,6 +207,9 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
                   document={doc}
                   onView={onViewDoc}
                   onDownload={onDownloadDoc}
+                  isFavorite={favoriteIds.includes(doc.id)}
+                  onToggleFavorite={onToggleFavorite}
+                  isDownloading={downloadingDocId === doc.id}
                 />
               </Reveal>
             ))}

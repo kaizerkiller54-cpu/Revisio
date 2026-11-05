@@ -30,7 +30,7 @@ async function computeStats() {
 router.get(
   "/",
   authenticateJWT,
-  requireRole("Administrateur", "SuperAdministrateur"),
+  requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     res.json(await computeStats());
   })
@@ -39,7 +39,7 @@ router.get(
 router.get(
   "/stats",
   authenticateJWT,
-  requireRole("Administrateur", "SuperAdministrateur"),
+  requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     res.json(await computeStats());
   })
@@ -48,7 +48,7 @@ router.get(
 router.get(
   "/dashboard",
   authenticateJWT,
-  requireRole("Administrateur", "SuperAdministrateur"),
+  requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     res.json(await computeStats());
   })

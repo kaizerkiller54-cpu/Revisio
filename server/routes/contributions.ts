@@ -55,14 +55,26 @@ router.get(
     }
     if (
       contribution.document?.visible === false &&
-      req.user!.role !== "SuperAdministrateur"
+      !["Administrateur", "SuperAdministrateur"].includes(req.user!.role)
     ) {
       throw notFound("Épreuve masquée.");
     }
-    if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
-    const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
-    if (!storagePath) throw notFound("Fichier introuvable.");
-    const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+    const candidateUrls = [
+      contribution.fichierUrl,
+      contribution.document?.fichierUrl,
+    ].filter((u): u is string => Boolean(u && isSupabaseStorageUrl(u)));
+    if (!candidateUrls.length) throw notFound("Fichier introuvable.");
+
+    let data: Blob | null = null;
+    for (const url of candidateUrls) {
+      const storagePath = url.split("/storage/v1/object/public/epreuves/")[1];
+      if (!storagePath) continue;
+      const resDownload = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+      if (resDownload.data) {
+        data = resDownload.data;
+        break;
+      }
+    }
     if (!data) throw notFound("Fichier introuvable.");
     const buffer = Buffer.from(await data.arrayBuffer());
     if (buffer.length > MAX_PREVIEW_BYTES || !buffer.subarray(0, 1029).includes(Buffer.from("%PDF-"))) {

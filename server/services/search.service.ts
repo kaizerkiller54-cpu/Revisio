@@ -1,3 +1,4 @@
+import { isMockDatabase } from "../config/env";
 import { prisma } from "../prisma/client";
 import { statutFromDb, semestreFromDb } from "../utils/mappers";
 
@@ -90,6 +91,10 @@ function escapeLike(s: string): string {
 export async function ensureSearchIndexes(): Promise<void> {
   if (ftsChecked) return;
   ftsChecked = true;
+  if (isMockDatabase) {
+    ftsReady = false;
+    return;
+  }
   try {
     await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS unaccent;`);
     await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);

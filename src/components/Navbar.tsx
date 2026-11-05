@@ -19,7 +19,8 @@ import {
   ShieldAlert,
   History,
   ChevronUp,
-  Settings
+  Settings,
+  Bookmark
 } from "lucide-react";
 
 interface NavbarProps {
@@ -28,6 +29,7 @@ interface NavbarProps {
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
   onOpenQuickLogin?: () => void;
+  favoritesCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,10 +37,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   onLogout,
+  favoritesCount = 0,
 }) => {
   const [navHistory, setNavHistory] = useState<string[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,15 +69,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const handleBack = () => {
-    setNavHistory((prev) => {
-      if (prev.length === 0) {
-        setActiveTab("home");
-        return prev;
-      }
-      const next = prev[prev.length - 1];
-      setActiveTab(next);
-      return prev.slice(0, -1);
-    });
+    if (navHistory.length === 0) {
+      setActiveTab("home");
+      return;
+    }
+    const next = navHistory[navHistory.length - 1];
+    setNavHistory((prev) => prev.slice(0, -1));
+    setActiveTab(next);
   };
 
   const handleLogoutClick = () => {
@@ -143,6 +145,30 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Contribuer</span>
             </button>
 
+            {user && (
+              <button
+                onClick={() => handleNavClick("favorites")}
+                className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  activeTab === "favorites"
+                    ? "bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-500/30"
+                    : "text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                }`}
+              >
+                <Bookmark className={`w-4 h-4 ${favoritesCount > 0 ? "fill-amber-400 text-amber-500" : ""}`} />
+                <span>Favoris</span>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all tabular-nums leading-none ${
+                    favoritesCount > 0
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                  }`}
+                  title={`${favoritesCount} épreuve${favoritesCount > 1 ? "s" : ""} favorite${favoritesCount > 1 ? "s" : ""}`}
+                >
+                  {favoritesCount}
+                </span>
+              </button>
+            )}
+
             <button
               onClick={() => handleNavClick("activity-log")}
               className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
@@ -167,20 +193,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Paramètres</span>
             </button>
 
-            {isSuperAdmin && (
+            {isAdmin && (
               <>
-                <div className="h-5 w-px bg-slate-200 mx-1" />
-                <button
-                  onClick={() => handleNavClick("admin-dashboard")}
-                  className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                    activeTab === "admin-dashboard"
-                      ? "bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold"
-                      : "text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10"
-                  }`}
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Dashboard Admin</span>
-                </button>
+                <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => handleNavClick("admin-dashboard")}
+                    className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
+                      activeTab === "admin-dashboard"
+                        ? "bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold"
+                        : "text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10"
+                    }`}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Dashboard Admin</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => handleNavClick("admin-documents")}
@@ -194,17 +222,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>Modération</span>
                 </button>
 
-                <button
-                  onClick={() => handleNavClick("super-admin-audit")}
-                  className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                    activeTab === "super-admin-audit"
-                      ? "bg-sky-50 dark:bg-sky-400/15 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-400/30 font-extrabold shadow-sm"
-                      : "text-sky-600 dark:text-sky-300 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50/60 dark:hover:bg-sky-400/10"
-                  }`}
-                >
-                  <ShieldAlert className="w-4 h-4 text-sky-600" />
-                  <span>Journal d'Audit</span>
-                </button>
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => handleNavClick("super-admin-audit")}
+                    className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
+                      activeTab === "super-admin-audit"
+                        ? "bg-sky-50 dark:bg-sky-400/15 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-400/30 font-extrabold shadow-sm"
+                        : "text-sky-600 dark:text-sky-300 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50/60 dark:hover:bg-sky-400/10"
+                    }`}
+                  >
+                    <ShieldAlert className="w-4 h-4 text-sky-600" />
+                    <span>Journal d'Audit</span>
+                  </button>
+                )}
               </>
             )}
           </nav>
@@ -219,7 +249,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="text-right">
                 </div>
                 <button
-                  onClick={onLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   title="Déconnexion du compte"
                   className="flex items-center space-x-1.5 px-2.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 font-semibold text-xs border border-red-200/80 dark:border-red-500/30 transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
                 >
@@ -335,6 +365,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Soumettre une Épreuve</span>
           </button>
 
+          {user && (
+            <button
+              onClick={() => handleNavClick("favorites")}
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
+                activeTab === "favorites" ? "bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold" : "text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Bookmark className={`w-4 h-4 ${favoritesCount > 0 ? "fill-amber-400 text-amber-500" : ""}`} />
+                <span>Mes Épreuves Favorites</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 text-xs font-bold rounded-full tabular-nums ${
+                  favoritesCount > 0
+                    ? "bg-amber-500 text-white shadow-xs"
+                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                }`}
+              >
+                {favoritesCount}
+              </span>
+            </button>
+          )}
+
           <button
             onClick={() => handleNavClick("activity-log")}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
@@ -360,15 +413,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="px-3 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                 Espace Administration
               </div>
-              <button
-                onClick={() => handleNavClick("admin-dashboard")}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                  activeTab === "admin-dashboard" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard Admin</span>
-              </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => handleNavClick("admin-dashboard")}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
+                    activeTab === "admin-dashboard" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600 dark:text-slate-300"
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Dashboard Admin</span>
+                </button>
+              )}
 
               <button
                 onClick={() => handleNavClick("admin-documents")}
@@ -398,8 +453,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user ? (
               <button
                 onClick={() => {
-                  onLogout();
                   setMobileMenuOpen(false);
+                  setShowLogoutConfirm(true);
                 }}
                 className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center space-x-2"
               >
@@ -492,6 +547,53 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <ChevronUp className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+      {/* Modal de confirmation de déconnexion */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-inner">
+              <LogOut className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 id="logout-confirm-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                Confirmer la déconnexion
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                Êtes-vous sûr de vouloir vous déconnecter de votre compte {user ? <strong>{user.prenom} {user.nom}</strong> : "Revisio"} ?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  onLogout();
+                }}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-red-600/20 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Se déconnecter</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

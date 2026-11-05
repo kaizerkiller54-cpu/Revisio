@@ -13,7 +13,7 @@ function cspDirectives(isProduction: boolean) {
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'"],
-    frameAncestors: ["'self'"],
+    frameAncestors: ["'self'", "https://*.run.app", "https://*.google.com", "https://*.googleapis.com"],
     manifestSrc: ["'self'"],
     workerSrc: ["'self'", "blob:"],
   } as const;
@@ -28,6 +28,8 @@ export function securityHeaders() {
     contentSecurityPolicy: {
       directives: cspDirectives(process.env.NODE_ENV === "production"),
     },
+    // Désactive X-Frame-Options: SAMEORIGIN pour autoriser le rendu dans l'iframe du studio
+    frameguard: false,
     // Cross-Origin-Embedder-Policy require-corp bloquerait l'affichage des PDF
     // hébergés sur un autre domaine (Supabase). Désactivé volontairement.
     crossOriginEmbedderPolicy: false,

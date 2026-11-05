@@ -65,9 +65,12 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
         undefined,
         telephone.trim() || undefined
       );
+      if (!res || !res.user || !res.token) {
+        throw new Error(res?.message || "Session d'inscription incomplète. Veuillez vous connecter.");
+      }
       onRegisterSuccess(res.user, res.token);
     } catch (err: any) {
-      setErrorMsg(err.message || "Échec de l'inscription.");
+      setErrorMsg(err?.message || "Échec de l'inscription.");
     } finally {
       setIsLoading(false);
     }
