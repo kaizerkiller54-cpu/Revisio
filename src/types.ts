@@ -40,6 +40,7 @@ export interface DocumentModel {
   id: string;
   titre: string;
   matiere: string;
+  matiereId?: string;
   semestre: Semestre;
   typeEpreuve: EpreuveType;
   anneeAcademique: string;

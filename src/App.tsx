@@ -33,24 +33,180 @@ import { SettingsView } from "./views/SettingsView";
 import { FavoritesView } from "./views/FavoritesView";
 import { PlanningView } from "./views/PlanningView";
 
+const DEFAULT_DOCUMENTS: DocumentModel[] = [
+  {
+    id: "doc-1",
+    titre: "Épreuve de Contrôle Continu (CC) - Analyse 1",
+    matiere: "Analyse 1",
+    matiereId: "mat-3",
+    semestre: "Semestre 1",
+    typeEpreuve: "CC",
+    anneeAcademique: "2025-2026",
+    fichierUrl: "",
+    fichierNom: "CC_Analyse1_2025-2026_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2026-10-15T09:00:00.000Z",
+    dateAjout: "2026-10-15T09:00:00.000Z",
+    telechargementsCount: 142,
+  },
+  {
+    id: "doc-2",
+    titre: "Examen de Session Normale - Algèbre linéaire",
+    matiere: "Algèbre linéaire",
+    matiereId: "mat-2",
+    semestre: "Semestre 1",
+    typeEpreuve: "SN",
+    anneeAcademique: "2025-2026",
+    fichierUrl: "",
+    fichierNom: "SN_Algebre_Lineaire_2025-2026_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2026-02-10T14:00:00.000Z",
+    dateAjout: "2026-02-10T14:00:00.000Z",
+    telechargementsCount: 198,
+  },
+  {
+    id: "doc-3",
+    titre: "Épreuve de Contrôle Continu (CC) - Électrocinétique",
+    matiere: "Électrocinétique",
+    matiereId: "mat-4",
+    semestre: "Semestre 1",
+    typeEpreuve: "CC",
+    anneeAcademique: "2025-2026",
+    fichierUrl: "",
+    fichierNom: "CC_Electrocinetique_2025-2026_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2026-11-02T10:30:00.000Z",
+    dateAjout: "2026-11-02T10:30:00.000Z",
+    telechargementsCount: 86,
+  },
+  {
+    id: "doc-4",
+    titre: "Travaux Dirigés & Corrigé - Mesures Physiques",
+    matiere: "Mesures Physiques",
+    matiereId: "mat-6",
+    semestre: "Semestre 1",
+    typeEpreuve: "TD",
+    anneeAcademique: "2025-2026",
+    fichierUrl: "",
+    fichierNom: "TD_Mesures_Physiques_2025-2026_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2026-10-20T11:00:00.000Z",
+    dateAjout: "2026-10-20T11:00:00.000Z",
+    telechargementsCount: 64,
+  },
+  {
+    id: "doc-5",
+    titre: "Examen de Session Normale - Mécanique du Point",
+    matiere: "Mécanique",
+    matiereId: "mat-7",
+    semestre: "Semestre 1",
+    typeEpreuve: "SN",
+    anneeAcademique: "2024-2025",
+    fichierUrl: "",
+    fichierNom: "SN_Mecanique_2024-2025_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2025-02-14T08:30:00.000Z",
+    dateAjout: "2025-02-14T08:30:00.000Z",
+    telechargementsCount: 215,
+  },
+  {
+    id: "doc-6",
+    titre: "Épreuve de Contrôle Continu (CC) - Communication",
+    matiere: "Communication",
+    matiereId: "mat-1",
+    semestre: "Semestre 1",
+    typeEpreuve: "CC",
+    anneeAcademique: "2025-2026",
+    fichierUrl: "",
+    fichierNom: "CC_Communication_2025-2026_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2026-11-05T15:00:00.000Z",
+    dateAjout: "2026-11-05T15:00:00.000Z",
+    telechargementsCount: 52,
+  },
+  {
+    id: "doc-7",
+    titre: "Cours & Support de Révision - Mécatronique",
+    matiere: "Mécatronique",
+    matiereId: "mat-8",
+    semestre: "Semestre 1",
+    typeEpreuve: "Cours",
+    anneeAcademique: "2025-2026",
+    fichierUrl: "",
+    fichierNom: "Cours_Mecatronique_2025-2026_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2026-10-01T08:00:00.000Z",
+    dateAjout: "2026-10-01T08:00:00.000Z",
+    telechargementsCount: 110,
+  },
+  {
+    id: "doc-8",
+    titre: "Examen de Session Normale - Algorithmique & C",
+    matiere: "Algorithmique",
+    matiereId: "mat-15",
+    semestre: "Semestre 2",
+    typeEpreuve: "SN",
+    anneeAcademique: "2024-2025",
+    fichierUrl: "",
+    fichierNom: "SN_Algorithmique_2024-2025_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2025-06-18T10:00:00.000Z",
+    dateAjout: "2025-06-18T10:00:00.000Z",
+    telechargementsCount: 178,
+  },
+  {
+    id: "doc-9",
+    titre: "Épreuve de Contrôle Continu (CC) - Analyse 2",
+    matiere: "Analyse 2",
+    matiereId: "mat-11",
+    semestre: "Semestre 2",
+    typeEpreuve: "CC",
+    anneeAcademique: "2024-2025",
+    fichierUrl: "",
+    fichierNom: "CC_Analyse2_2024-2025_ISJ.pdf",
+    statut: "Publié",
+    visible: true,
+    datePublication: "2025-05-12T09:00:00.000Z",
+    dateAjout: "2025-05-12T09:00:00.000Z",
+    telechargementsCount: 130,
+  },
+];
+
 const DEFAULT_MATIERES: MatiereModel[] = [
-  { id: "mat-1", nom: "Communication", code: "COMM101", semestre: "Semestre 1", description: "Techniques de communication écrite et orale.", countDocs: 0 },
-  { id: "mat-2", nom: "Algèbre linéaire", code: "MATH101", semestre: "Semestre 1", description: "Espaces vectoriels, matrices, applications linéaires.", countDocs: 0 },
-  { id: "mat-3", nom: "Analyse 1", code: "MATH102", semestre: "Semestre 1", description: "Suites numériques, dérivation, calcul d'intégrales.", countDocs: 0 },
-  { id: "mat-4", nom: "Électrocinétique", code: "PHYS101", semestre: "Semestre 1", description: "Circuits électriques, lois de Kirchhoff, filtres.", countDocs: 0 },
+  { id: "mat-1", nom: "Communication", code: "COMM101", semestre: "Semestre 1", description: "Techniques de communication écrite et orale.", countDocs: 1 },
+  { id: "mat-2", nom: "Algèbre linéaire", code: "MATH101", semestre: "Semestre 1", description: "Espaces vectoriels, matrices, applications linéaires.", countDocs: 1 },
+  { id: "mat-3", nom: "Analyse 1", code: "MATH102", semestre: "Semestre 1", description: "Suites numériques, dérivation, calcul d'intégrales.", countDocs: 1 },
+  { id: "mat-4", nom: "Électrocinétique", code: "PHYS101", semestre: "Semestre 1", description: "Circuits électriques, lois de Kirchhoff, filtres.", countDocs: 1 },
   { id: "mat-5", nom: "Anglais", code: "LANG101", semestre: "Semestre 1", description: "Anglais scientifique et technique I.", countDocs: 0 },
-  { id: "mat-6", nom: "Mesures Physiques", code: "PHYS102", semestre: "Semestre 1", description: "Calculs d'incertitudes, métrologie, instruments.", countDocs: 0 },
-  { id: "mat-7", nom: "Mécanique", code: "PHYS103", semestre: "Semestre 1", description: "Mécanique du point et du solide, cinématique.", countDocs: 0 },
-  { id: "mat-8", nom: "Mécatronique", code: "MTRK101", semestre: "Semestre 1", description: "Systèmes mécatroniques intégrés, capteurs.", countDocs: 0 },
+  { id: "mat-6", nom: "Mesures Physiques", code: "PHYS102", semestre: "Semestre 1", description: "Calculs d'incertitudes, métrologie, instruments.", countDocs: 1 },
+  { id: "mat-7", nom: "Mécanique", code: "PHYS103", semestre: "Semestre 1", description: "Mécanique du point et du solide, cinématique.", countDocs: 1 },
+  { id: "mat-8", nom: "Mécatronique", code: "MTRK101", semestre: "Semestre 1", description: "Systèmes mécatroniques intégrés, capteurs.", countDocs: 1 },
   { id: "mat-9", nom: "Réflexion humaine", code: "HUM201", semestre: "Semestre 2", description: "Éthique de l'ingénieur, réflexion critique.", countDocs: 0 },
   { id: "mat-10", nom: "Géométrie", code: "MATH201", semestre: "Semestre 2", description: "Géométrie euclidienne dans l'espace.", countDocs: 0 },
-  { id: "mat-11", nom: "Analyse 2", code: "MATH202", semestre: "Semestre 2", description: "Séries numériques, Fourier, intégrales multiples.", countDocs: 0 },
+  { id: "mat-11", nom: "Analyse 2", code: "MATH202", semestre: "Semestre 2", description: "Séries numériques, Fourier, intégrales multiples.", countDocs: 1 },
   { id: "mat-12", nom: "Électrostatique/magnétostatique", code: "PHYS201", semestre: "Semestre 2", description: "Champs et potentiels électrostatiques.", countDocs: 0 },
   { id: "mat-13", nom: "Anglais", code: "LANG202", semestre: "Semestre 2", description: "Anglais technique II, présentations.", countDocs: 0 },
   { id: "mat-14", nom: "Chimie", code: "CHIM201", semestre: "Semestre 2", description: "Structure atomique, liaisons chimiques.", countDocs: 0 },
-  { id: "mat-15", nom: "Algorithmique", code: "INFO201", semestre: "Semestre 2", description: "Conception d'algorithmes, complexité.", countDocs: 0 },
+  { id: "mat-15", nom: "Algorithmique", code: "INFO201", semestre: "Semestre 2", description: "Conception d'algorithmes, complexité.", countDocs: 1 },
   { id: "mat-16", nom: "IDFOT", code: "INFO202", semestre: "Semestre 2", description: "Initiation aux Développements et Formations Outils.", countDocs: 0 },
 ];
+
+function updateMatieresCounts(mats: MatiereModel[], docs: DocumentModel[]): MatiereModel[] {
+  return mats.map((m) => {
+    const cnt = docs.filter(
+      (d) => d.matiereId === m.id || d.matiere?.toLowerCase() === m.nom?.toLowerCase()
+    ).length;
+    return { ...m, countDocs: cnt };
+  });
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -65,9 +221,9 @@ export default function App() {
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
   const [downloadToast, setDownloadToast] = useState<DownloadToastState | null>(null);
 
-  const [documents, setDocuments] = useState<DocumentModel[]>([]);
+  const [documents, setDocuments] = useState<DocumentModel[]>(DEFAULT_DOCUMENTS);
   const [hiddenDocuments, setHiddenDocuments] = useState<DocumentModel[]>([]);
-  const [matieres, setMatieres] = useState<MatiereModel[]>(DEFAULT_MATIERES);
+  const [matieres, setMatieres] = useState<MatiereModel[]>(() => updateMatieresCounts(DEFAULT_MATIERES, DEFAULT_DOCUMENTS));
   const [contributions, setContributions] = useState<ContributionModel[]>([]);
   const [adminStats, setAdminStats] = useState<DashboardStats | null>(null);
 
@@ -94,12 +250,13 @@ export default function App() {
       const statsData = me?.role === "SuperAdministrateur" ? await getAdminStatsApi().catch(() => null) : null;
       const hiddenData = me?.role === "SuperAdministrateur" ? await getHiddenDocumentsApi().catch(() => []) : [];
 
-      if (Array.isArray(docsData) && docsData.length > 0) setDocuments(docsData);
+      const activeDocs = Array.isArray(docsData) && docsData.length > 0 ? docsData : DEFAULT_DOCUMENTS;
+      const activeSubjects = Array.isArray(subjectsData) && subjectsData.length > 0 ? subjectsData : DEFAULT_MATIERES;
+
+      setDocuments(activeDocs);
+      setMatieres(updateMatieresCounts(activeSubjects, activeDocs));
+
       if (Array.isArray(hiddenData)) setHiddenDocuments(hiddenData);
-      
-      if (Array.isArray(subjectsData) && subjectsData.length > 0) {
-        setMatieres(subjectsData);
-      }
       if (Array.isArray(contribsData)) setContributions(contribsData);
       if (statsData) setAdminStats(statsData);
 
