@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   History,
   ChevronUp,
+  ChevronDown,
   Settings,
   Bookmark,
   Calendar
@@ -42,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [navHistory, setNavHistory] = useState<string[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -60,6 +62,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isAdmin = user?.role === "Administrateur" || user?.role === "SuperAdministrateur";
   const isSuperAdmin = user?.role === "SuperAdministrateur";
+  const isAdminTabActive =
+    activeTab === "admin-dashboard" ||
+    activeTab === "admin-documents" ||
+    activeTab === "super-admin-audit";
 
   const handleNavClick = (tab: string) => {
     if (tab !== activeTab) {
@@ -67,6 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
     setActiveTab(tab);
     setMobileMenuOpen(false);
+    setAdminMenuOpen(false);
   };
 
   const handleBack = () => {
@@ -88,21 +95,21 @@ export const Navbar: React.FC<NavbarProps> = ({
     <>
     <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 shadow-xs">
       <div className="max-w-[1600px] mx-auto px-3 sm:px-5 2xl:px-8">
-        <div className="flex items-center justify-between gap-2 xl:gap-4 h-16">
+        <div className="flex items-center justify-between gap-3 xl:gap-6 h-16">
           {/* Zone 1 : Logo & Brand (Jamais écrasé) */}
           <div
             onClick={() => handleNavClick("home")}
-            className="cursor-pointer shrink-0 pr-1 xl:pr-2"
+            className="cursor-pointer shrink-0"
           >
             <AppLogo size="md" variant="light" showSubtitle={false} />
           </div>
 
-          {/* Zone 2 : Navigation Principale & Administration (Desktop) */}
+          {/* Zone 2 : Navigation Principale & Menu Administration (Desktop) */}
           <nav
             aria-label="Navigation principale"
-            className="hidden lg:flex items-center justify-center flex-1 min-w-0 gap-1.5 xl:gap-2.5"
+            className="hidden lg:flex items-center justify-center flex-1 min-w-0 gap-2"
           >
-            {/* Pôle Académique */}
+            {/* Barre unifiée : Pôle Académique + Accès Administration */}
             <div className="flex items-center gap-0.5 xl:gap-1 bg-slate-50/90 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/70 shrink-0">
               <button
                 onClick={() => handleNavClick("home")}
@@ -197,61 +204,123 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 </button>
               )}
+
+              {/* Accès Administration intégré sans débordement */}
+              {isAdmin && (
+                <>
+                  <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5 shrink-0" />
+                  {isSuperAdmin ? (
+                    <div className="relative shrink-0">
+                      <button
+                        onClick={() => setAdminMenuOpen(!adminMenuOpen)}
+                        title="Espace Administration & Gouvernance"
+                        className={`h-9 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                          isAdminTabActive || adminMenuOpen
+                            ? "bg-blue-900 text-white dark:bg-blue-600 shadow-xs"
+                            : "text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                        <span>
+                          {activeTab === "admin-documents"
+                            ? "Modération"
+                            : activeTab === "super-admin-audit"
+                            ? "Audit"
+                            : "Admin"}
+                        </span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                            adminMenuOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {adminMenuOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setAdminMenuOpen(false)}
+                          />
+                          <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-1.5 z-50 animate-fadeIn">
+                            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                              Pôle Administration ISJ
+                            </div>
+
+                            <button
+                              onClick={() => handleNavClick("admin-dashboard")}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
+                                activeTab === "admin-dashboard"
+                                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
+                                  : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              <LayoutDashboard className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
+                              <div>
+                                <div className="font-bold">Dashboard Admin</div>
+                                <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                  Statistiques et gestion des comptes
+                                </div>
+                              </div>
+                            </button>
+
+                            <button
+                              onClick={() => handleNavClick("admin-documents")}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
+                                activeTab === "admin-documents"
+                                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
+                                  : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              <FileCheck className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
+                              <div>
+                                <div className="font-bold">Modération</div>
+                                <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                  Validation et publication des épreuves
+                                </div>
+                              </div>
+                            </button>
+
+                            <button
+                              onClick={() => handleNavClick("super-admin-audit")}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
+                                activeTab === "super-admin-audit"
+                                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
+                                  : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              <ShieldAlert className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
+                              <div>
+                                <div className="font-bold">Journal d'Audit</div>
+                                <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                  Traçabilité et sécurité SuperAdmin
+                                </div>
+                              </div>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleNavClick("admin-documents")}
+                      title="Modération des documents"
+                      className={`h-9 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                        activeTab === "admin-documents"
+                          ? "bg-blue-900 text-white dark:bg-blue-600 shadow-xs"
+                          : "text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <FileCheck className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                      <span>Modération</span>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
-
-            {/* Pôle Administration (Gouvernance & Modération) */}
-            {isAdmin && (
-              <div className="flex items-center gap-0.5 xl:gap-1 bg-amber-50/70 dark:bg-slate-800/80 p-1 rounded-xl border border-amber-200/80 dark:border-slate-700 shrink-0">
-                {isSuperAdmin && (
-                  <button
-                    onClick={() => handleNavClick("admin-dashboard")}
-                    title="Dashboard Administrateur"
-                    className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                      activeTab === "admin-dashboard"
-                        ? "bg-amber-600 text-white font-semibold shadow-xs"
-                        : "text-amber-900 dark:text-amber-300 hover:bg-amber-100/80 dark:hover:bg-amber-500/15"
-                    }`}
-                  >
-                    <LayoutDashboard className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
-                    <span className="hidden 2xl:inline">Dashboard Admin</span>
-                    <span className="2xl:hidden">Admin</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => handleNavClick("admin-documents")}
-                  title="Modération des documents"
-                  className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                    activeTab === "admin-documents"
-                      ? "bg-amber-600 text-white font-semibold shadow-xs"
-                      : "text-amber-900 dark:text-amber-300 hover:bg-amber-100/80 dark:hover:bg-amber-500/15"
-                  }`}
-                >
-                  <FileCheck className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
-                  <span>Modération</span>
-                </button>
-
-                {isSuperAdmin && (
-                  <button
-                    onClick={() => handleNavClick("super-admin-audit")}
-                    title="Journal d'Audit SuperAdmin"
-                    className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                      activeTab === "super-admin-audit"
-                        ? "bg-blue-900 text-white dark:bg-sky-600 font-semibold shadow-xs"
-                        : "text-blue-900 dark:text-sky-300 hover:bg-blue-100/70 dark:hover:bg-sky-500/15"
-                    }`}
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
-                    <span className="hidden 2xl:inline">Journal d'Audit</span>
-                    <span className="2xl:hidden">Audit</span>
-                  </button>
-                )}
-              </div>
-            )}
           </nav>
 
           {/* Zone 3 : Outils Personnels, Notifications & Session (Jamais écrasé) */}
-          <div className="hidden lg:flex items-center shrink-0 gap-1.5 xl:gap-2">
+          <div className="hidden lg:flex items-center shrink-0 gap-1.5">
             {/* Groupe Utilitaires : Journal, Paramètres, Notifications */}
             <div className="flex items-center gap-1.5">
               <button
@@ -291,10 +360,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => setShowLogoutConfirm(true)}
                   title="Déconnexion du compte"
-                  className="h-9 flex items-center gap-1.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 font-semibold text-xs border border-red-200/80 dark:border-red-500/30 transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+                  className="h-9 flex items-center justify-center gap-1.5 px-2.5 xl:px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 font-semibold text-xs border border-red-200/80 dark:border-red-500/30 transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <LogOut className="w-3.5 h-3.5 shrink-0" />
-                  <span>Déconnexion</span>
+                  <LogOut className="w-4 h-4 xl:w-3.5 xl:h-3.5 shrink-0" />
+                  <span className="hidden xl:inline">Déconnexion</span>
                 </button>
               </div>
             ) : (
