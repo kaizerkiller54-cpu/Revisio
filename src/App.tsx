@@ -61,6 +61,7 @@ export default function App() {
 
   // Load initial datasets from API
   const loadData = async () => {
+    let fetchFailed = false;
     try {
       const me = await getMeApi().catch(() => null);
       if (me) {
@@ -69,23 +70,34 @@ export default function App() {
         setUser(null);
       }
 
-      const [docsData, subjectsData, contribsData, statsData, hiddenData] = await Promise.all([
-        getDocumentsApi({ statut: "Publié" }).catch(() => getDocumentsApi().catch(() => [])),
-        getSubjectsApi().catch(() => []),
-        getContributionsApi().catch(() => []),
-        me?.role === "SuperAdministrateur" ? getAdminStatsApi().catch(() => null) : Promise.resolve(null),
-        me?.role === "SuperAdministrateur" ? getHiddenDocumentsApi().catch(() => []) : Promise.resolve([]),
-      ]);
+      let docsFailed = false;
+      let subjectsFailed = false;
+
+      const docsData = await getDocumentsApi({ statut: "Publié" }).catch(() => {
+        docsFailed = true;
+        return [];
+      });
+
+      const subjectsData = await getSubjectsApi().catch(() => {
+        subjectsFailed = true;
+        return [];
+      });
+
+      const contribsData = await getContributionsApi().catch(() => []);
+      const statsData = me?.role === "SuperAdministrateur" ? await getAdminStatsApi().catch(() => null) : null;
+      const hiddenData = me?.role === "SuperAdministrateur" ? await getHiddenDocumentsApi().catch(() => []) : [];
 
       if (Array.isArray(docsData)) setDocuments(docsData);
       if (Array.isArray(hiddenData)) setHiddenDocuments(hiddenData);
-      if (Array.isArray(subjectsData)) setMatieres(subjectsData);
+      
+      if (Array.isArray(subjectsData) && subjectsData.length > 0) {
+        setMatieres(subjectsData);
+      }
       if (Array.isArray(contribsData)) setContributions(contribsData);
       if (statsData) setAdminStats(statsData);
 
-      // Data is considered successfully loaded if documents or subjects arrays are retrieved
-      const hasLoadedData = (Array.isArray(docsData) && docsData.length > 0) || (Array.isArray(subjectsData) && subjectsData.length > 0);
-      setDataLoadError(!hasLoadedData);
+      // Error only if API calls explicitly failed due to network / server down
+      setDataLoadError(docsFailed && subjectsFailed);
     } catch (err) {
       console.error("Erreur de chargement des données:", err);
       setDataLoadError(true);
