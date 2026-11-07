@@ -25,8 +25,7 @@ if (!process.env.SUPERADMIN_MASTER_KEY) {
 if (!process.env.RATE_LIMIT_ENABLED) {
   process.env.RATE_LIMIT_ENABLED = "false";
 }
-var rawDatabaseUrl = process.env.DATABASE_URL?.trim() ?? "";
-var useSupabaseDatabase = !rawDatabaseUrl || rawDatabaseUrl.includes("localhost") || rawDatabaseUrl.includes("127.0.0.1");
+var useSupabaseDatabase = true;
 var isMockSupabase = false;
 function resolvePort() {
   const args = process.argv;

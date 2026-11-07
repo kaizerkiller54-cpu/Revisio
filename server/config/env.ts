@@ -15,10 +15,8 @@ if (!process.env.RATE_LIMIT_ENABLED) {
   process.env.RATE_LIMIT_ENABLED = "false";
 }
 
-const rawDatabaseUrl = process.env.DATABASE_URL?.trim() ?? "";
-
-// Use Supabase PostgREST adapter when DATABASE_URL is absent or points to localhost (unreachable in cloud container)
-export const useSupabaseDatabase = !rawDatabaseUrl || rawDatabaseUrl.includes("localhost") || rawDatabaseUrl.includes("127.0.0.1");
+// Always connect to live Supabase REST client containing all real ISJ documents and subjects
+export const useSupabaseDatabase = true;
 export const isMockDatabase = useSupabaseDatabase;
 export const isMockSupabase = false;
 
