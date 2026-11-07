@@ -5,25 +5,19 @@ import {
   Clock,
   BookOpen,
   CheckCircle2,
-  AlertCircle,
   Plus,
   Trash2,
   Bell,
   BellOff,
-  Search,
-  ChevronRight,
-  Filter,
-  Sparkles,
-  Award,
   CheckSquare,
   Square,
   FileText,
   CalendarCheck,
-  Tag,
-  Share2,
-  Info,
-  ShieldCheck,
-  Edit2
+  Award,
+  ArrowRight,
+  RotateCcw,
+  Layers,
+  GraduationCap,
 } from "lucide-react";
 import { Reveal } from "../components/motion";
 
@@ -66,7 +60,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-10-10",
     heureDebut: "08:00",
-    heureFin: "10:00"
+    heureFin: "10:00",
   },
   // Samedi 31/10/2026
   {
@@ -76,7 +70,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-10-31",
     heureDebut: "08:00",
-    heureFin: "10:00"
+    heureFin: "10:00",
   },
   {
     id: "ing1-cc-31-10-mesures",
@@ -85,7 +79,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-10-31",
     heureDebut: "10:30",
-    heureFin: "12:30"
+    heureFin: "12:30",
   },
   // Samedi 07/11/2026
   {
@@ -95,7 +89,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-11-07",
     heureDebut: "08:00",
-    heureFin: "10:00"
+    heureFin: "10:00",
   },
   {
     id: "ing1-cc-07-11-algebre",
@@ -104,7 +98,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-11-07",
     heureDebut: "10:30",
-    heureFin: "12:30"
+    heureFin: "12:30",
   },
   // Samedi 28/11/2026
   {
@@ -114,7 +108,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-11-28",
     heureDebut: "08:00",
-    heureFin: "10:00"
+    heureFin: "10:00",
   },
   {
     id: "ing1-cc-28-11-mecanique",
@@ -123,7 +117,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-11-28",
     heureDebut: "10:30",
-    heureFin: "12:30"
+    heureFin: "12:30",
   },
   // Samedi 05/12/2026
   {
@@ -133,7 +127,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-12-05",
     heureDebut: "08:00",
-    heureFin: "10:00"
+    heureFin: "10:00",
   },
   {
     id: "ing1-cc-05-12-mesures",
@@ -142,7 +136,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-12-05",
     heureDebut: "10:30",
-    heureFin: "12:30"
+    heureFin: "12:30",
   },
   {
     id: "ing1-cc-05-12-anglais",
@@ -151,7 +145,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-12-05",
     heureDebut: "13:00",
-    heureFin: "15:00"
+    heureFin: "15:00",
   },
   // Samedi 12/12/2026
   {
@@ -161,7 +155,7 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-12-12",
     heureDebut: "08:00",
-    heureFin: "10:00"
+    heureFin: "10:00",
   },
   {
     id: "ing1-cc-12-12-communication",
@@ -170,8 +164,8 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     semestre: "Semestre 1",
     dateIso: "2026-12-12",
     heureDebut: "10:30",
-    heureFin: "11:30"
-  }
+    heureFin: "11:30",
+  },
 ];
 
 export const PlanningView: React.FC<PlanningViewProps> = ({
@@ -179,18 +173,18 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
   documents,
   matieres,
   onNavigateToExams,
-  onNavigateToLogin,
 }) => {
   const [selectedSemestre, setSelectedSemestre] = useState<"Semestre 1" | "Semestre 2">("Semestre 1");
-  const [selectedType, setSelectedType] = useState<string>("Tous");
   const [selectedMatiere, setSelectedMatiere] = useState<string>("Toutes");
   const [statusFilter, setStatusFilter] = useState<"upcoming" | "all" | "past">("upcoming");
-  const [activeTab, setActiveTab] = useState<"calendar" | "personal">("calendar");
+  // On mobile/tablet (< lg), "split" acts like "calendar" so the user doesn't have to scroll past everything,
+  // while on desktop (lg+) "split" shows both columns side-by-side.
+  const [activeView, setActiveView] = useState<"split" | "calendar" | "personal">("split");
+  const [mobileSection, setMobileSection] = useState<"calendar" | "personal">("calendar");
 
-  // Always load official ING1 schedule from PDF
   const [examSchedule] = useState<ExamEvent[]>(DEFAULT_ING1_EXAM_SCHEDULE);
 
-  // Helper to check if an exam has ended based on exact date & end time (heureFin)
+  // Check if an exam has ended based on exact date & end time (heureFin)
   const isExamEnded = (ev: ExamEvent) => {
     try {
       const now = new Date();
@@ -214,62 +208,87 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
       {
         id: "task-1",
         matiereNom: "Algèbre linéaire",
-        titre: "Refaire tous les exercices du CC 2024 d'Algèbre",
-        dateCibleIso: "2026-11-17",
+        titre: "Refaire les exercices du CC d'Algèbre linéaire",
+        dateCibleIso: "2026-11-25",
         terminee: false,
         rappelActif: true,
-        notes: "Insister sur le calcul de déterminants et réduction d'endomorphismes."
+        notes: "Insister sur le calcul de déterminants et la réduction d'endomorphismes.",
       },
       {
         id: "task-2",
         matiereNom: "Analyse 1",
-        titre: "Fiche récapitulative des DL usuels",
-        dateCibleIso: "2026-11-18",
+        titre: "Réviser les développements limités et suites numériques",
+        dateCibleIso: "2026-11-26",
         terminee: true,
         rappelActif: false,
-        notes: "Vérifier la formule de Taylor-Young à l'ordre 3."
-      }
+        notes: "Revoir la formule de Taylor-Young.",
+      },
     ];
   });
 
   // State for new task creation
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskMatiere, setNewTaskMatiere] = useState("Algèbre linéaire");
-  const [newTaskDate, setNewTaskDate] = useState("2026-11-18");
+  const [newTaskMatiere, setNewTaskMatiere] = useState("Analyse 1");
+  const [newTaskDate, setNewTaskDate] = useState("2026-11-28");
   const [newTaskNotes, setNewTaskNotes] = useState("");
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
 
-  // Save tasks to local storage
   useEffect(() => {
     try {
       localStorage.setItem(storageKeyTasks, JSON.stringify(userTasks));
     } catch {}
   }, [userTasks, storageKeyTasks]);
 
-  // S1 Matieres list
-  const s1MatieresList = useMemo(() => {
-    return matieres
+  const semesterMatieresList = useMemo(() => {
+    const list = matieres
       .filter((m) => m.semestre === selectedSemestre)
       .map((m) => m.nom);
+    return list.length > 0
+      ? list
+      : [
+          "Analyse 1",
+          "Algèbre linéaire",
+          "Électrocinétique",
+          "Mécanique",
+          "Mesures Physiques",
+          "Mécatronique",
+          "Communication",
+          "Anglais",
+        ];
   }, [matieres, selectedSemestre]);
 
   // Filtered Exam Events (hides ended exams by default)
   const filteredEvents = useMemo(() => {
-    return examSchedule.filter((ev) => {
-      if (ev.semestre !== selectedSemestre) return false;
-      if (selectedType !== "Tous" && ev.typeEpreuve !== selectedType) return false;
-      if (selectedMatiere !== "Toutes" && ev.matiereNom !== selectedMatiere) return false;
+    return examSchedule
+      .filter((ev) => {
+        if (ev.semestre !== selectedSemestre) return false;
+        if (selectedMatiere !== "Toutes" && ev.matiereNom !== selectedMatiere) return false;
 
-      const ended = isExamEnded(ev);
-      if (statusFilter === "upcoming" && ended) return false;
-      if (statusFilter === "past" && !ended) return false;
+        const ended = isExamEnded(ev);
+        if (statusFilter === "upcoming" && ended) return false;
+        if (statusFilter === "past" && !ended) return false;
 
-      return true;
-    }).sort((a, b) => {
-      if (a.dateIso !== b.dateIso) return a.dateIso.localeCompare(b.dateIso);
-      return a.heureDebut.localeCompare(b.heureDebut);
-    });
-  }, [examSchedule, selectedSemestre, selectedType, selectedMatiere, statusFilter]);
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.dateIso !== b.dateIso) return a.dateIso.localeCompare(b.dateIso);
+        return a.heureDebut.localeCompare(b.heureDebut);
+      });
+  }, [examSchedule, selectedSemestre, selectedMatiere, statusFilter]);
+
+  // Group filtered events by dateIso for clean visual structure
+  const groupedEventsByDate = useMemo(() => {
+    const groups: Array<{ dateIso: string; events: ExamEvent[] }> = [];
+    for (const ev of filteredEvents) {
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.dateIso === ev.dateIso) {
+        lastGroup.events.push(ev);
+      } else {
+        groups.push({ dateIso: ev.dateIso, events: [ev] });
+      }
+    }
+    return groups;
+  }, [filteredEvents]);
 
   // Next upcoming exam session date and all exams scheduled for that day
   const nextUpcomingExams = useMemo(() => {
@@ -281,33 +300,26 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
       });
 
     if (upcoming.length === 0) return [];
-    
-    // Get the earliest upcoming date
     const earliestDateIso = upcoming[0].dateIso;
-    // Return all exams on that date that haven't ended yet
     return upcoming.filter((ev) => ev.dateIso === earliestDateIso);
   }, [examSchedule]);
 
-  // Toggle Task Completion
   const handleToggleTask = (id: string) => {
     setUserTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, terminee: !t.terminee } : t))
     );
   };
 
-  // Toggle Reminder
   const handleToggleReminder = (id: string) => {
     setUserTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, rappelActif: !t.rappelActif } : t))
     );
   };
 
-  // Delete Task
   const handleDeleteTask = (id: string) => {
     setUserTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Add New Task
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
@@ -326,7 +338,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
     setShowAddTaskForm(false);
   };
 
-  // Quick Add Exam Event to Personal Planner
   const handleAddExamToPlanner = (ev: ExamEvent) => {
     const exists = userTasks.some((t) => t.examEventId === ev.id);
     if (exists) return;
@@ -338,18 +349,26 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
       dateCibleIso: ev.dateIso,
       terminee: false,
       rappelActif: true,
-      notes: `Horaire : ${ev.heureDebut} à ${ev.heureFin}`
+      notes: `Horaire de l'épreuve : ${ev.heureDebut} à ${ev.heureFin}`,
     };
     setUserTasks((prev) => [task, ...prev]);
-    setActiveTab("personal");
   };
 
-  // Count docs per subject for quick link
   const getDocCountForSubject = (matiereNom: string) => {
-    return documents.filter((d) => d.matiere === matiereNom && d.statut === "Publié").length;
+    return documents.filter(
+      (d) =>
+        d.matiere?.toLowerCase().trim() === matiereNom.toLowerCase().trim() &&
+        d.statut === "Publié"
+    ).length;
   };
 
-  // Format date readable
+  const getMatiereCode = (matiereNom: string) => {
+    const found = matieres.find(
+      (m) => m.nom.toLowerCase().trim() === matiereNom.toLowerCase().trim()
+    );
+    return found?.code || "ING1";
+  };
+
   const formatDateFr = (dateStr: string) => {
     try {
       const parts = dateStr.split("-");
@@ -359,7 +378,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
         weekday: "long",
         day: "numeric",
         month: "long",
-        year: "numeric"
+        year: "numeric",
       });
     } catch {
       return dateStr;
@@ -368,414 +387,612 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
 
   const tasksCompletedCount = userTasks.filter((t) => t.terminee).length;
   const tasksTotalCount = userTasks.length;
-  const progressPercent = tasksTotalCount > 0 ? Math.round((tasksCompletedCount / tasksTotalCount) * 100) : 0;
+  const progressPercent =
+    tasksTotalCount > 0 ? Math.round((tasksCompletedCount / tasksTotalCount) * 100) : 0;
+
+  const isFiltered = selectedMatiere !== "Toutes" || statusFilter !== "upcoming";
+
+  const handleResetFilters = () => {
+    setSelectedMatiere("Toutes");
+    setStatusFilter("upcoming");
+  };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header Banner */}
+    <div className="space-y-5 sm:space-y-8 pb-10 sm:pb-12">
+      {/* Institutional Header Card */}
       <Reveal>
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-950 via-slate-900 to-slate-950 p-6 sm:p-10 border border-blue-800/40 shadow-xl text-white">
-          <div className="relative z-10 space-y-4 max-w-3xl">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-amber-300 text-xs font-bold">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Planning Académique & Programme de Révision ISJ (ING1)</span>
-            </div>
-
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
-              Calendrier Officiel des Évaluations & Planner
-            </h1>
-
-            <p className="text-sm sm:text-base text-blue-200/90 leading-relaxed font-medium">
-              Consultez les dates des Contrôles Continus (CC) et Examens de Première Année (ING1),
-              planifiez vos révisions et accédez directement aux épreuves correspondantes.
-            </p>
-
-            {/* Top Navigation Switcher */}
-            <div className="pt-2 flex flex-wrap gap-3">
-              <button
-                onClick={() => setActiveTab("calendar")}
-                className={`px-5 py-2.5 rounded-2xl font-extrabold text-xs transition-all flex items-center space-x-2 shadow-md ${
-                  activeTab === "calendar"
-                    ? "bg-amber-400 text-slate-950 shadow-amber-500/20"
-                    : "bg-slate-800/80 text-blue-200 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                <CalendarIcon className="w-4 h-4" />
-                <span>Calendrier Officiel Examens</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("personal")}
-                className={`px-5 py-2.5 rounded-2xl font-extrabold text-xs transition-all flex items-center space-x-2 shadow-md ${
-                  activeTab === "personal"
-                    ? "bg-amber-400 text-slate-950 shadow-amber-500/20"
-                    : "bg-slate-800/80 text-blue-200 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                <CalendarCheck className="w-4 h-4" />
-                <span>Mon Programme de Révision ({userTasks.length})</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </Reveal>
-
-      {/* Upcoming Exam Spotlight Banner (Displays all exams scheduled for the next session date) */}
-      {nextUpcomingExams.length > 0 && (
-        <Reveal delay={0.1}>
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-blue-500/10 to-slate-900 border border-amber-400/30 dark:border-amber-500/20 shadow-md space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-400/20 dark:border-amber-500/20 pb-3">
-              <div className="flex items-center space-x-2.5">
-                <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 font-black shrink-0 flex items-center space-x-2 shadow-xs">
-                  <Clock className="w-5 h-5" />
-                  <span className="text-xs uppercase tracking-wider font-black">
-                    {nextUpcomingExams.length > 1 ? `Prochains CC (${nextUpcomingExams.length} Épreuves)` : "Prochain CC"}
-                  </span>
-                </div>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-5 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 sm:gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 sm:pb-5">
+            <div className="space-y-1.5 sm:space-y-2">
+              <div className="inline-flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-[11px] sm:text-xs font-bold">
+                <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">Organisation & Planning Académique • ING1</span>
               </div>
-              <p className="text-xs sm:text-sm font-extrabold text-amber-700 dark:text-amber-300 capitalize flex items-center space-x-1.5 bg-amber-400/10 px-3.5 py-1.5 rounded-full border border-amber-400/20">
-                <span>🗓️ {formatDateFr(nextUpcomingExams[0].dateIso)}</span>
+              <div className="flex items-center space-x-2.5 sm:space-x-3 text-blue-900 dark:text-blue-300">
+                <CalendarIcon className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug">
+                  Planning des CC & Révisions
+                </h1>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+                Consultez le calendrier officiel des contrôles continus de Première Année Ingénieur, accédez aux anciennes épreuves et organisez vos objectifs de révision.
               </p>
             </div>
 
-            <div className={`grid grid-cols-1 ${nextUpcomingExams.length > 1 ? "md:grid-cols-2" : "grid-cols-1"} gap-4`}>
-              {nextUpcomingExams.map((exam) => (
-                <div
-                  key={exam.id}
-                  className="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-3"
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/30">
-                        {exam.typeEpreuve}
-                      </span>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                        {exam.semestre}
-                      </span>
-                    </div>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                      {exam.matiereNom}
-                    </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-1.5 font-medium">
-                      <span>⏰ Horaire :</span>
-                      <strong className="text-blue-900 dark:text-blue-300 font-bold">{exam.heureDebut} à {exam.heureFin}</strong>
-                    </p>
-                  </div>
+            {/* Mobile 2-Tab Switcher (Full-width, ergonomic on phones/tablets) */}
+            <div className="grid grid-cols-2 lg:hidden bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 w-full">
+              <button
+                type="button"
+                onClick={() => setMobileSection("calendar")}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                  mobileSection === "calendar"
+                    ? "bg-blue-900 text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <CalendarIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Calendrier ({filteredEvents.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileSection("personal")}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                  mobileSection === "personal"
+                    ? "bg-blue-900 text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <CalendarCheck className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Mon Planner ({userTasks.length})</span>
+              </button>
+            </div>
 
-                  <div className="flex items-center space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={() => onNavigateToExams({ matiere: exam.matiereNom, semestre: exam.semestre })}
-                      className="px-3.5 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs"
-                    >
-                      <BookOpen className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Réviseur Épreuves</span>
-                    </button>
-                    <button
-                      onClick={() => handleAddExamToPlanner(exam)}
-                      className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition-all flex items-center space-x-1.5 shadow-xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Ajouter Planner</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+            {/* Desktop 3-Mode Pill Switcher */}
+            <div className="hidden lg:flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200 dark:border-slate-700 self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveView("split")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  activeView === "split"
+                    ? "bg-blue-900 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                Vue globale
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("calendar")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeView === "calendar"
+                    ? "bg-blue-900 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <CalendarIcon className="w-3.5 h-3.5" />
+                <span>Calendrier ({filteredEvents.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("personal")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeView === "personal"
+                    ? "bg-blue-900 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <CalendarCheck className="w-3.5 h-3.5" />
+                <span>Mon Planner ({userTasks.length})</span>
+              </button>
             </div>
           </div>
-        </Reveal>
-      )}
 
-      {/* TAB 1: OFFICIAL EXAM CALENDAR */}
-      {activeTab === "calendar" && (
-        <div className="space-y-6">
-          {/* Controls & Filters */}
-          <Reveal delay={0.15}>
-            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              {/* Semestre Filter */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">Semestre :</span>
-                <div className="flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                  <button
-                    onClick={() => setSelectedSemestre("Semestre 1")}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      selectedSemestre === "Semestre 1"
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-                    }`}
-                  >
-                    Semestre 1 (ING1)
-                  </button>
-                  <button
-                    onClick={() => setSelectedSemestre("Semestre 2")}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      selectedSemestre === "Semestre 2"
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-                    }`}
-                  >
-                    Semestre 2 (ING1)
-                  </button>
-                </div>
-              </div>
-
-              {/* Type Epreuve Filter */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">Type :</span>
-                <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          {/* Compact Responsive Filter Bar (2-col on mobile, 3-col on tablet/desktop) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            {/* Semestre */}
+            <div className="col-span-1">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 truncate">
+                Semestre
+              </label>
+              <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-600 h-[38px]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSemestre("Semestre 1")}
+                  className={`flex-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                    selectedSemestre === "Semestre 1"
+                      ? "bg-blue-900 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                  }`}
                 >
-                  <option value="Tous">Tous les types (CC, SN, SR)</option>
-                  <option value="CC">Contrôle Continu (CC)</option>
-                  <option value="SN">Session Normale (SN)</option>
-                  <option value="SR">Session Rattrapage (SR)</option>
-                </select>
-              </div>
-
-              {/* Statut / Période Filter */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">Affichage :</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  <span className="sm:hidden">S1</span>
+                  <span className="hidden sm:inline">Semestre 1</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSemestre("Semestre 2")}
+                  className={`flex-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                    selectedSemestre === "Semestre 2"
+                      ? "bg-blue-900 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                  }`}
                 >
-                  <option value="upcoming">⏳ Épreuves à venir uniquement</option>
-                  <option value="all">📅 Toutes les épreuves (CC)</option>
-                  <option value="past">✅ Épreuves passées (Historique)</option>
-                </select>
+                  <span className="sm:hidden">S2</span>
+                  <span className="hidden sm:inline">Semestre 2</span>
+                </button>
               </div>
+            </div>
 
-              {/* Matière Filter */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">Matière :</span>
+            {/* Période / Statut */}
+            <div className="col-span-1">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 truncate">
+                Sessions
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as "upcoming" | "all" | "past")}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-2.5 sm:px-3 py-2 text-[11px] sm:text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium h-[38px]"
+              >
+                <option value="upcoming">À venir uniquement</option>
+                <option value="all">Toutes les sessions</option>
+                <option value="past">Sessions terminées</option>
+              </select>
+            </div>
+
+            {/* Matière (Full width on mobile row 2, 1 col on sm+) */}
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 truncate">
+                Filtrer par matière
+              </label>
+              <div className="flex items-center gap-2">
                 <select
                   value={selectedMatiere}
                   onChange={(e) => setSelectedMatiere(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium h-[38px]"
                 >
-                  <option value="Toutes">Toutes les matières</option>
-                  {s1MatieresList.map((nom) => (
+                  <option value="Toutes">Toutes les matières ({semesterMatieresList.length})</option>
+                  {semesterMatieresList.map((nom) => (
                     <option key={nom} value={nom}>
                       {nom}
                     </option>
                   ))}
                 </select>
+                {isFiltered && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    title="Réinitialiser les filtres"
+                    className="h-[38px] px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center shrink-0 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
-          </Reveal>
+          </div>
+        </div>
+      </Reveal>
 
-          {/* Schedule List */}
-          {filteredEvents.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-3">
-              <CalendarIcon className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-              <div>
-                <p className="text-slate-900 dark:text-white font-bold text-base">Aucune épreuve à afficher</p>
-                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                  {statusFilter === "upcoming"
-                    ? "Toutes les épreuves correspondantes sont terminées ou aucunes épreuves à venir ne correspondent."
-                    : "Aucune épreuve ne correspond à ces critères de recherche."}
-                </p>
+      {/* Spotlight Banner: Next Upcoming CC Session */}
+      {nextUpcomingExams.length > 0 && (
+        <Reveal delay={0.08}>
+          <section className="bg-blue-900 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-lg space-y-3.5 sm:space-y-5">
+            <div className="flex items-center justify-between gap-2 border-b border-blue-800 pb-3 sm:pb-4">
+              <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0 border border-white/15">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-blue-200 block truncate">
+                    Prochaine journée d'évaluation
+                  </span>
+                  <h2 className="text-sm sm:text-lg lg:text-xl font-extrabold text-white capitalize truncate">
+                    {formatDateFr(nextUpcomingExams[0].dateIso)}
+                  </h2>
+                </div>
               </div>
-              {statusFilter === "upcoming" && (
-                <button
-                  onClick={() => setStatusFilter("all")}
-                  className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-full transition-colors shadow-xs"
-                >
-                  Consulter toutes les épreuves
-                </button>
-              )}
+
+              <span className="inline-flex items-center space-x-1 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] sm:text-xs font-bold text-blue-100 shrink-0">
+                <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-200 shrink-0" />
+                <span>
+                  {nextUpcomingExams.length > 1
+                    ? `${nextUpcomingExams.length} CC`
+                    : "1 CC"}
+                </span>
+              </span>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filteredEvents.map((ev, index) => {
-              const docCount = getDocCountForSubject(ev.matiereNom);
-              const isAddedToPlanner = userTasks.some((t) => t.examEventId === ev.id);
 
-              return (
-                <Reveal key={ev.id} delay={Math.min(index * 0.05, 0.3)}>
-                  <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/20">
-                          {ev.typeEpreuve === "CC" ? "Contrôle Continu" : ev.typeEpreuve === "SN" ? "Session Normale" : "Rattrapage"}
-                        </span>
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                          {ev.semestre}
-                        </span>
-                      </div>
+            <div
+              className={`grid grid-cols-1 ${
+                nextUpcomingExams.length > 1 ? "md:grid-cols-2" : "grid-cols-1"
+              } gap-3 sm:gap-4`}
+            >
+              {nextUpcomingExams.map((exam) => {
+                const isAdded = userTasks.some((t) => t.examEventId === exam.id);
+                const docCount = getDocCountForSubject(exam.matiereNom);
+                return (
+                  <div
+                    key={exam.id}
+                    className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-blue-100 dark:border-slate-700 shadow-sm flex flex-col justify-between gap-3 sm:gap-4"
+                  >
+                    <div className="space-y-2">
+                      {/* Top row: Badges on left, Time pill on right */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-1.5 min-w-0">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-100 dark:border-red-500/20 shrink-0">
+                            {exam.typeEpreuve}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/15 px-2 py-0.5 rounded-lg border border-blue-100 dark:border-blue-500/30 shrink-0">
+                            {getMatiereCode(exam.matiereNom)}
+                          </span>
+                        </div>
 
-                      <div>
-                        <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                          {ev.matiereNom}
-                        </h3>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 font-bold capitalize mt-0.5">
-                          🗓️ {formatDateFr(ev.dateIso)}
-                        </p>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-600 dark:text-slate-300 space-y-1">
-                        <div className="flex items-center space-x-2 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-blue-500" />
-                          <span>Horaire : {ev.heureDebut} à {ev.heureFin}</span>
+                        <div className="inline-flex items-center space-x-1 text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 shrink-0">
+                          <Clock className="w-3 h-3 text-blue-700 dark:text-blue-400 shrink-0" />
+                          <span>
+                            {exam.heureDebut} – {exam.heureFin}
+                          </span>
                         </div>
                       </div>
+
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-snug">
+                        {exam.matiereNom}
+                      </h3>
                     </div>
 
-                    {/* Actions */}
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                    {/* Action buttons: 50/50 balanced grid on mobile, flex on sm+ */}
+                    <div className="pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-2">
                       <button
-                        onClick={() => onNavigateToExams({ matiere: ev.matiereNom, semestre: ev.semestre })}
-                        className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-colors flex items-center space-x-1.5"
+                        type="button"
+                        onClick={() =>
+                          onNavigateToExams({ matiere: exam.matiereNom, semestre: exam.semestre })
+                        }
+                        className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/15 text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
                       >
-                        <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                        <span>Réviser ({docCount} épreuve{docCount > 1 ? "s" : ""})</span>
+                        <FileText className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400 shrink-0" />
+                        <span className="truncate">Épreuves ({docCount})</span>
                       </button>
 
                       <button
-                        onClick={() => handleAddExamToPlanner(ev)}
-                        disabled={isAddedToPlanner}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-                          isAddedToPlanner
+                        type="button"
+                        onClick={() => handleAddExamToPlanner(exam)}
+                        disabled={isAdded}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                          isAdded
                             ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 cursor-default"
-                            : "bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold active:scale-95 shadow-xs"
+                            : "bg-blue-900 hover:bg-blue-800 text-white shadow-xs active:scale-95"
                         }`}
                       >
-                        {isAddedToPlanner ? (
+                        {isAdded ? (
                           <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>Dans mon Planner</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span className="truncate">Planifié</span>
                           </>
                         ) : (
                           <>
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Ajouter Planner</span>
+                            <Plus className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">Planifier</span>
                           </>
                         )}
                       </button>
                     </div>
                   </div>
-                </Reveal>
-              );
-            })}
-          </div>
-          )}
-        </div>
+                );
+              })}
+            </div>
+          </section>
+        </Reveal>
       )}
 
-      {/* TAB 2: PERSONALIZED REVISION PLANNER */}
-      {activeTab === "personal" && (
-        <div className="space-y-6">
-          {/* Progress Overview Card */}
-          <Reveal delay={0.15}>
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center space-x-2">
-                    <Award className="w-5 h-5 text-amber-500" />
-                    <span>Progression de vos Révisions</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {tasksCompletedCount} sur {tasksTotalCount} objectif{tasksTotalCount > 1 ? "s" : ""} validé{tasksCompletedCount > 1 ? "s" : ""}
+      {/* Main Content Area: Responsive Mobile Tabbing & Desktop Split Layout */}
+      <div
+        className={`grid grid-cols-1 ${
+          activeView === "split" ? "lg:grid-cols-12" : "lg:grid-cols-1"
+        } gap-6 sm:gap-8 items-start`}
+      >
+        {/* LEFT / MAIN COLUMN: Official Exam Schedule grouped by Date */}
+        <div
+          className={`${
+            mobileSection === "calendar" ? "block" : "hidden"
+          } ${
+            activeView === "personal"
+              ? "lg:hidden"
+              : activeView === "split"
+                ? "lg:block lg:col-span-7"
+                : "lg:block"
+          } space-y-4 sm:space-y-6`}
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5 sm:pb-3">
+            <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2 min-w-0">
+              <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 dark:text-blue-400 shrink-0" />
+              <span className="truncate">Calendrier Officiel ({selectedSemestre})</span>
+            </h2>
+            <span className="text-[11px] sm:text-xs bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold shrink-0">
+              {filteredEvents.length} Épreuve{filteredEvents.length > 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {groupedEventsByDate.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 text-center space-y-3 shadow-sm">
+              <CalendarIcon className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+              <div className="space-y-1">
+                <p className="text-slate-900 dark:text-white font-bold text-sm">
+                  Aucune épreuve à afficher pour cette sélection
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  {statusFilter === "upcoming"
+                    ? "Toutes les épreuves correspondantes sont déjà passées ou aucune session n'est programmée pour ce filtre."
+                    : "Aucune épreuve ne correspond aux critères sélectionnés."}
+                </p>
+              </div>
+              {statusFilter === "upcoming" && (
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("all")}
+                  className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-full transition-colors shadow-xs cursor-pointer"
+                >
+                  Afficher toutes les épreuves du semestre
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-6">
+              {groupedEventsByDate.map((group, groupIdx) => (
+                <Reveal key={group.dateIso} delay={Math.min(groupIdx * 0.05, 0.25)}>
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
+                    {/* Date Header */}
+                    <div className="flex items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0" />
+                        <h3 className="text-xs sm:text-base font-bold text-slate-900 dark:text-white capitalize truncate">
+                          {formatDateFr(group.dateIso)}
+                        </h3>
+                      </div>
+                      <span className="text-[10px] sm:text-[11px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-2 sm:px-2.5 py-0.5 rounded-full font-bold shrink-0">
+                        {group.events.length} {group.events.length > 1 ? "Épreuves" : "Épreuve"}
+                      </span>
+                    </div>
+
+                    {/* Exams on this date */}
+                    <div className="grid grid-cols-1 gap-3">
+                      {group.events.map((ev) => {
+                        const docCount = getDocCountForSubject(ev.matiereNom);
+                        const isAddedToPlanner = userTasks.some((t) => t.examEventId === ev.id);
+                        const ended = isExamEnded(ev);
+
+                        return (
+                          <div
+                            key={ev.id}
+                            className="p-3.5 sm:p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 hover:bg-blue-50/40 dark:hover:bg-blue-500/10 border border-slate-200/80 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
+                          >
+                            <div className="space-y-1.5 min-w-0 flex-1">
+                              {/* Top metadata row */}
+                              <div className="flex items-center justify-between sm:justify-start gap-2">
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-100 dark:border-red-500/20">
+                                    {ev.typeEpreuve}
+                                  </span>
+                                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200">
+                                    {getMatiereCode(ev.matiereNom)}
+                                  </span>
+                                  {ended && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                      Terminée
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span className="inline-flex items-center space-x-1 text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-600 shrink-0">
+                                  <Clock className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
+                                  <span>
+                                    {ev.heureDebut} – {ev.heureFin}
+                                  </span>
+                                </span>
+                              </div>
+
+                              <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                                {ev.matiereNom}
+                              </h4>
+                            </div>
+
+                            {/* Action buttons: 50/50 full-width grid on mobile, inline flex on sm+ */}
+                            <div
+                              className={`grid ${
+                                !ended ? "grid-cols-2" : "grid-cols-1"
+                              } sm:flex items-center gap-2 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-200/70 dark:border-slate-700/70`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onNavigateToExams({
+                                    matiere: ev.matiereNom,
+                                    semestre: ev.semestre,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-blue-700 dark:text-blue-300 shrink-0" />
+                                <span className="truncate">
+                                  {docCount} {docCount > 1 ? "épreuves" : "épreuve"}
+                                </span>
+                              </button>
+
+                              {!ended && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddExamToPlanner(ev)}
+                                  disabled={isAddedToPlanner}
+                                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                    isAddedToPlanner
+                                      ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 cursor-default"
+                                      : "bg-blue-900 hover:bg-blue-800 text-white shadow-xs active:scale-95"
+                                  }`}
+                                >
+                                  {isAddedToPlanner ? (
+                                    <>
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                      <span className="truncate">Planifié</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus className="w-3.5 h-3.5 shrink-0" />
+                                      <span className="truncate">Planifier</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Personalized Revision Planner */}
+        <div
+          className={`${
+            mobileSection === "personal" ? "block" : "hidden"
+          } ${
+            activeView === "calendar"
+              ? "lg:hidden"
+              : activeView === "split"
+                ? "lg:block lg:col-span-5"
+                : "lg:block"
+          } space-y-4 sm:space-y-6`}
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5 sm:pb-3">
+            <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2 min-w-0">
+              <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 dark:text-blue-400 shrink-0" />
+              <span className="truncate">Mon Programme de Révision</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowAddTaskForm(!showAddTaskForm)}
+              className="px-3 sm:px-3.5 py-1.5 rounded-full bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs transition-all flex items-center space-x-1 sm:space-x-1.5 shadow-xs shrink-0 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span>Objectif</span>
+            </button>
+          </div>
+
+          {/* Progress Card */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                    Progression des révisions
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {tasksCompletedCount} sur {tasksTotalCount} objectif{tasksTotalCount > 1 ? "s" : ""} complété{tasksCompletedCount > 1 ? "s" : ""}
                   </p>
                 </div>
-
-                <button
-                  onClick={() => setShowAddTaskForm(!showAddTaskForm)}
-                  className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs transition-all flex items-center space-x-2 shadow-md self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Ajouter un objectif de révision</span>
-                </button>
               </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <span>Avancement</span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-700">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-600 via-amber-400 to-emerald-500 rounded-full transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
+              <span className="text-base sm:text-lg font-extrabold text-blue-900 dark:text-blue-300 shrink-0">
+                {progressPercent}%
+              </span>
             </div>
-          </Reveal>
 
-          {/* Add Task Form Modal / Inline */}
+            <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+              <div
+                className="h-full bg-blue-700 dark:bg-blue-500 rounded-full transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Add Objective Form */}
           {showAddTaskForm && (
             <Reveal>
-              <form onSubmit={handleAddTask} className="p-6 rounded-3xl bg-blue-950/90 text-white border border-blue-800/60 shadow-xl space-y-4 text-xs">
-                <h3 className="text-base font-bold flex items-center space-x-2 text-amber-300">
-                  <Plus className="w-4 h-4" />
-                  <span>Nouvel objectif de révision</span>
-                </h3>
+              <form
+                onSubmit={handleAddTask}
+                className="bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-500/40 rounded-2xl p-4 sm:p-5 shadow-md space-y-3.5 sm:space-y-4 text-xs"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <Plus className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                    <span>Ajouter un objectif de révision</span>
+                  </h3>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block font-bold">Matière</label>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300">
+                      Matière
+                    </label>
                     <select
                       value={newTaskMatiere}
                       onChange={(e) => setNewTaskMatiere(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-blue-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     >
-                      {s1MatieresList.map((m) => (
-                        <option key={m} value={m}>{m}</option>
+                      {semesterMatieresList.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block font-bold">Titre de l'objectif</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Refaire les exercices du Chapitre 2"
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-blue-800 text-white placeholder-blue-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block font-bold">Date cible</label>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300">
+                      Date cible
+                    </label>
                     <input
                       type="date"
                       value={newTaskDate}
                       onChange={(e) => setNewTaskDate(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-blue-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block font-bold">Notes / Remarques (optionnel)</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Points de cours importants, formules à retenir..."
-                    value={newTaskNotes}
-                    onChange={(e) => setNewTaskNotes(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-blue-800 text-white placeholder-blue-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  <label className="block font-bold text-slate-700 dark:text-slate-300">
+                    Titre de l'objectif
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Traiter le sujet de CC 2025-2026"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-2">
+                <div className="space-y-1">
+                  <label className="block font-bold text-slate-700 dark:text-slate-300">
+                    Notes personnelles (optionnel)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Chapitres ou exercices prioritaires..."
+                    value={newTaskNotes}
+                    onChange={(e) => setNewTaskNotes(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setShowAddTaskForm(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-center cursor-pointer"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold shadow-sm"
+                    className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold shadow-xs text-center cursor-pointer"
                   >
-                    Enregistrer l'objectif
+                    Enregistrer
                   </button>
                 </div>
               </form>
@@ -785,99 +1002,115 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
           {/* User Tasks List */}
           <div className="space-y-3">
             {userTasks.length === 0 ? (
-              <div className="text-center py-12 px-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-                <CalendarCheck className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                  Aucun objectif de révision enregistré
+              <div className="text-center py-8 sm:py-10 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2.5 shadow-sm">
+                <CalendarCheck className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Aucun objectif dans votre programme
                 </h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Consultez le calendrier officiel ci-dessus pour ajouter directement des épreuves à votre programme personnel !
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                  Cliquez sur « Planifier » sur une épreuve du calendrier officiel pour l'ajouter à vos révisions.
                 </p>
               </div>
             ) : (
               userTasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
                     task.terminee
-                      ? "bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 opacity-75"
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-300"
+                      ? "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-75"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500"
                   }`}
                 >
-                  <div className="flex items-start space-x-3 min-w-0">
+                  <div className="flex items-start space-x-2.5 sm:space-x-3 min-w-0">
                     <button
+                      type="button"
                       onClick={() => handleToggleTask(task.id)}
-                      className="mt-0.5 text-blue-600 dark:text-blue-400 hover:scale-110 transition-transform shrink-0"
-                      title={task.terminee ? "Marquer comme non terminé" : "Marquer comme terminé"}
+                      className="mt-0.5 text-blue-700 dark:text-blue-400 hover:scale-105 transition-transform shrink-0 cursor-pointer"
+                      title={
+                        task.terminee ? "Marquer comme non terminé" : "Marquer comme terminé"
+                      }
                     >
                       {task.terminee ? (
-                        <CheckSquare className="w-5 h-5 text-emerald-500" />
+                        <CheckSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       ) : (
-                        <Square className="w-5 h-5 text-slate-400" />
+                        <Square className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                       )}
                     </button>
 
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/20">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30">
                           {task.matiereNom}
                         </span>
-                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                          📅 {formatDateFr(task.dateCibleIso)}
+                        <span className="inline-flex items-center space-x-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          <CalendarIcon className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="capitalize truncate">{formatDateFr(task.dateCibleIso)}</span>
                         </span>
                       </div>
 
                       <h4
-                        className={`text-sm font-bold text-slate-900 dark:text-white leading-snug ${
-                          task.terminee ? "line-through text-slate-500 dark:text-slate-500" : ""
+                        className={`text-xs sm:text-sm font-bold leading-snug ${
+                          task.terminee
+                            ? "line-through text-slate-400 dark:text-slate-500"
+                            : "text-slate-900 dark:text-white"
                         }`}
                       >
                         {task.titre}
                       </h4>
 
                       {task.notes && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">
+                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                           {task.notes}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
+                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                     <button
+                      type="button"
                       onClick={() => onNavigateToExams({ matiere: task.matiereNom })}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center space-x-1"
+                      className="text-xs font-bold text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 flex items-center space-x-1 cursor-pointer"
                     >
-                      <BookOpen className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Épreuves</span>
+                      <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                      <span>Épreuves associées</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
                     </button>
 
-                    <button
-                      onClick={() => handleToggleReminder(task.id)}
-                      className={`p-2 rounded-xl transition-colors ${
-                        task.rappelActif
-                          ? "bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                      }`}
-                      title={task.rappelActif ? "Rappel actif" : "Activer le rappel"}
-                    >
-                      {task.rappelActif ? <Bell className="w-4 h-4 fill-amber-400" /> : <BellOff className="w-4 h-4" />}
-                    </button>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleReminder(task.id)}
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          task.rappelActif
+                            ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300"
+                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        }`}
+                        title={task.rappelActif ? "Rappel activé" : "Activer le rappel"}
+                      >
+                        {task.rappelActif ? (
+                          <Bell className="w-3.5 h-3.5" />
+                        ) : (
+                          <BellOff className="w-3.5 h-3.5" />
+                        )}
+                      </button>
 
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                      title="Supprimer cet objectif"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+                        title="Supprimer cet objectif"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
             )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

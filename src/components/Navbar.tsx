@@ -85,202 +85,229 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className="max-w-[1600px] mx-auto px-3 sm:px-6 2xl:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo & Brand matching Geometric Balance */}
+    <>
+    <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 shadow-xs">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-5 2xl:px-8">
+        <div className="flex items-center justify-between gap-2 xl:gap-4 h-16">
+          {/* Zone 1 : Logo & Brand (Jamais écrasé) */}
           <div
             onClick={() => handleNavClick("home")}
-            className="cursor-pointer"
+            className="cursor-pointer shrink-0 pr-1 xl:pr-2"
           >
             <AppLogo size="md" variant="light" showSubtitle={false} />
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex min-w-0 flex-1 justify-center items-center gap-0.5 xl:gap-1">
-            <button
-              onClick={() => handleNavClick("home")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "home"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <School className="w-4 h-4" />
-              <span>Accueil</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("subjects")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "subjects"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Matières</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("exams")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "exams"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Search className="w-4 h-4" />
-              <span>Épreuves</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("planning")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "planning"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Planning & CC</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("contribute")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "contribute"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Upload className="w-4 h-4" />
-              <span>Contribuer</span>
-            </button>
-
-            {user && (
+          {/* Zone 2 : Navigation Principale & Administration (Desktop) */}
+          <nav
+            aria-label="Navigation principale"
+            className="hidden lg:flex items-center justify-center flex-1 min-w-0 gap-1.5 xl:gap-2.5"
+          >
+            {/* Pôle Académique */}
+            <div className="flex items-center gap-0.5 xl:gap-1 bg-slate-50/90 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/70 shrink-0">
               <button
-                onClick={() => handleNavClick("favorites")}
-                className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                  activeTab === "favorites"
-                    ? "bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-500/30"
-                    : "text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                onClick={() => handleNavClick("home")}
+                className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "home"
+                    ? "bg-blue-900 text-white dark:bg-blue-600 font-semibold shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
                 }`}
               >
-                <Bookmark className={`w-4 h-4 ${favoritesCount > 0 ? "fill-amber-400 text-amber-500" : ""}`} />
-                <span>Favoris</span>
-                <span
-                  className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all tabular-nums leading-none ${
-                    favoritesCount > 0
-                      ? "bg-amber-500 text-white shadow-xs"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                  }`}
-                  title={`${favoritesCount} épreuve${favoritesCount > 1 ? "s" : ""} favorite${favoritesCount > 1 ? "s" : ""}`}
-                >
-                  {favoritesCount}
-                </span>
+                <School className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                <span>Accueil</span>
               </button>
-            )}
 
-            <button
-              onClick={() => handleNavClick("activity-log")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "activity-log"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <History className="w-4 h-4" />
-              <span>{isSuperAdmin ? "Journal global" : "Mon journal"}</span>
-            </button>
+              <button
+                onClick={() => handleNavClick("subjects")}
+                className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "subjects"
+                    ? "bg-blue-900 text-white dark:bg-blue-600 font-semibold shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                <span>Matières</span>
+              </button>
 
-            <button
-              onClick={() => handleNavClick("settings")}
-              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
-                activeTab === "settings"
-                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Paramètres</span>
-            </button>
+              <button
+                onClick={() => handleNavClick("exams")}
+                className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "exams"
+                    ? "bg-blue-900 text-white dark:bg-blue-600 font-semibold shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                <span>Épreuves</span>
+              </button>
 
+              <button
+                onClick={() => handleNavClick("planning")}
+                className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "planning"
+                    ? "bg-blue-900 text-white dark:bg-blue-600 font-semibold shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                <span>Planning & CC</span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick("contribute")}
+                className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "contribute"
+                    ? "bg-blue-900 text-white dark:bg-blue-600 font-semibold shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                <span>Contribuer</span>
+              </button>
+
+              {user && (
+                <button
+                  onClick={() => handleNavClick("favorites")}
+                  className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeTab === "favorites"
+                      ? "bg-blue-900 text-white dark:bg-blue-600 font-semibold shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Bookmark
+                    className={`w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0 ${
+                      activeTab === "favorites"
+                        ? "fill-amber-400 text-amber-400"
+                        : favoritesCount > 0
+                        ? "fill-amber-400 text-amber-500"
+                        : ""
+                    }`}
+                  />
+                  <span>Favoris</span>
+                  <span
+                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all tabular-nums leading-none ${
+                      activeTab === "favorites"
+                        ? "bg-amber-400 text-slate-950"
+                        : favoritesCount > 0
+                        ? "bg-amber-500 text-white shadow-xs"
+                        : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                    }`}
+                    title={`${favoritesCount} épreuve${favoritesCount > 1 ? "s" : ""} favorite${favoritesCount > 1 ? "s" : ""}`}
+                  >
+                    {favoritesCount}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Pôle Administration (Gouvernance & Modération) */}
             {isAdmin && (
-              <>
-                <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+              <div className="flex items-center gap-0.5 xl:gap-1 bg-amber-50/70 dark:bg-slate-800/80 p-1 rounded-xl border border-amber-200/80 dark:border-slate-700 shrink-0">
                 {isSuperAdmin && (
                   <button
                     onClick={() => handleNavClick("admin-dashboard")}
-                    className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
+                    title="Dashboard Administrateur"
+                    className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                       activeTab === "admin-dashboard"
-                        ? "bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold"
-                        : "text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10"
+                        ? "bg-amber-600 text-white font-semibold shadow-xs"
+                        : "text-amber-900 dark:text-amber-300 hover:bg-amber-100/80 dark:hover:bg-amber-500/15"
                     }`}
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    <span>Dashboard Admin</span>
+                    <LayoutDashboard className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                    <span className="hidden 2xl:inline">Dashboard Admin</span>
+                    <span className="2xl:hidden">Admin</span>
                   </button>
                 )}
 
                 <button
                   onClick={() => handleNavClick("admin-documents")}
-                  className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
+                  title="Modération des documents"
+                  className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                     activeTab === "admin-documents"
-                      ? "bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold"
-                      : "text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10"
+                      ? "bg-amber-600 text-white font-semibold shadow-xs"
+                      : "text-amber-900 dark:text-amber-300 hover:bg-amber-100/80 dark:hover:bg-amber-500/15"
                   }`}
                 >
-                  <FileCheck className="w-4 h-4" />
+                  <FileCheck className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
                   <span>Modération</span>
                 </button>
 
                 {isSuperAdmin && (
                   <button
                     onClick={() => handleNavClick("super-admin-audit")}
-                    className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
+                    title="Journal d'Audit SuperAdmin"
+                    className={`h-9 px-2 xl:px-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                       activeTab === "super-admin-audit"
-                        ? "bg-sky-50 dark:bg-sky-400/15 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-400/30 font-extrabold shadow-sm"
-                        : "text-sky-600 dark:text-sky-300 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50/60 dark:hover:bg-sky-400/10"
+                        ? "bg-blue-900 text-white dark:bg-sky-600 font-semibold shadow-xs"
+                        : "text-blue-900 dark:text-sky-300 hover:bg-blue-100/70 dark:hover:bg-sky-500/15"
                     }`}
                   >
-                    <ShieldAlert className="w-4 h-4 text-sky-600" />
-                    <span>Journal d'Audit</span>
+                    <ShieldAlert className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                    <span className="hidden 2xl:inline">Journal d'Audit</span>
+                    <span className="2xl:hidden">Audit</span>
                   </button>
                 )}
-              </>
+              </div>
             )}
           </nav>
 
-          {/* User Auth Info & Actions */}
-          <div className="hidden lg:flex items-center space-x-3">
-            {/* Notification Center */}
-            <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
+          {/* Zone 3 : Outils Personnels, Notifications & Session (Jamais écrasé) */}
+          <div className="hidden lg:flex items-center shrink-0 gap-1.5 xl:gap-2">
+            {/* Groupe Utilitaires : Journal, Paramètres, Notifications */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handleNavClick("activity-log")}
+                title={isSuperAdmin ? "Journal d'activité global" : "Mon journal d'activité"}
+                className={`h-9 px-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "activity-log"
+                    ? "bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 font-semibold ring-2 ring-blue-500/30"
+                    : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                }`}
+              >
+                <History className="w-4 h-4 shrink-0" />
+                <span className="hidden 2xl:inline">
+                  {isSuperAdmin ? "Journal global" : "Mon journal"}
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick("settings")}
+                title="Paramètres de l'application"
+                className={`h-9 px-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === "settings"
+                    ? "bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 font-semibold ring-2 ring-blue-500/30"
+                    : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                }`}
+              >
+                <Settings className="w-4 h-4 shrink-0" />
+                <span className="hidden 2xl:inline">Paramètres</span>
+              </button>
+
+              {/* Notification Center */}
+              <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
+            </div>
 
             {user ? (
-              <div className="flex shrink-0 items-center space-x-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-                <div className="text-right">
-                </div>
+              <div className="flex shrink-0 items-center pl-2 ml-0.5 border-l border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => setShowLogoutConfirm(true)}
                   title="Déconnexion du compte"
-                  className="flex items-center space-x-1.5 px-2.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 font-semibold text-xs border border-red-200/80 dark:border-red-500/30 transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+                  className="h-9 flex items-center gap-1.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 font-semibold text-xs border border-red-200/80 dark:border-red-500/30 transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-3.5 h-3.5 shrink-0" />
                   <span>Déconnexion</span>
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2 pl-2 ml-0.5 border-l border-slate-200 dark:border-slate-700 shrink-0">
                 <button
                   onClick={() => handleNavClick("login")}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+                  className="h-9 px-3 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-700 transition-colors whitespace-nowrap"
                 >
                   Connexion
                 </button>
                 <button
                   onClick={() => handleNavClick("register")}
-                  className="bg-blue-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition-all shadow-sm"
+                  className="h-9 bg-blue-900 text-white px-4 rounded-xl text-xs font-semibold hover:bg-blue-800 transition-all shadow-xs whitespace-nowrap"
                 >
                   S'inscrire
                 </button>
@@ -289,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile Actions: Notifications & Menu */}
-          <div className="flex items-center lg:hidden space-x-2">
+          <div className="flex items-center lg:hidden space-x-2 shrink-0">
             <NotificationCenter currentUser={user} onNavigateTab={handleNavClick} />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -319,228 +346,303 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-2 pb-5 space-y-2 animate-fadeIn">
-          {user && (
-            <div className="p-3 mb-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="font-bold text-sm text-slate-900 truncate">
-                  {user.prenom} {user.nom}
-                </p>
-                <p className="text-xs text-slate-500 truncate">{user.email}</p>
-              </div>
-              <span
-                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                  isAdmin ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300" : "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300"
-                }`}
-              >
-                {user.role}
-              </span>
-            </div>
-          )}
-
-          <button
-            onClick={() => handleNavClick("home")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "home" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <School className="w-4 h-4" />
-            <span>Accueil</span>
-          </button>
-
-          <button
-            onClick={() => handleNavClick("subjects")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "subjects" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Matières du Niveau 1</span>
-          </button>
-
-          <button
-            onClick={() => handleNavClick("exams")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "exams" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <Search className="w-4 h-4" />
-            <span>Consulter les Épreuves</span>
-          </button>
-
-          <button
-            onClick={() => handleNavClick("planning")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "planning" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Planning CC & Examens</span>
-          </button>
-
-          <button
-            onClick={() => handleNavClick("contribute")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "contribute" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <Upload className="w-4 h-4" />
-            <span>Soumettre une Épreuve</span>
-          </button>
-
-          {user && (
-            <button
-              onClick={() => handleNavClick("favorites")}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
-                activeTab === "favorites" ? "bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold" : "text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Bookmark className={`w-4 h-4 ${favoritesCount > 0 ? "fill-amber-400 text-amber-500" : ""}`} />
-                <span>Mes Épreuves Favorites</span>
-              </div>
-              <span
-                className={`px-2 py-0.5 text-xs font-bold rounded-full tabular-nums ${
-                  favoritesCount > 0
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                {favoritesCount}
-              </span>
-            </button>
-          )}
-
-          <button
-            onClick={() => handleNavClick("activity-log")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "activity-log" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <History className="w-4 h-4" />
-            <span>{isSuperAdmin ? "Journal d'Activité Global" : "Mon Journal d'Activité"}</span>
-          </button>
-
-          <button
-            onClick={() => handleNavClick("settings")}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-              activeTab === "settings" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Paramètres</span>
-          </button>
-
-          {isAdmin && (
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1">
-              <div className="px-3 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                Espace Administration
-              </div>
-              {isSuperAdmin && (
-                <button
-                  onClick={() => handleNavClick("admin-dashboard")}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                    activeTab === "admin-dashboard" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600 dark:text-slate-300"
+        <>
+          {/* Fond semi-transparent pour fermer au clic extérieur */}
+          <div
+            className="fixed inset-0 top-16 z-30 bg-slate-900/40 backdrop-blur-[1px] lg:hidden animate-fadeIn"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="relative z-40 lg:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-2xl px-3.5 pt-2.5 pb-4 space-y-2.5 animate-fadeIn">
+            {/* Carte Utilisateur Compacte */}
+            {user && (
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-9 h-9 rounded-xl bg-blue-900 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    {(user.prenom?.[0] || "") + (user.nom?.[0] || "U")}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                      {user.prenom} {user.nom}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-full shrink-0 border ${
+                    isAdmin
+                      ? "bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-500/30"
+                      : "bg-blue-50 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-500/30"
                   }`}
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Dashboard Admin</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => handleNavClick("admin-documents")}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                  activeTab === "admin-documents" ? "bg-amber-50 text-amber-800 font-bold" : "text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                <FileCheck className="w-4 h-4" />
-                <span>Modération des Documents</span>
-              </button>
-
-              {isSuperAdmin && (
-                <button
-                  onClick={() => handleNavClick("super-admin-audit")}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                    activeTab === "super-admin-audit" ? "bg-sky-50 text-sky-800 font-extrabold" : "text-sky-600"
-                  }`}
-                >
-                  <ShieldAlert className="w-4 h-4 text-sky-600" />
-                  <span>Journal d'Audit & Historique Admins</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
-            {user ? (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setShowLogoutConfirm(true);
-                }}
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center space-x-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Se déconnecter</span>
-              </button>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  onClick={() => handleNavClick("login")}
-                  className="w-full text-center py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-lg"
-                >
-                  Connexion
-                </button>
-                <button
-                  onClick={() => handleNavClick("register")}
-                  className="w-full text-center py-2 text-sm font-bold text-white bg-blue-900 rounded-lg"
-                >
-                  S'inscrire
-                </button>
+                  {user.role}
+                </span>
               </div>
             )}
+
+            {/* Grille Navigation Principale (2 colonnes pour tout voir sans couper) */}
+            <div>
+              <div className="px-1 pb-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Navigation & Outils
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => handleNavClick("home")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "home"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <School className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Accueil</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("subjects")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "subjects"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Matières</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("exams")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "exams"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Search className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Épreuves</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("planning")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "planning"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Planning & CC</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("contribute")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "contribute"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Upload className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Contribuer</span>
+                </button>
+
+                {user && (
+                  <button
+                    onClick={() => handleNavClick("favorites")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-1.5 border transition-all cursor-pointer ${
+                      activeTab === "favorites"
+                        ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                        : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Bookmark
+                        className={`w-4 h-4 shrink-0 ${
+                          activeTab === "favorites"
+                            ? "fill-amber-400 text-amber-400"
+                            : favoritesCount > 0
+                            ? "fill-amber-400 text-amber-500"
+                            : ""
+                        }`}
+                      />
+                      <span className="truncate">Favoris</span>
+                    </div>
+                    <span
+                      className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full tabular-nums shrink-0 leading-none ${
+                        activeTab === "favorites"
+                          ? "bg-amber-400 text-slate-950"
+                          : favoritesCount > 0
+                          ? "bg-amber-500 text-white"
+                          : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      }`}
+                    >
+                      {favoritesCount}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleNavClick("activity-log")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "activity-log"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <History className="w-4 h-4 shrink-0" />
+                  <span className="truncate">
+                    {isSuperAdmin ? "Journal global" : "Mon journal"}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("settings")}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                    activeTab === "settings"
+                      ? "bg-blue-900 text-white border-blue-900 dark:bg-blue-600 dark:border-blue-500 shadow-xs"
+                      : "bg-slate-50/90 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Settings className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Paramètres</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section Espace Administration Compacte */}
+            {isAdmin && (
+              <div className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-slate-800/80 border border-amber-200/80 dark:border-slate-700 space-y-1.5">
+                <div className="px-1 text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
+                  Espace Administration
+                </div>
+                <div className={`grid gap-1.5 ${isSuperAdmin ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => handleNavClick("admin-dashboard")}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                        activeTab === "admin-dashboard"
+                          ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                          : "bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-300 border-amber-200/80 dark:border-slate-700"
+                      }`}
+                    >
+                      <LayoutDashboard className="w-4 h-4 shrink-0" />
+                      <span className="truncate">Dashboard Admin</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => handleNavClick("admin-documents")}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                      activeTab === "admin-documents"
+                        ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                        : "bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-300 border-amber-200/80 dark:border-slate-700"
+                    }`}
+                  >
+                    <FileCheck className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Modération</span>
+                  </button>
+
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => handleNavClick("super-admin-audit")}
+                      className={`col-span-2 px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        activeTab === "super-admin-audit"
+                          ? "bg-blue-900 text-white border-blue-900 dark:bg-sky-600 shadow-xs"
+                          : "bg-white dark:bg-slate-900 text-blue-900 dark:text-sky-300 border-blue-200/80 dark:border-slate-700"
+                      }`}
+                    >
+                      <ShieldAlert className="w-4 h-4 shrink-0" />
+                      <span className="truncate">Journal d'Audit & Historique Admins</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Pied du menu mobile : Déconnexion / Connexion toujours visible */}
+            <div className="pt-1">
+              {user ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-red-600 dark:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-500/15 dark:hover:bg-red-500/25 border border-red-200/80 dark:border-red-500/30 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-2xs"
+                >
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  <span>Se déconnecter du compte</span>
+                </button>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleNavClick("login")}
+                    className="w-full text-center py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+                  >
+                    Connexion
+                  </button>
+                  <button
+                    onClick={() => handleNavClick("register")}
+                    className="w-full text-center py-2.5 text-xs font-bold text-white bg-blue-900 rounded-xl shadow-xs"
+                  >
+                    S'inscrire
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* BARRE FLOTTANTE SUR MOBILE LORS DU SCROLL */}
       {isScrolled && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden animate-fadeIn max-w-[95vw]">
-          <div className="bg-slate-900/95 backdrop-blur-md text-white px-2.5 py-1.5 rounded-full shadow-2xl border border-slate-700/70 flex items-center space-x-1 ring-1 ring-black/20">
+          <div className="bg-slate-900/95 backdrop-blur-md text-white px-2 py-1.5 rounded-full shadow-2xl border border-slate-700/70 flex items-center gap-1 ring-1 ring-black/20">
             <button
               onClick={() => handleNavClick("home")}
-              className={`px-3 py-2 rounded-full text-xs font-extrabold flex items-center space-x-1.5 transition-all ${
+              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
                 activeTab === "home"
                   ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
-              <School className="w-4 h-4 shrink-0 text-blue-300" />
+              <School className="w-3.5 h-3.5 shrink-0 text-blue-300" />
               <span className="text-[11px] font-bold">Accueil</span>
             </button>
 
             <button
               onClick={() => handleNavClick("exams")}
-              className={`px-3 py-2 rounded-full text-xs font-extrabold flex items-center space-x-1.5 transition-all ${
+              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
                 activeTab === "exams"
                   ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
-              <Search className="w-4 h-4 shrink-0 text-blue-300" />
+              <Search className="w-3.5 h-3.5 shrink-0 text-blue-300" />
               <span className="text-[11px] font-bold">Épreuves</span>
             </button>
 
             <button
+              onClick={() => handleNavClick("planning")}
+              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
+                activeTab === "planning"
+                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 shrink-0 text-blue-300" />
+              <span className="text-[11px] font-bold">Planning</span>
+            </button>
+
+            <button
               onClick={() => handleNavClick("contribute")}
-              className={`px-3 py-2 rounded-full text-xs font-extrabold flex items-center space-x-1.5 transition-all ${
+              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
                 activeTab === "contribute"
                   ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
-              <Upload className="w-4 h-4 shrink-0 text-blue-300" />
+              <Upload className="w-3.5 h-3.5 shrink-0 text-blue-300" />
               <span className="text-[11px] font-bold">Déposer</span>
             </button>
 
@@ -553,7 +655,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className={`p-2 rounded-full transition-all ${
+              className={`p-2 rounded-full shrink-0 transition-all ${
                 mobileMenuOpen
                   ? "bg-blue-600 text-white ring-1 ring-blue-400"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
@@ -565,7 +667,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 shrink-0 transition-colors"
               title="Haut de page"
             >
               <ChevronUp className="w-4 h-4" />
@@ -573,53 +675,55 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
-      {/* Modal de confirmation de déconnexion */}
-      {showLogoutConfirm && (
+    </header>
+
+    {/* Modal de confirmation de déconnexion (rendue hors du header en plein écran) */}
+    {showLogoutConfirm && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
+        onClick={() => setShowLogoutConfirm(false)}
+      >
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
-          onClick={() => setShowLogoutConfirm(false)}
+          className="bg-white dark:bg-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-confirm-title"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="bg-white dark:bg-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-confirm-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-inner">
-              <LogOut className="w-6 h-6" />
-            </div>
-            <div className="text-center space-y-1.5">
-              <h3 id="logout-confirm-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                Confirmer la déconnexion
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                Êtes-vous sûr de vouloir vous déconnecter de votre compte {user ? <strong>{user.prenom} {user.nom}</strong> : "Revisio"} ?
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLogoutConfirm(false);
-                  onLogout();
-                }}
-                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-red-600/20 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Se déconnecter</span>
-              </button>
-            </div>
+          <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-inner">
+            <LogOut className="w-6 h-6" />
+          </div>
+          <div className="text-center space-y-1.5">
+            <h3 id="logout-confirm-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              Confirmer la déconnexion
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+              Êtes-vous sûr de vouloir vous déconnecter de votre compte {user ? <strong>{user.prenom} {user.nom}</strong> : "Revisio"} ?
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(false)}
+              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                onLogout();
+              }}
+              className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-red-600/20 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Se déconnecter</span>
+            </button>
           </div>
         </div>
-      )}
-    </header>
+      </div>
+    )}
+    </>
   );
 };

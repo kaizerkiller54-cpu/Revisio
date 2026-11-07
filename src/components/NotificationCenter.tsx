@@ -137,14 +137,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 rounded-xl transition-all flex items-center justify-center ${
+        className={`relative h-9 w-9 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${
           isOpen
             ? "bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 ring-2 ring-blue-500/30"
             : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
         }`}
         title="Notifications système"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
