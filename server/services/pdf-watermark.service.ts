@@ -21,18 +21,31 @@ export async function stampPdf(pdfBytes: Uint8Array): Promise<Uint8Array> {
 
   const stamp = "Revisio-ISJ";
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const unitWidth = font.widthOfTextAtSize(stamp, 1);
+  const angleDeg = -30;
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const cos = Math.cos(angleRad);
+  const sin = Math.sin(angleRad);
+
   for (const page of pdf.getPages()) {
     const { width, height } = page.getSize();
-    const size = Math.min(24, Math.max(16, width * 0.04));
+    const minDim = Math.min(width, height);
+    const targetTextWidth = minDim * 0.72;
+    const size = Math.max(48, targetTextWidth / unitWidth);
     const textWidth = font.widthOfTextAtSize(stamp, size);
+    const textHeight = font.heightAtSize(size, { descender: false });
+
+    const offsetX = (textWidth / 2) * cos - (textHeight / 2) * sin;
+    const offsetY = (textWidth / 2) * sin + (textHeight / 2) * cos;
+
     page.drawText(stamp, {
-      x: width / 2 - textWidth / 2,
-      y: height / 2 - size / 2,
+      x: width / 2 - offsetX,
+      y: height / 2 - offsetY,
       size,
       font,
       color: rgb(0.18, 0.22, 0.3),
-      opacity: 0.18,
-      rotate: degrees(-30),
+      opacity: 0.2,
+      rotate: degrees(angleDeg),
     });
   }
 
