@@ -11,7 +11,6 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Loader2,
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -22,7 +21,6 @@ interface PdfViewerModalProps {
   document: DocumentModel | null;
   onClose: () => void;
   onDownload: (doc: DocumentModel) => void;
-  isDownloading?: boolean;
 }
 
 const PdfPageCanvas: React.FC<{
@@ -84,7 +82,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   document: doc,
   onClose,
   onDownload,
-  isDownloading = false,
 }) => {
   const [copied, setCopied] = useState(false);
   const [concealed, setConcealed] = useState(false);
@@ -223,25 +220,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             </button>
             <button
               onClick={() => onDownload(doc)}
-              disabled={isDownloading}
-              className={`px-4 py-2 text-white text-xs font-bold rounded-full transition-all flex items-center space-x-2 shadow-sm ${
-                isDownloading
-                  ? "bg-amber-600 dark:bg-amber-700 cursor-wait animate-pulse"
-                  : "bg-blue-900 hover:bg-blue-800 active:scale-95"
-              }`}
-              title={isDownloading ? "Téléchargement en cours..." : "Télécharger le document PDF"}
+              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-full transition-all flex items-center space-x-1.5 shadow-sm"
             >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Téléchargement en cours...</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline">Télécharger PDF</span>
-                </>
-              )}
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Télécharger PDF</span>
             </button>
             <button
               onClick={onClose}

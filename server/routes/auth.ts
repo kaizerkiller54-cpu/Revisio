@@ -12,14 +12,9 @@ import { logUserActivity } from "../services/activity.service";
 import {
   createSupabaseUser,
   findSupabaseUserByEmail,
-  normalizePhoneNumber,
   refreshSupabaseSession,
-  requestPasswordResetCode,
-  requestPasswordResetSmsCode,
   revokeSupabaseSession,
   signInSupabase,
-  verifyPasswordResetCodeOnly,
-  verifyResetCodeAndUpdatePassword,
 } from "../services/auth.service";
 import { tryGetSuperAdminMasterKey } from "../config/superadmin";
 
@@ -33,10 +28,10 @@ function masterKeyMatches(candidate: string | undefined, expected: string | null
 }
 
 const registerSchema = z.object({
-  nom: z.string().trim().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
-  prenom: z.string().trim().min(2, "Le prénom est requis.").max(80, "Le prénom est trop long."),
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
-  telephone: z.string().trim().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional(),
+  nom: z.string().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
+  prenom: z.string().min(2, "Le prénom est requis.").max(80, "Le prénom est trop long."),
+  email: z.string().email("Adresse e-mail invalide.").max(200),
+  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional(),
   motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
     .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
     .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
@@ -46,7 +41,7 @@ const registerSchema = z.object({
 }).strict();
 
 const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
+  email: z.string().email("Adresse e-mail invalide.").max(200),
   motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
   masterKey: z.string().max(256).optional(),
 });
@@ -54,175 +49,6 @@ const loginSchema = z.object({
 const refreshSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token requis.").max(512),
 });
-
-const forgotPasswordSchema = z
-  .object({
-    email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
-    telephone: z.string().min(8, "Numéro de téléphone invalide.").max(30).optional(),
-  })
-  .refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
-    message: "Veuillez renseigner votre adresse e-mail ou votre numéro de téléphone.",
-  });
-
-const verifyResetCodeSchema = z
-  .object({
-    email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
-    telephone: z.string().min(8, "Numéro de téléphone invalide.").max(30).optional(),
-    code: z.string().min(6, "Le code doit contenir au moins 6 chiffres.").max(12),
-  })
-  .refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
-    message: "Veuillez renseigner votre adresse e-mail ou votre numéro de téléphone.",
-  });
-
-const resetPasswordSchema = z
-  .object({
-    email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
-    telephone: z.string().min(8, "Numéro de téléphone invalide.").max(30).optional(),
-    code: z.string().min(6, "Jeton ou code de vérification requis.").max(1024),
-    nouveauMotDePasse: z
-      .string()
-      .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
-      .max(128)
-      .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
-      .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
-      .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial."),
-  })
-  .refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
-    message: "Veuillez renseigner votre adresse e-mail ou votre numéro de téléphone.",
-  });
-
-async function findUserByEmailOrPhone(email?: string, telephone?: string) {
-  if (telephone && telephone.trim()) {
-    const normalizedTarget = normalizePhoneNumber(telephone.trim());
-    if (!normalizedTarget || normalizedTarget.length < 9) {
-      throw badRequest("Format du numéro de téléphone invalide (ex: +2376XXXXXXXX).");
-    }
-
-    const usersWithPhone = await prisma.user.findMany({
-      where: { telephone: { not: null } },
-    });
-    const matched = usersWithPhone.find(
-      (u) => u.telephone && normalizePhoneNumber(u.telephone) === normalizedTarget
-    );
-    if (!matched) {
-      throw badRequest("Aucun compte n'est associé à ce numéro de téléphone.");
-    }
-    return { user: matched, normalizedPhone: normalizedTarget, viaSms: true };
-  }
-
-  const trimmedEmail = (email ?? "").trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: { email: trimmedEmail } });
-  if (!user) {
-    throw badRequest("Aucun compte n'est associé à cette adresse e-mail.");
-  }
-  return {
-    user,
-    normalizedPhone: user.telephone ? normalizePhoneNumber(user.telephone) : undefined,
-    viaSms: false,
-  };
-}
-
-router.post(
-  "/forgot-password",
-  authRateLimiter,
-  validate(forgotPasswordSchema),
-  asyncHandler(async (req, res) => {
-    const { email, telephone } = req.body as { email?: string; telephone?: string };
-    const { user, normalizedPhone, viaSms } = await findUserByEmailOrPhone(email, telephone);
-
-    if (viaSms && normalizedPhone) {
-      const { sentBySms } = await requestPasswordResetSmsCode(
-        normalizedPhone,
-        user.id,
-        user.email
-      );
-
-      if (!sentBySms) {
-        throw badRequest(
-          "L'envoi par SMS n'est pas encore actif : aucun fournisseur SMS n'est configuré dans votre projet Supabase (Authentication > Providers > Phone) ou via Twilio. Pour recevoir votre code directement sur votre messagerie, veuillez choisir l'option 'Par E-mail'."
-        );
-      }
-
-      return res.json({
-        message: `Un code de réinitialisation par SMS a été envoyé au numéro ${normalizedPhone}.`,
-        telephone: normalizedPhone,
-      });
-    }
-
-    await requestPasswordResetCode(user.email, user.id);
-
-    res.json({
-      message: `Un code de vérification a été envoyé à l'adresse ${user.email}.`,
-    });
-  })
-);
-
-router.post(
-  "/verify-reset-code",
-  authRateLimiter,
-  validate(verifyResetCodeSchema),
-  asyncHandler(async (req, res) => {
-    const { email, telephone, code } = req.body as {
-      email?: string;
-      telephone?: string;
-      code: string;
-    };
-    const { user, normalizedPhone } = await findUserByEmailOrPhone(email, telephone);
-
-    const { resetToken } = await verifyPasswordResetCodeOnly(
-      user.email,
-      code,
-      normalizedPhone
-    );
-
-    res.json({
-      valid: true,
-      resetToken,
-      email: user.email,
-      telephone: normalizedPhone,
-      message:
-        "Code vérifié avec succès ! Veuillez maintenant définir et confirmer votre nouveau mot de passe.",
-    });
-  })
-);
-
-router.post(
-  "/reset-password",
-  authRateLimiter,
-  validate(resetPasswordSchema),
-  asyncHandler(async (req, res) => {
-    const { email, telephone, code, nouveauMotDePasse } = req.body as {
-      email?: string;
-      telephone?: string;
-      code: string;
-      nouveauMotDePasse: string;
-    };
-    const { user, normalizedPhone, viaSms } = await findUserByEmailOrPhone(email, telephone);
-
-    await verifyResetCodeAndUpdatePassword(
-      user.email,
-      code,
-      nouveauMotDePasse,
-      normalizedPhone
-    );
-
-    await logUserActivity({
-      userId: user.id,
-      userNom: `${user.prenom} ${user.nom}`,
-      userEmail: user.email,
-      userRole: user.role,
-      actionType: "LOGIN",
-      description: viaSms
-        ? "A réinitialisé son mot de passe via code SMS."
-        : "A réinitialisé son mot de passe via code e-mail.",
-    });
-
-    res.json({
-      message:
-        "Votre mot de passe a été réinitialisé avec succès ! Vous pouvez maintenant vous connecter.",
-    });
-  })
-);
 
 router.post(
   "/register",
@@ -234,45 +60,21 @@ router.post(
     const trimmedTelephone = telephone?.trim() || null;
 
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
-    const existingAuth = await findSupabaseUserByEmail(trimmedEmail);
-
-    if (existing && existingAuth) {
-      throw badRequest("Cette adresse e-mail est déjà utilisée. Veuillez vous connecter avec votre mot de passe.");
+    if (existing) {
+      throw badRequest("Cette adresse e-mail est déjà utilisée.");
     }
 
-    let authId: string;
-    let user: any;
-
-    if (existing && !existingAuth) {
-      // L'étudiant est déjà inscrit dans la base locale (ex: import académique), on active son compte
-      authId = await createSupabaseUser(
-        trimmedEmail,
-        motDePasse,
-        trimmedTelephone ?? existing.telephone ?? undefined,
-        true,
-        existing.id
-      );
-      user = await prisma.user.update({
-        where: { email: trimmedEmail },
-        data: {
-          nom: nom ? nom.trim().toUpperCase() : existing.nom,
-          prenom: prenom ? prenom.trim() : existing.prenom,
-          telephone: trimmedTelephone || existing.telephone,
-        },
-      });
-    } else {
-      authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? undefined);
-      user = await prisma.user.create({
-        data: {
-          id: authId,
-          nom: nom.trim().toUpperCase(),
-          prenom: prenom.trim(),
-          email: trimmedEmail,
-          telephone: trimmedTelephone,
-          role: "Etudiant",
-        },
-      });
-    }
+    const authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? undefined);
+    const user = await prisma.user.create({
+      data: {
+        id: authId,
+        nom: nom.trim().toUpperCase(),
+        prenom: prenom.trim(),
+        email: trimmedEmail,
+        telephone: trimmedTelephone,
+        role: "Etudiant",
+      },
+    });
 
     const session = await signInSupabase(trimmedEmail, motDePasse);
 
@@ -289,7 +91,7 @@ router.post(
       token: session.accessToken,
       refreshToken: session.refreshToken,
       user: mapUser(user),
-      message: `Inscription réussie ! Votre compte ${user.role} a été activé avec succès.`,
+      message: `Inscription réussie ! Votre compte ${user.role} a été créé.`,
     });
   })
 );
@@ -301,7 +103,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, motDePasse, masterKey } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = motDePasse.trim();
     const currentMasterKey = tryGetSuperAdminMasterKey();
 
     // La clé ne sert qu'à initialiser le tout premier SuperAdmin. Elle ne
@@ -330,68 +131,10 @@ router.post(
       }
     }
 
-    let session: any;
-    try {
-      session = await signInSupabase(trimmedEmail, motDePasse);
-    } catch (authError: any) {
-      // En cas d'échec, vérifions l'état précis du compte pour renvoyer un diagnostic exact
-      const existingDbUser = await prisma.user.findUnique({ where: { email: trimmedEmail } });
-
-      if (existingDbUser) {
-        const authUser = await findSupabaseUserByEmail(trimmedEmail);
-        if (!authUser) {
-          // L'étudiant est présent dans l'annuaire académique ISJ mais n'avait pas encore de session Auth
-          try {
-            await createSupabaseUser(
-              trimmedEmail,
-              trimmedPassword,
-              existingDbUser.telephone ?? undefined,
-              true,
-              existingDbUser.id
-            );
-            session = await signInSupabase(trimmedEmail, trimmedPassword);
-          } catch (provisionErr) {
-            console.error("Auto-provisioning Supabase Auth error:", provisionErr);
-            throw unauthorized("Mot de passe incorrect ou compte en cours de synchronisation. Veuillez vérifier votre saisie ou contacter l'administration.");
-          }
-        } else {
-          // Le compte existe bien dans Supabase Auth, le mot de passe est réellement incorrect
-          throw unauthorized("Mot de passe incorrect. Veuillez vérifier votre saisie.");
-        }
-      } else {
-        // Aucun compte avec cette adresse e-mail
-        throw unauthorized("Aucun compte n'est associé à cette adresse e-mail. Vérifiez votre saisie ou créez votre compte.");
-      }
-    }
-
-    // Récupération et synchronisation du profil utilisateur
-    let user = await prisma.user.findUnique({ where: { id: session.userId } });
+    const session = await signInSupabase(trimmedEmail, motDePasse);
+    const user = await prisma.user.findUnique({ where: { id: session.userId } });
     if (!user) {
-      // Fallback par adresse e-mail si l'identifiant Auth et l'identifiant DB différaient
-      user = await prisma.user.findUnique({ where: { email: trimmedEmail } });
-      if (user && user.id !== session.userId) {
-        try {
-          user = await prisma.user.update({
-            where: { email: trimmedEmail },
-            data: { id: session.userId },
-          });
-        } catch {
-          // Utilise le profil existant
-        }
-      }
-    }
-
-    // Auto-réparation si le profil utilisateur dans la table `users` n'avait pas encore été créé
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          id: session.userId,
-          nom: "ÉTUDIANT",
-          prenom: "Étudiant ISJ",
-          email: trimmedEmail,
-          role: "Etudiant",
-        },
-      });
+      throw unauthorized("E-mail ou mot de passe incorrect.");
     }
 
     await logUserActivity({
@@ -508,4 +251,3 @@ async function bootstrapFirstSuperAdmin(email: string, password: string) {
 }
 
 export default router;
-

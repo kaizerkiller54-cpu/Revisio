@@ -37,17 +37,10 @@ async function parseJsonResponse<T = any>(
     if (!res.ok) {
       throw new Error(cleanText || `${defaultErrorMessage} (Code HTTP ${res.status})`);
     }
-    if (cleanText) {
-      throw new Error(`Réponse inattendue du serveur (${res.status}). Veuillez réessayer.`);
-    }
   }
 
   if (!res.ok) {
     throw new Error(data?.message || `${defaultErrorMessage} (Code HTTP ${res.status})`);
-  }
-
-  if (data === null || data === undefined) {
-    throw new Error("Réponse serveur vide. Veuillez recharger la page et réessayer.");
   }
 
   return data as T;
@@ -57,67 +50,10 @@ export async function loginApi(email: string, motDePasse: string, masterKey?: st
   const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: email.trim().toLowerCase(),
-      motDePasse,
-      masterKey,
-    }),
+    body: JSON.stringify({ email, motDePasse, masterKey }),
   });
-  const data = await parseJsonResponse<{ token: string; refreshToken?: string; user: User; message?: string }>(
-    res,
-    "Échec de connexion."
-  );
-  if (!data || typeof data !== "object" || !data.user || !data.token) {
-    throw new Error(data?.message || "Données de connexion incomplètes reçues du serveur.");
-  }
-  return data;
+  return parseJsonResponse(res, "Échec de connexion.");
 }
-
-export async function forgotPasswordApi(payload: {
-  email?: string;
-  telephone?: string;
-}): Promise<{ message: string; telephone?: string }> {
-  const res = await fetch("/api/auth/forgot-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return parseJsonResponse(res, "Impossible d'envoyer le code de vérification.");
-}
-
-export async function resetPasswordApi(payload: {
-  email?: string;
-  telephone?: string;
-  code: string;
-  nouveauMotDePasse: string;
-}): Promise<{ message: string }> {
-  const res = await fetch("/api/auth/reset-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return parseJsonResponse(res, "Impossible de réinitialiser le mot de passe.");
-}
-
-export async function verifyResetCodeApi(payload: {
-  email?: string;
-  telephone?: string;
-  code: string;
-}): Promise<{
-  valid: boolean;
-  resetToken: string;
-  email?: string;
-  telephone?: string;
-  message: string;
-}> {
-  const res = await fetch("/api/auth/verify-reset-code", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return parseJsonResponse(res, "Code de vérification invalide ou expiré.");
-}
-
 
 export async function registerApi(
   nom: string,
@@ -133,24 +69,17 @@ export async function registerApi(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nom, prenom, email, motDePasse, role, masterKey, telephone }),
   });
-  const data = await parseJsonResponse<{ token: string; refreshToken?: string; user: User; message?: string }>(
-    res,
-    "Échec de l'inscription."
-  );
-  if (!data || typeof data !== "object" || !data.user || !data.token) {
-    throw new Error(data?.message || "Compte créé mais session invalide reçue du serveur.");
-  }
-  return data;
+  return parseJsonResponse(res, "Échec de l'inscription.");
 }
 
-export async function getMeApi(): Promise<User | null> {
+export async function getMeApi() {
   try {
     const res = await fetch("/api/auth/me", {
       headers: { ...getAuthHeader() },
     });
     if (!res.ok) return null;
     const data = await parseJsonResponse<{ user: User }>(res, "Erreur session");
-    return data?.user ? (data.user as User) : null;
+    return data.user as User;
   } catch {
     return null;
   }
@@ -602,32 +531,3 @@ export async function clearAllNotificationsApi(currentUser?: User | null): Promi
   });
   if (!res.ok) throw new Error("Impossible d'effacer les notifications.");
 }
-
-// User Personal Favorites API
-export async function getUserFavoritesApi(): Promise<string[]> {
-  const token = localStorage.getItem("isj_auth_token");
-  if (!token) return [];
-  try {
-    const res = await fetch("/api/users/favorites", {
-      headers: { ...getAuthHeader() },
-    });
-    if (!res.ok) return [];
-    const data = await res.json().catch(() => null);
-    return Array.isArray(data?.favorites) ? data.favorites : [];
-  } catch {
-    return [];
-  }
-}
-
-export async function toggleUserFavoriteApi(documentId: string): Promise<{ favorites: string[]; isFavorite: boolean }> {
-  const res = await fetch("/api/users/favorites/toggle", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeader(),
-    },
-    body: JSON.stringify({ documentId }),
-  });
-  return parseJsonResponse(res, "Impossible de modifier les favoris.");
-}
-

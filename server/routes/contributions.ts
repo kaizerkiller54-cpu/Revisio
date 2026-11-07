@@ -55,7 +55,7 @@ router.get(
     }
     if (
       contribution.document?.visible === false &&
-      !["Administrateur", "SuperAdministrateur"].includes(req.user!.role)
+      req.user!.role !== "SuperAdministrateur"
     ) {
       throw notFound("Épreuve masquée.");
     }

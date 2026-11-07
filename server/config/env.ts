@@ -52,21 +52,6 @@ export const env = {
       "lTuRpsdwO2rhlX/mC1IDXfOLZiufrXA1TSQqWM3ArFkguXNrW7B3vP26hZbY8iPvJFjTkziW5b1uIBlvWOBH4Q=="
     ),
   },
-  smtp: {
-    host: envOrDefault("SMTP_HOST", "smtp.gmail.com"),
-    port: Number(process.env.SMTP_PORT || 465),
-    user: process.env.SMTP_USER?.trim() || "",
-    pass: process.env.SMTP_PASS?.trim() || "",
-    from: envOrDefault("SMTP_FROM", "Revisio ISJ <noreply@saintjeaningenieur.org>"),
-  },
-  resendApiKey: process.env.RESEND_API_KEY?.trim() || "",
-  twilio: {
-    accountSid: process.env.TWILIO_ACCOUNT_SID?.trim() || "",
-    authToken: process.env.TWILIO_AUTH_TOKEN?.trim() || "",
-    phoneNumber: process.env.TWILIO_PHONE_NUMBER?.trim() || "",
-  },
 };
-
-
 
 

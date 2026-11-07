@@ -13,7 +13,6 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { securityHeaders, apiNotFound } from "./middlewares/security";
 import { apiLimiter } from "./middlewares/rateLimit";
 import { env } from "./config/env";
-import { prisma } from "./prisma/client";
 
 export function createApp() {
   const app = express();
@@ -58,58 +57,6 @@ export function createApp() {
   app.use("/api/stats", statsRoutes);
   app.use("/api/activities", activityRoutes);
   app.use("/api/notifications", notificationRoutes);
-
-  // Endpoint d'accueil et de contrôle d'état de l'API
-  app.get(["/api", "/api/health"], (_req, res) => {
-    res.json({
-      status: "ok",
-      name: "Revisio ISJ API",
-      message: "API opérationnelle",
-      version: "1.0.0",
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  // Endpoint de diagnostic temporaire pour vérifier l'environnement et la connectivité BDD sans exposer de secrets
-  app.get("/api/debug-env", async (_req, res) => {
-    let dbStatus = "unknown";
-    let dbError: string | null = null;
-    let counts = { matieres: 0, documents: 0, users: 0 };
-
-    try {
-      const [matCount, docCount, userCount] = await Promise.all([
-        prisma.matiere.count().catch(() => 0),
-        prisma.document.count().catch(() => 0),
-        prisma.user.count().catch(() => 0),
-      ]);
-      counts = { matieres: matCount, documents: docCount, users: userCount };
-      dbStatus = "connected";
-    } catch (err: any) {
-      dbStatus = "error";
-      dbError = err?.message || String(err);
-    }
-
-    res.json({
-      status: "ok",
-      environment: {
-        isVercel: Boolean(process.env.VERCEL),
-        nodeEnv: process.env.NODE_ENV || "development",
-        hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
-        hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
-        supabaseUrl: process.env.SUPABASE_URL || null,
-        hasSupabaseAnonKey: Boolean(process.env.SUPABASE_ANON_KEY),
-        hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-        hasSupabaseJwtSecret: Boolean(process.env.SUPABASE_JWT_SECRET),
-      },
-      database: {
-        status: dbStatus,
-        error: dbError,
-        counts,
-      },
-      timestamp: new Date().toISOString(),
-    });
-  });
-
   app.use("/api", apiNotFound);
 
   app.use(errorHandler);
