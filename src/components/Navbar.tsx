@@ -176,9 +176,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Bookmark
                     className={`w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0 ${
                       activeTab === "favorites"
-                        ? "fill-amber-400 text-amber-400"
+                        ? "fill-white text-white"
                         : favoritesCount > 0
-                        ? "fill-amber-400 text-amber-500"
+                        ? "fill-blue-700 text-blue-700 dark:fill-blue-400 dark:text-blue-400"
                         : ""
                     }`}
                   />
@@ -186,9 +186,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span
                     className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all tabular-nums leading-none ${
                       activeTab === "favorites"
-                        ? "bg-amber-400 text-slate-950"
+                        ? "bg-white text-blue-900"
                         : favoritesCount > 0
-                        ? "bg-amber-500 text-white shadow-xs"
+                        ? "bg-blue-100 dark:bg-blue-500/25 text-blue-800 dark:text-blue-200"
                         : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                     }`}
                     title={`${favoritesCount} épreuve${favoritesCount > 1 ? "s" : ""} favorite${favoritesCount > 1 ? "s" : ""}`}
@@ -460,9 +460,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <Bookmark
                         className={`w-4 h-4 shrink-0 ${
                           activeTab === "favorites"
-                            ? "fill-amber-400 text-amber-400"
+                            ? "fill-white text-white"
                             : favoritesCount > 0
-                            ? "fill-amber-400 text-amber-500"
+                            ? "fill-blue-700 text-blue-700 dark:fill-blue-400 dark:text-blue-400"
                             : ""
                         }`}
                       />
@@ -471,9 +471,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span
                       className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full tabular-nums shrink-0 leading-none ${
                         activeTab === "favorites"
-                          ? "bg-amber-400 text-slate-950"
+                          ? "bg-white text-blue-900"
                           : favoritesCount > 0
-                          ? "bg-amber-500 text-white"
+                          ? "bg-blue-100 dark:bg-blue-500/25 text-blue-800 dark:text-blue-200"
                           : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                       }`}
                     >

@@ -93,15 +93,15 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                 }}
                 aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                 title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-                className={`p-1 rounded-full transition-all active:scale-90 cursor-pointer ${
+                className={`p-1.5 rounded-lg transition-all active:scale-90 cursor-pointer ${
                   isFavorite
-                    ? "bg-amber-50 dark:bg-amber-500/20 text-amber-500 border border-amber-300 dark:border-amber-500/40 shadow-xs"
-                    : "text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/40 shadow-2xs"
+                    : "text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent"
                 }`}
               >
                 <Bookmark
                   className={`w-3.5 h-3.5 transition-transform ${
-                    isFavorite ? "fill-amber-400 text-amber-500 scale-105" : ""
+                    isFavorite ? "fill-blue-700 dark:fill-blue-300 text-blue-700 dark:text-blue-300 scale-105" : ""
                   }`}
                 />
               </button>
