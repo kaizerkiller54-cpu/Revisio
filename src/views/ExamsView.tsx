@@ -25,6 +25,13 @@ interface ExamsViewProps {
 
 const PAGE_SIZE = 12;
 
+const ensureString = (val: any, fallback: string): string => {
+  if (typeof val === "string") return val;
+  if (val && typeof val === "object" && typeof val.matiere === "string") return val.matiere;
+  if (val && typeof val === "object" && typeof val.semestre === "string") return val.semestre;
+  return fallback;
+};
+
 export const ExamsView: React.FC<ExamsViewProps> = ({
   documents,
   onViewDoc,
@@ -35,10 +42,10 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
   initialFilters,
 }) => {
   const [searchQuery, setSearchQuery] = useState(initialFilters?.search || "");
-  const [selectedMatiere, setSelectedMatiere] = useState(initialFilters?.matiere || "Toutes");
-  const [selectedSemestre, setSelectedSemestre] = useState(initialFilters?.semestre || "Tous");
-  const [selectedType, setSelectedType] = useState(initialFilters?.typeEpreuve || "Tous");
-  const [selectedAnnee, setSelectedAnnee] = useState(initialFilters?.anneeAcademique || "Toutes");
+  const [selectedMatiere, setSelectedMatiere] = useState(() => ensureString(initialFilters?.matiere, "Toutes"));
+  const [selectedSemestre, setSelectedSemestre] = useState(() => ensureString(initialFilters?.semestre, "Tous"));
+  const [selectedType, setSelectedType] = useState(() => ensureString(initialFilters?.typeEpreuve, "Tous"));
+  const [selectedAnnee, setSelectedAnnee] = useState(() => ensureString(initialFilters?.anneeAcademique, "Toutes"));
 
   const [results, setResults] = useState<DocumentModel[]>([]);
   const [total, setTotal] = useState(0);
@@ -50,11 +57,11 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
 
   useEffect(() => {
     if (initialFilters) {
-      if (initialFilters.search !== undefined) setSearchQuery(initialFilters.search);
-      if (initialFilters.matiere !== undefined) setSelectedMatiere(initialFilters.matiere);
-      if (initialFilters.semestre !== undefined) setSelectedSemestre(initialFilters.semestre);
-      if (initialFilters.typeEpreuve !== undefined) setSelectedType(initialFilters.typeEpreuve);
-      if (initialFilters.anneeAcademique !== undefined) setSelectedAnnee(initialFilters.anneeAcademique);
+      if (initialFilters.search !== undefined) setSearchQuery(ensureString(initialFilters.search, ""));
+      if (initialFilters.matiere !== undefined) setSelectedMatiere(ensureString(initialFilters.matiere, "Toutes"));
+      if (initialFilters.semestre !== undefined) setSelectedSemestre(ensureString(initialFilters.semestre, "Tous"));
+      if (initialFilters.typeEpreuve !== undefined) setSelectedType(ensureString(initialFilters.typeEpreuve, "Tous"));
+      if (initialFilters.anneeAcademique !== undefined) setSelectedAnnee(ensureString(initialFilters.anneeAcademique, "Toutes"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFilters?.matiere, initialFilters?.semestre, initialFilters?.typeEpreuve, initialFilters?.anneeAcademique, initialFilters?.search]);
@@ -171,22 +178,22 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
           <span className="text-slate-500 font-bold">Filtres actifs:</span>
           {selectedMatiere !== "Toutes" && (
             <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-3 py-1 rounded-full font-semibold">
-              Matière: {selectedMatiere}
+              Matière: {String(selectedMatiere)}
             </span>
           )}
           {selectedSemestre !== "Tous" && (
             <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30 px-3 py-1 rounded-full font-semibold">
-              Semestre: {selectedSemestre}
+              Semestre: {String(selectedSemestre)}
             </span>
           )}
           {selectedType !== "Tous" && (
             <span className="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/30 px-3 py-1 rounded-full font-semibold">
-              Type: {selectedType}
+              Type: {String(selectedType)}
             </span>
           )}
           {selectedAnnee !== "Toutes" && (
             <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-full font-semibold">
-              Année: {selectedAnnee}
+              Année: {String(selectedAnnee)}
             </span>
           )}
         </div>

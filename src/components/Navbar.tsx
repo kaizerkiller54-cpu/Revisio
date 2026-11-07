@@ -20,7 +20,8 @@ import {
   History,
   ChevronUp,
   Settings,
-  Bookmark
+  Bookmark,
+  Calendar
 } from "lucide-react";
 
 interface NavbarProps {
@@ -131,6 +132,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Search className="w-4 h-4" />
               <span>Épreuves</span>
+            </button>
+
+            <button
+              onClick={() => handleNavClick("planning")}
+              className={`px-1.5 xl:px-2 py-2 rounded-lg text-[11px] xl:text-xs font-medium transition-colors flex items-center gap-1 ${
+                activeTab === "planning"
+                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold"
+                  : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Planning & CC</span>
             </button>
 
             <button
@@ -353,6 +366,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Search className="w-4 h-4" />
             <span>Consulter les Épreuves</span>
+          </button>
+
+          <button
+            onClick={() => handleNavClick("planning")}
+            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center space-x-2 ${
+              activeTab === "planning" ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold" : "text-slate-600 dark:text-slate-300"
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Planning CC & Examens</span>
           </button>
 
           <button

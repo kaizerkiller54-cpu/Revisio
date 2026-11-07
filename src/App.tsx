@@ -31,6 +31,7 @@ import { LoginView } from "./views/LoginView";
 import { RegisterView } from "./views/RegisterView";
 import { SettingsView } from "./views/SettingsView";
 import { FavoritesView } from "./views/FavoritesView";
+import { PlanningView } from "./views/PlanningView";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -164,8 +165,19 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    if (filterState) {
-      setExamsFilters(filterState);
+    if (filterState && typeof filterState === "object") {
+      const normalizedFilters: any = {};
+      if (typeof filterState.search === "string") normalizedFilters.search = filterState.search;
+      if (typeof filterState.matiere === "string") normalizedFilters.matiere = filterState.matiere;
+      else if (filterState.matiere && typeof filterState.matiere === "object" && typeof filterState.matiere.matiere === "string") {
+        normalizedFilters.matiere = filterState.matiere.matiere;
+      }
+      if (typeof filterState.semestre === "string") normalizedFilters.semestre = filterState.semestre;
+      if (typeof filterState.typeEpreuve === "string") normalizedFilters.typeEpreuve = filterState.typeEpreuve;
+      if (typeof filterState.anneeAcademique === "string") normalizedFilters.anneeAcademique = filterState.anneeAcademique;
+      setExamsFilters(normalizedFilters);
+    } else {
+      setExamsFilters({});
     }
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -379,6 +391,18 @@ export default function App() {
                 onDownloadDoc={handleDownloadDocument}
                 downloadingDocId={downloadingDocId}
                 onNavigateToExams={() => handleNavigate("exams")}
+              />
+            )}
+
+            {activeTab === "planning" && (
+              <PlanningView
+                user={user}
+                documents={documents}
+                matieres={matieres}
+                onNavigateToExams={(filters) =>
+                  handleNavigate("exams", typeof filters === "string" ? { matiere: filters } : filters)
+                }
+                onNavigateToLogin={() => setActiveTab("login")}
               />
             )}
 
