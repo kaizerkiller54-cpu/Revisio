@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { User, AuditLog, UserRole, AuditActionType } from "../types";
+import { User, AuditLog, UserRole, AuditActionType, DocumentModel, ContributionModel } from "../types";
 import { getAuditLogsApi, getUsersApi, updateUserRoleApi, createAdminUserApi, deleteUserApi } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { UserDetailModal } from "../components/UserDetailModal";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -20,17 +21,26 @@ import {
   Shield,
   Clock,
   User as UserIcon,
-  AlertCircle
+  AlertCircle,
+  Eye,
 } from "lucide-react";
 
 interface SuperAdminAuditViewProps {
   currentUser: User | null;
   onRefreshData?: () => void;
+  documents?: DocumentModel[];
+  contributions?: ContributionModel[];
+  onPreviewDoc?: (doc: DocumentModel) => void;
+  onNavigateToModeration?: () => void;
 }
 
 export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
   currentUser,
   onRefreshData,
+  documents = [],
+  contributions = [],
+  onPreviewDoc,
+  onNavigateToModeration,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<"logs" | "users">("logs");
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -67,6 +77,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
   const [userSearchQuery, setUserSearchQuery] = useState<string>("");
   const [elevatingUser, setElevatingUser] = useState<User | null>(null);
   const [isElevating, setIsElevating] = useState<boolean>(false);
+  const [selectedUserForDetails, setSelectedUserForDetails] = useState<User | null>(null);
 
   const fetchAuditData = async () => {
     setIsLoading(true);
@@ -745,7 +756,11 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                         const isStudent = u.role === "Etudiant";
 
                         return (
-                          <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                          <tr
+                            key={u.id}
+                            onClick={() => setSelectedUserForDetails(u)}
+                            className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                          >
                             <td className="py-3.5 px-4">
                               <div className="flex items-center space-x-2.5">
                                 <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs ${
@@ -758,7 +773,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
                                   {u.prenom.charAt(0)}{u.nom.charAt(0)}
                                 </div>
                                 <div>
-                                  <p className="font-bold text-slate-900 flex items-center space-x-1">
+                                  <p className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors flex items-center space-x-1">
                                     <span>{u.prenom} {u.nom}</span>
                                     {isSelf && (
                                       <span className="text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-extrabold ml-1">
@@ -794,8 +809,17 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
 
                             <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">{dateFormatted}</td>
 
-                            <td className="py-3.5 px-4 text-right">
+                            <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => setSelectedUserForDetails(u)}
+                                  className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 rounded-lg text-xs font-bold transition-colors inline-flex items-center space-x-1 cursor-pointer"
+                                  title="Voir les dernières connexions, favoris et contributions"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-blue-700" />
+                                  <span>Détails</span>
+                                </button>
+
                                 {/* Quick Privilege Elevation Button for Students */}
                                 {isStudent && (
                                   <button
@@ -1147,6 +1171,16 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Detailed User Activity Modal (Logins, Favorites, Pending Contributions) */}
+      <UserDetailModal
+        user={selectedUserForDetails}
+        onClose={() => setSelectedUserForDetails(null)}
+        allDocuments={documents}
+        allContributions={contributions}
+        onPreviewDoc={onPreviewDoc}
+        onNavigateToModeration={onNavigateToModeration}
+      />
     </div>
   );
 };

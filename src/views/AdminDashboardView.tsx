@@ -7,6 +7,7 @@ import {
   User,
 } from "../types";
 import { getUsersApi } from "../lib/api";
+import { UserDetailModal } from "../components/UserDetailModal";
 import { Reveal } from "../components/motion";
 import {
   Users,
@@ -21,13 +22,14 @@ import {
   BarChart3,
   PieChart,
   TrendingUp,
-  AlertCircle,
   Eye,
   RefreshCw,
   Layers,
   Award,
   ShieldAlert,
   Calendar,
+  Search,
+  ChevronRight,
 } from "lucide-react";
 
 interface AdminDashboardViewProps {
@@ -108,6 +110,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [users, setUsers] = useState<User[]>([]);
   const [subjectSemFilter, setSubjectSemFilter] = useState<"Tous" | "Semestre 1" | "Semestre 2">("Tous");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState<
+    "Tous" | "Etudiant" | "Administrateur" | "SuperAdministrateur"
+  >("Tous");
 
   useEffect(() => {
     let cancelled = false;
@@ -285,6 +292,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     const superAdmins = users.filter((u) => u.role === "SuperAdministrateur").length;
     return { etudiants, admins, superAdmins };
   }, [users]);
+
+  // Filtered users for the interactive directory
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    return users.filter((u) => {
+      if (userRoleFilter !== "Tous" && u.role !== userRoleFilter) return false;
+      if (!q) return true;
+      const fullName = `${u.prenom || ""} ${u.nom || ""}`.toLowerCase();
+      return (
+        fullName.includes(q) ||
+        (u.email || "").toLowerCase().includes(q) ||
+        (u.role || "").toLowerCase().includes(q)
+      );
+    });
+  }, [users, userSearch, userRoleFilter]);
 
   // SVG Donut geometry constants
   const radius = 56;
@@ -981,6 +1003,195 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           </div>
         </Reveal>
       </div>
+
+      {/* 7. RÉPERTOIRE DES UTILISATEURS & ACTIVITÉ INDIVIDUELLE (CLIC SUR UNE LIGNE) */}
+      <Reveal delay={0.3}>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-700 dark:text-blue-400" />
+                <span>Utilisateurs & Suivi Individuel</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Cliquez sur une ligne d'utilisateur pour afficher ses dernières connexions, ses épreuves favorites et ses contributions en attente
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              {/* Barre de recherche utilisateur */}
+              <div className="relative min-w-[220px]">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Rechercher nom, e-mail..."
+                  className="w-full h-9 pl-8 pr-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600"
+                />
+              </div>
+
+              {/* Filtres par rôle */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
+                {(
+                  [
+                    { id: "Tous", label: `Tous (${users.length})` },
+                    { id: "Etudiant", label: `Étudiants (${roleBreakdown.etudiants})` },
+                    { id: "Administrateur", label: `Admins (${roleBreakdown.admins})` },
+                    { id: "SuperAdministrateur", label: `SuperAdmins (${roleBreakdown.superAdmins})` },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setUserRoleFilter(tab.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      userRoleFilter === tab.id
+                        ? "bg-blue-900 text-white dark:bg-blue-600 shadow-2xs"
+                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase tracking-wider">
+                  <th className="py-3 px-4">Utilisateur</th>
+                  <th className="py-3 px-4">Adresse E-mail</th>
+                  <th className="py-3 px-4">Rôle</th>
+                  <th className="py-3 px-4">Contributions</th>
+                  <th className="py-3 px-4 hidden md:table-cell">Inscription</th>
+                  <th className="py-3 px-4 text-right">Détails</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                      Aucun compte utilisateur trouvé.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((u) => {
+                    const userContribs = contributions.filter(
+                      (c) =>
+                        c.utilisateurId === u.id ||
+                        c.utilisateurEmail?.toLowerCase().trim() ===
+                          u.email?.toLowerCase().trim()
+                    );
+                    const userPendingCount = userContribs.filter(
+                      (c) => c.statut === "En attente"
+                    ).length;
+                    const createdDate = u.dateCreation
+                      ? new Date(u.dateCreation).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "—";
+
+                    return (
+                      <tr
+                        key={u.id}
+                        onClick={() => setSelectedUser(u)}
+                        className="hover:bg-blue-50/50 dark:hover:bg-blue-950/25 transition-colors cursor-pointer group"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-blue-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                              {(u.prenom?.[0] || "").toUpperCase()}
+                              {(u.nom?.[0] || "U").toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors truncate">
+                                {u.prenom} {u.nom}
+                              </div>
+                              {u.telephone && (
+                                <div className="text-[10px] text-slate-400 truncate">
+                                  {u.telephone}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300">
+                          {u.email}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              u.role === "SuperAdministrateur"
+                                ? "bg-blue-950 text-white border-blue-900 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30"
+                                : u.role === "Administrateur"
+                                ? "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30"
+                                : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                            }`}
+                          >
+                            {u.role === "Etudiant" ? "Étudiant" : u.role}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {userPendingCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
+                                <Clock className="w-3 h-3" />
+                                {userPendingCount} en attente
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                {userContribs.length > 0
+                                  ? `${userContribs.length} soumise${userContribs.length > 1 ? "s" : ""}`
+                                  : "Aucune"}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 hidden md:table-cell text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                          {createdDate}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedUser(u);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-700 dark:text-blue-300 font-bold text-[11px] transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Voir fiche</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* MODALE VUE DÉTAILLÉE UTILISATEUR (Connexions, Favoris, Contributions en attente) */}
+      <UserDetailModal
+        user={selectedUser}
+        onClose={() => setSelectedUser(null)}
+        allDocuments={allDocs}
+        allContributions={contributions}
+        onPreviewDoc={onPreviewDoc}
+        onNavigateToModeration={onNavigateToModeration}
+      />
     </div>
   );
 };

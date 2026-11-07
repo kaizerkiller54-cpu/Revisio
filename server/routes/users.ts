@@ -4,7 +4,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "../prisma/client";
 import { asyncHandler } from "../utils/asyncHandler";
 import { badRequest, forbidden, notFound } from "../utils/errors";
-import { mapUser } from "../utils/mappers";
+import { mapUser, mapDocument, mapContribution, mapActivity } from "../utils/mappers";
 import { authenticateJWT } from "../middlewares/authenticate";
 import { requireRole } from "../middlewares/authorize";
 import { validate } from "../middlewares/validate";
@@ -177,14 +177,118 @@ router.put(
   })
 );
 
-// GET /api/users — superadmin only
+// GET /api/users — admin and superadmin
 router.get(
   "/",
   authenticateJWT,
-  requireRole("SuperAdministrateur"),
+  requireRole("Administrateur", "SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
     res.json(users.map(mapUser));
+  })
+);
+
+// GET /api/users/:id/details — detailed user profile (last logins, favorite exams, pending contributions)
+router.get(
+  "/:id/details",
+  authenticateJWT,
+  requireRole("Administrateur", "SuperAdministrateur"),
+  validate(uuidParam, "params"),
+  asyncHandler(async (req, res) => {
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) {
+      throw notFound("Utilisateur non trouvé.");
+    }
+
+    const [supaUserRes, activities, userContribs] = await Promise.all([
+      supabaseAdmin.auth.admin.getUserById(target.id).catch(() => ({ data: { user: null }, error: null })),
+      prisma.userActivity.findMany({
+        where: { userId: target.id },
+        orderBy: { timestamp: "desc" },
+      }).catch(() => []),
+      prisma.contribution.findMany({
+        where: { utilisateurId: target.id },
+        orderBy: { dateEnvoi: "desc" },
+      }).catch(() => []),
+    ]);
+
+    const supaUser = supaUserRes?.data?.user ?? null;
+
+    // 1. Dernières connexions (LOGIN / REGISTER + Supabase Auth last_sign_in_at)
+    const loginActivities = activities
+      .filter((a) => a.actionType === "LOGIN" || a.actionType === "REGISTER")
+      .map(mapActivity);
+
+    const lastSignInAt = supaUser?.last_sign_in_at || loginActivities[0]?.timestamp || null;
+    const lastLogins = [...loginActivities];
+
+    if (supaUser?.last_sign_in_at) {
+      const supaTime = new Date(supaUser.last_sign_in_at).getTime();
+      const hasCloseMatch = lastLogins.some(
+        (l) => Math.abs(new Date(l.timestamp).getTime() - supaTime) < 60 * 1000
+      );
+      if (!hasCloseMatch) {
+        lastLogins.unshift({
+          id: `supa-login-${target.id}`,
+          userId: target.id,
+          userNom: `${target.prenom} ${target.nom}`,
+          userEmail: target.email,
+          userRole: target.role,
+          actionType: "LOGIN",
+          description: "Session authentifiée sur la plateforme Revisio ISJ.",
+          targetId: "",
+          targetTitle: "",
+          timestamp: new Date(supaUser.last_sign_in_at).toISOString(),
+        });
+      }
+    }
+
+    lastLogins.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // 2. Épreuves favorites (depuis user_metadata.favorites + fallback historique d'activité)
+    const rawFavs = supaUser?.user_metadata?.favorites;
+    let favoriteIds: string[] = Array.isArray(rawFavs)
+      ? rawFavs.filter((id: any) => typeof id === "string" && id.length > 0)
+      : [];
+
+    if (favoriteIds.length === 0) {
+      const reconstructed = new Set<string>();
+      const chronological = [...activities].reverse();
+      for (const act of chronological) {
+        if (act.actionType === "FAVORITE_ADD" && act.targetId) {
+          reconstructed.add(act.targetId);
+        } else if (act.actionType === "FAVORITE_REMOVE" && act.targetId) {
+          reconstructed.delete(act.targetId);
+        }
+      }
+      favoriteIds = Array.from(reconstructed);
+    }
+
+    let favoriteDocuments: ReturnType<typeof mapDocument>[] = [];
+    if (favoriteIds.length > 0) {
+      const docs = await prisma.document
+        .findMany({
+          where: { id: { in: favoriteIds } },
+          include: { matiere: true },
+        })
+        .catch(() => []);
+      favoriteDocuments = docs.map(mapDocument);
+    }
+
+    // 3. Contributions en attente & historique des soumissions
+    const mappedContribs = userContribs.map(mapContribution);
+    const pendingContributions = mappedContribs.filter((c) => c.statut === "En attente");
+
+    res.json({
+      user: mapUser(target),
+      lastSignInAt,
+      lastLogins: lastLogins.slice(0, 10),
+      favoriteIds,
+      favoriteDocuments,
+      pendingContributions,
+      allContributions: mappedContribs,
+      recentActivities: activities.slice(0, 12).map(mapActivity),
+    });
   })
 );
 

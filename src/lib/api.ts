@@ -442,11 +442,29 @@ export async function getAuditLogsApi(params?: {
   return parseJsonResponse<AuditLog[]>(res, "Impossible de récupérer le journal d'audit.");
 }
 
+export interface AdminUserDetails {
+  user: User;
+  lastSignInAt: string | null;
+  lastLogins: UserActivity[];
+  favoriteIds: string[];
+  favoriteDocuments: DocumentModel[];
+  pendingContributions: ContributionModel[];
+  allContributions: ContributionModel[];
+  recentActivities: UserActivity[];
+}
+
 export async function getUsersApi(): Promise<User[]> {
   const res = await fetch("/api/admin/users", {
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<User[]>(res, "Impossible de récupérer la liste des utilisateurs.");
+}
+
+export async function getUserDetailsApi(userId: string): Promise<AdminUserDetails> {
+  const res = await fetch(`/api/admin/users/${userId}/details`, {
+    headers: { ...getAuthHeader() },
+  });
+  return parseJsonResponse<AdminUserDetails>(res, "Impossible de récupérer les détails de l'utilisateur.");
 }
 
 export async function createAdminUserApi(userData: {

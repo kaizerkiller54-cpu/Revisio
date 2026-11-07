@@ -463,6 +463,10 @@ export default function App() {
               <SuperAdminAuditView
                 currentUser={user}
                 onRefreshData={loadData}
+                documents={documents}
+                contributions={contributions}
+                onPreviewDoc={(doc) => setPreviewDocument(doc)}
+                onNavigateToModeration={() => setActiveTab("admin-documents")}
               />
             )}
 
