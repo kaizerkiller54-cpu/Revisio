@@ -17,7 +17,9 @@ import { Settings,
   LifeBuoy,
   Download,
   Check,
-  X
+  X,
+  Bookmark,
+  ArrowRight
 } from "lucide-react";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 
@@ -27,6 +29,8 @@ interface SettingsViewProps {
   onChangeTheme: (theme: "light" | "dark" | "system") => void;
   onUpdateUser: (updatedUser: User) => void;
   onNavigateToRegister: () => void;
+  onNavigateToFavorites?: () => void;
+  favoritesCount?: number;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -35,6 +39,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onChangeTheme,
   onUpdateUser,
   onNavigateToRegister,
+  onNavigateToFavorites,
+  favoritesCount = 0,
 }) => {
   // Profile state
   const [nom, setNom] = useState(user?.nom || "");
@@ -416,8 +422,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
-        {/* Right 1 Col: Theme & Quick Contact */}
+        {/* Right 1 Col: Theme & Quick Contact & Favorites */}
         <div className="space-y-6">
+          {/* Favorites Shortcut Card */}
+          {user && onNavigateToFavorites && (
+            <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-500/15 dark:to-slate-900 border border-amber-200 dark:border-amber-500/30 rounded-3xl p-6 shadow-xs space-y-3">
+              <div className="flex items-center space-x-3 pb-2 border-b border-amber-200/50 dark:border-amber-500/20">
+                <div className="w-9 h-9 rounded-2xl bg-amber-100 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold shrink-0">
+                  <Bookmark className="w-4 h-4 fill-amber-400 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">Mes Favoris</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {favoritesCount} épreuve{favoritesCount > 1 ? "s" : ""} enregistrée{favoritesCount > 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Accédez rapidement à vos sujets sauvegardés pour réviser avant vos examens et contrôles continus.
+              </p>
+              <button
+                type="button"
+                onClick={onNavigateToFavorites}
+                className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <span>Consulter mes favoris</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Theme Switcher Card */}
           <div className="bg-white border border-slate-200 dark:border-slate-600 rounded-3xl p-6 shadow-xs space-y-4">
             <div className="flex items-center space-x-3 pb-3 border-b border-slate-100 dark:border-slate-700/60 dark:border-slate-700/60">

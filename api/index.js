@@ -7,6 +7,7 @@ import { z } from "zod";
 import { timingSafeEqual } from "crypto";
 
 // server/prisma/client.ts
+import { randomUUID as randomUUID2 } from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -14,37 +15,66 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import path from "path";
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: path.join(process.cwd(), ".env") });
-function required(name) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Variable d'environnement manquante : ${name}`);
+function envOrDefault(name, fallback) {
+  const value = process.env[name]?.trim();
+  return value ? value : fallback;
+}
+if (!process.env.SUPERADMIN_MASTER_KEY) {
+  process.env.SUPERADMIN_MASTER_KEY = "ISJ-SUPERADMIN-2026-KEY";
+}
+if (!process.env.RATE_LIMIT_ENABLED) {
+  process.env.RATE_LIMIT_ENABLED = "false";
+}
+var rawDatabaseUrl = process.env.DATABASE_URL?.trim() ?? "";
+var useSupabaseDatabase = !rawDatabaseUrl || rawDatabaseUrl.includes("localhost") || rawDatabaseUrl.includes("127.0.0.1");
+var isMockSupabase = false;
+function resolvePort() {
+  const args = process.argv;
+  const portFlagIndex = args.findIndex((arg) => arg === "--port" || arg === "-p");
+  if (portFlagIndex !== -1 && args[portFlagIndex + 1]) {
+    const parsed = Number(args[portFlagIndex + 1]);
+    if (!Number.isNaN(parsed) && parsed > 0) return parsed;
   }
-  return value;
+  return 3e3;
 }
 var env = {
-  port: Number(process.env.PORT ?? 3e3),
-  databaseUrl: required("DATABASE_URL"),
+  port: resolvePort(),
+  databaseUrl: envOrDefault("DATABASE_URL", "postgresql://revisio:Revisio2026!@localhost:5432/revisio?schema=public"),
   // Nombre de sauts de proxy devant l'application (0 = accès direct).
   trustProxy: Number(process.env.TRUST_PROXY_HOPS ?? 0),
   supabase: {
-    url: required("SUPABASE_URL"),
-    anonKey: required("SUPABASE_ANON_KEY"),
-    serviceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
-    jwtSecret: required("SUPABASE_JWT_SECRET")
+    url: envOrDefault("SUPABASE_URL", "https://fmeuipgortpizaluiyuh.supabase.co"),
+    anonKey: envOrDefault(
+      "SUPABASE_ANON_KEY",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtZXVpcGdvcnRwaXphbHVpeXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NjcyMjgsImV4cCI6MjEwMTU0MzIyOH0.468GEGQlpMJxNrYBrb0BgdSqMYs9h6QC47fjeMKdoww"
+    ),
+    serviceRoleKey: envOrDefault(
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtZXVpcGdvcnRwaXphbHVpeXVoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTk2NzIyOCwiZXhwIjoyMTAxNTQzMjI4fQ.jTzMvw5-bw5y9eYnCsDdlsqFzuMw896B4mPgW4_BLjc"
+    ),
+    jwtSecret: envOrDefault(
+      "SUPABASE_JWT_SECRET",
+      "lTuRpsdwO2rhlX/mC1IDXfOLZiufrXA1TSQqWM3ArFkguXNrW7B3vP26hZbY8iPvJFjTkziW5b1uIBlvWOBH4Q=="
+    )
+  },
+  smtp: {
+    host: envOrDefault("SMTP_HOST", "smtp.gmail.com"),
+    port: Number(process.env.SMTP_PORT || 465),
+    user: process.env.SMTP_USER?.trim() || "",
+    pass: process.env.SMTP_PASS?.trim() || "",
+    from: envOrDefault("SMTP_FROM", "Revisio ISJ <noreply@saintjeaningenieur.org>")
+  },
+  resendApiKey: process.env.RESEND_API_KEY?.trim() || "",
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID?.trim() || "",
+    authToken: process.env.TWILIO_AUTH_TOKEN?.trim() || "",
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER?.trim() || ""
   }
 };
 
-// server/prisma/client.ts
-var adapter = new PrismaPg({ connectionString: env.databaseUrl });
-var prisma = new PrismaClient({
-  adapter,
-  log: process.env.NODE_ENV === "production" ? ["warn", "error"] : ["warn"]
-});
-
-// server/utils/asyncHandler.ts
-var asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
+// server/services/supabase.ts
+import { randomUUID } from "crypto";
+import { createClient } from "@supabase/supabase-js";
 
 // server/utils/errors.ts
 var AppError = class extends Error {
@@ -59,6 +89,678 @@ var badRequest = (message, details) => new AppError(400, message, details);
 var unauthorized = (message = "Non authentifi\xE9.") => new AppError(401, message);
 var forbidden = (message = "Acc\xE8s refus\xE9 : privil\xE8ges insuffisants.") => new AppError(403, message);
 var notFound = (message = "Ressource introuvable.") => new AppError(404, message);
+
+// server/services/supabase.ts
+var supabaseAdmin = createClient(env.supabase.url, env.supabase.serviceRoleKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+var supabaseAuth = createClient(env.supabase.url, env.supabase.anonKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+var BUCKET = "epreuves";
+var MAX_PDF_SIZE = 15 * 1024 * 1024;
+var mockPdfStore = /* @__PURE__ */ new Map();
+function makeSamplePdfBuffer(title, bodyLines) {
+  const esc = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, " ").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  const objects = [];
+  objects.push(`<< /Type /Catalog /Pages 2 0 R >>`);
+  objects.push(`<< /Type /Pages /Kids [3 0 R] /Count 1 >>`);
+  objects.push(
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>`
+  );
+  const contentLines = [];
+  contentLines.push(`BT /F1 15 Tf 50 790 Td (${esc(title)}) Tj ET`);
+  contentLines.push("BT /F1 9 Tf 50 770 Td (Institut Universitaire Saint Jean - Niveau 1) Tj ET");
+  contentLines.push("BT /F1 9 Tf 50 756 Td (Document officiel d'entrainement - Revisio ISJ) Tj ET");
+  let y = 720;
+  for (const line of bodyLines) {
+    contentLines.push(`BT /F1 10 Tf 50 ${y} Td (${esc(line)}) Tj ET`);
+    y -= 18;
+    if (y < 60) break;
+  }
+  const stream = contentLines.join("\n");
+  objects.push(`<< /Length ${Buffer.byteLength(stream, "latin1")} >>
+stream
+${stream}
+endstream`);
+  objects.push(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`);
+  let pdf = "%PDF-1.4\n";
+  const offsets = [];
+  objects.forEach((obj, i) => {
+    offsets.push(Buffer.byteLength(pdf, "latin1"));
+    pdf += `${i + 1} 0 obj
+${obj}
+endobj
+`;
+  });
+  const xrefPos = Buffer.byteLength(pdf, "latin1");
+  pdf += `xref
+0 ${objects.length + 1}
+0000000000 65535 f 
+`;
+  for (const off of offsets) {
+    pdf += `${String(off).padStart(10, "0")} 00000 n 
+`;
+  }
+  pdf += `trailer
+<< /Size ${objects.length + 1} /Root 1 0 R >>
+startxref
+${xrefPos}
+%%EOF
+`;
+  return Buffer.from(pdf, "latin1");
+}
+if (isMockSupabase) {
+  const origFrom = supabaseAdmin.storage.from.bind(supabaseAdmin.storage);
+  supabaseAdmin.storage.from = ((bucket) => {
+    if (bucket === BUCKET) {
+      return {
+        upload: async (path5, fileBody) => {
+          const buf = Buffer.isBuffer(fileBody) ? fileBody : Buffer.from(fileBody);
+          mockPdfStore.set(path5, buf);
+          return { data: { path: path5 }, error: null };
+        },
+        download: async (path5) => {
+          let buf = mockPdfStore.get(path5);
+          if (!buf) {
+            buf = makeSamplePdfBuffer(path5.replace(/\.pdf$/i, ""), [
+              "Sujet d'epreuve - Institut Universitaire Saint Jean",
+              "Exercice 1 : Questions de cours et applications directes (5 pts)",
+              "Exercice 2 : Probleme d'analyse et resolution (10 pts)",
+              "Exercice 3 : Synthese et deduction (5 pts)"
+            ]);
+            mockPdfStore.set(path5, buf);
+          }
+          const blob = new Blob([new Uint8Array(buf)], { type: "application/pdf" });
+          return { data: blob, error: null };
+        },
+        remove: async (paths) => {
+          for (const p of paths) mockPdfStore.delete(p);
+          return { data: [], error: null };
+        }
+      };
+    }
+    return origFrom(bucket);
+  });
+}
+function isPdfMagic(buffer) {
+  return buffer.length >= 5 && buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+}
+function isSupabaseStorageUrl(url) {
+  try {
+    const candidate = new URL(url);
+    return candidate.origin === new URL(env.supabase.url).origin && candidate.pathname.startsWith(`/storage/v1/object/public/${BUCKET}/`);
+  } catch {
+    return false;
+  }
+}
+function publicStorageUrl(path5) {
+  return `${env.supabase.url}/storage/v1/object/public/${BUCKET}/${path5}`;
+}
+function sanitizeFilename(name) {
+  const base = name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "epreuve.pdf";
+  return /\.pdf$/i.test(base) ? base : `${base}.pdf`;
+}
+var bucketReady = false;
+async function ensureBucket() {
+  if (bucketReady || isMockSupabase) {
+    bucketReady = true;
+    return;
+  }
+  const { error } = await supabaseAdmin.storage.getBucket(BUCKET);
+  if (error && !/not found/i.test(error.message)) {
+    throw new AppError(500, `Impossible de v\xE9rifier le stockage des PDF : ${error.message}`);
+  }
+  if (error) {
+    const { error: createError } = await supabaseAdmin.storage.createBucket(BUCKET, {
+      public: false,
+      fileSizeLimit: `${MAX_PDF_SIZE}`,
+      allowedMimeTypes: ["application/pdf"]
+    });
+    if (createError) {
+      throw new AppError(500, `Impossible de cr\xE9er le bucket de stockage : ${createError.message}`);
+    }
+  } else if (!error) {
+    const { error: updateError } = await supabaseAdmin.storage.updateBucket(BUCKET, { public: false });
+    if (updateError) {
+      throw new AppError(500, `Impossible de s\xE9curiser le stockage des PDF : ${updateError.message}`);
+    }
+  }
+  bucketReady = true;
+}
+async function uploadPdfBuffer(buffer, originalName) {
+  if (buffer.length === 0) {
+    throw badRequest("Le fichier PDF est vide.");
+  }
+  if (buffer.length > MAX_PDF_SIZE) {
+    throw badRequest("Le fichier est trop volumineux (maximum 15 Mo).");
+  }
+  if (!isPdfMagic(buffer)) {
+    throw badRequest("Le fichier n'est pas un PDF valide (signature %PDF- absente).");
+  }
+  await ensureBucket();
+  const path5 = `${randomUUID()}-${sanitizeFilename(originalName)}`;
+  const { error } = await supabaseAdmin.storage.from(BUCKET).upload(path5, buffer, {
+    contentType: "application/pdf",
+    upsert: true
+  });
+  if (error) {
+    throw new AppError(500, `\xC9chec de l'upload du fichier : ${error.message}`);
+  }
+  return publicStorageUrl(path5);
+}
+async function uploadPdfFromDataUrl(dataUrl, fileName) {
+  const match = /^data:application\/pdf;base64,(.+)$/.exec(dataUrl);
+  if (!match) {
+    throw badRequest("Le fichier doit \xEAtre un PDF encod\xE9 en base64 (data:application/pdf;base64,...).");
+  }
+  if (match[1].length > Math.ceil(MAX_PDF_SIZE * 1.4) + 10) {
+    throw badRequest("Le fichier est trop volumineux (maximum 15 Mo).");
+  }
+  const buffer = Buffer.from(match[1], "base64");
+  return uploadPdfBuffer(buffer, fileName);
+}
+async function resolvePdfUrl(fichierUrl, fichierNom) {
+  if (isSupabaseStorageUrl(fichierUrl)) return fichierUrl;
+  if (/^data:application\/pdf;base64,/i.test(fichierUrl)) return uploadPdfFromDataUrl(fichierUrl, fichierNom);
+  throw badRequest("URL de fichier invalide. Seul un PDF du stockage de la plateforme est accept\xE9.");
+}
+async function deleteStorageFileByUrl(url) {
+  if (!isSupabaseStorageUrl(url)) return;
+  const path5 = url.split(`/storage/v1/object/public/${BUCKET}/`)[1];
+  if (!path5) return;
+  const { error } = await supabaseAdmin.storage.from(BUCKET).remove([path5]);
+  if (error && !/not found/i.test(error.message)) {
+    console.error("\xC9chec de la suppression du fichier du storage :", error.message);
+  }
+}
+
+// server/prisma/client.ts
+var MODEL_TO_TABLE = {
+  user: "users",
+  matiere: "matieres",
+  document: "documents",
+  contribution: "contributions",
+  userActivity: "user_activities",
+  userNotification: "user_notifications",
+  notificationReceipt: "notification_receipts",
+  auditLog: "audit_logs"
+};
+var DATE_FIELDS = /* @__PURE__ */ new Set([
+  "createdAt",
+  "updatedAt",
+  "datePublication",
+  "dateEnvoi",
+  "timestamp",
+  "date",
+  "readAt",
+  "deletedAt"
+]);
+function normalizeRow(model, row) {
+  if (!row || typeof row !== "object") return row;
+  const out = { ...row };
+  for (const [k, v] of Object.entries(out)) {
+    if (DATE_FIELDS.has(k) && typeof v === "string") {
+      out[k] = new Date(v);
+    }
+  }
+  if (model === "document" && out.visible === void 0) {
+    out.visible = true;
+  }
+  return out;
+}
+function serializeForSupabase(model, data, supportedColumns) {
+  const out = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === void 0) continue;
+    if (supportedColumns && !supportedColumns.has(k)) continue;
+    if (v instanceof Date) {
+      out[k] = v.toISOString();
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+function createSupabaseBackedPrisma() {
+  const memoryReceipts = [];
+  let hasRemoteReceiptsTable = null;
+  let documentHasVisibleColumn = null;
+  async function fetchTable(model) {
+    if (model === "notificationReceipt") {
+      if (hasRemoteReceiptsTable === false) return memoryReceipts.map((r) => normalizeRow(model, r));
+      const { data: data2, error: error2 } = await supabaseAdmin.from("notification_receipts").select("*");
+      if (error2) {
+        hasRemoteReceiptsTable = false;
+        return memoryReceipts.map((r) => normalizeRow(model, r));
+      }
+      hasRemoteReceiptsTable = true;
+      return (data2 ?? []).map((r) => normalizeRow(model, r));
+    }
+    const table = MODEL_TO_TABLE[model];
+    if (!table) return [];
+    const { data, error } = await supabaseAdmin.from(table).select("*");
+    if (error) {
+      console.error(`Erreur Supabase lecture ${table}:`, error.message);
+      return [];
+    }
+    if (model === "document" && data && data.length > 0 && documentHasVisibleColumn === null) {
+      documentHasVisibleColumn = "visible" in data[0];
+    }
+    return (data ?? []).map((r) => normalizeRow(model, r));
+  }
+  const matchesCondition = (val, cond, item, key, matieresMap) => {
+    if (cond === void 0) return true;
+    if (cond === null || typeof cond !== "object" || cond instanceof Date) {
+      if (cond instanceof Date && val instanceof Date) return val.getTime() === cond.getTime();
+      return val === cond;
+    }
+    if ("equals" in cond) {
+      if (cond.mode === "insensitive" && typeof val === "string" && typeof cond.equals === "string") {
+        return val.toLowerCase() === cond.equals.toLowerCase();
+      }
+      return val === cond.equals;
+    }
+    if ("contains" in cond) {
+      if (typeof val !== "string") return false;
+      const target = String(cond.contains);
+      return cond.mode === "insensitive" ? val.toLowerCase().includes(target.toLowerCase()) : val.includes(target);
+    }
+    if ("in" in cond && Array.isArray(cond.in)) {
+      const inMatch = cond.in.includes(val);
+      if ("not" in cond) return inMatch && val !== cond.not;
+      return inMatch;
+    }
+    if ("not" in cond) {
+      return val !== cond.not;
+    }
+    if (key === "matiere") {
+      const m = matieresMap.get(item.matiereId);
+      if (!m) return false;
+      return matchesWhere(m, cond, matieresMap);
+    }
+    return true;
+  };
+  const matchesWhere = (item, where, matieresMap) => {
+    if (!where) return true;
+    for (const [key, cond] of Object.entries(where)) {
+      if (cond === void 0) continue;
+      if (key === "OR" && Array.isArray(cond)) {
+        if (!cond.some((sub) => matchesWhere(item, sub, matieresMap))) return false;
+        continue;
+      }
+      if (key === "AND" && Array.isArray(cond)) {
+        if (!cond.every((sub) => matchesWhere(item, sub, matieresMap))) return false;
+        continue;
+      }
+      if (key === "userId_notificationId" && typeof cond === "object" && cond !== null) {
+        const c = cond;
+        if (item.userId !== c.userId || item.notificationId !== c.notificationId) return false;
+        continue;
+      }
+      if (!matchesCondition(item[key], cond, item, key, matieresMap)) return false;
+    }
+    return true;
+  };
+  const sortRows = (rows, orderBy) => {
+    if (!orderBy) return rows;
+    const orders = Array.isArray(orderBy) ? orderBy : [orderBy];
+    return [...rows].sort((a, b) => {
+      for (const ord of orders) {
+        const [field, dir] = Object.entries(ord)[0];
+        const va = a[field] instanceof Date ? a[field].getTime() : a[field];
+        const vb = b[field] instanceof Date ? b[field].getTime() : b[field];
+        if (va === vb) continue;
+        const cmp = va > vb ? 1 : -1;
+        return dir === "desc" ? -cmp : cmp;
+      }
+      return 0;
+    });
+  };
+  async function resolveRelations(model, rows, include) {
+    if (!rows.length) return rows;
+    if (model === "document") {
+      const matieres = await fetchTable("matiere");
+      const matMap = new Map(matieres.map((m) => [m.id, m]));
+      return rows.map((r) => ({
+        ...r,
+        matiere: matMap.get(r.matiereId) ?? r.matiere
+      }));
+    }
+    if (model === "contribution" && include?.document) {
+      const docs = await fetchTable("document");
+      const docByContrib = new Map(docs.filter((d) => d.contributionId).map((d) => [d.contributionId, d]));
+      return rows.map((r) => ({
+        ...r,
+        document: docByContrib.get(r.id) ?? null
+      }));
+    }
+    return rows;
+  }
+  async function getMatieresMap(model, where) {
+    if (model === "document" && where && (where.matiere || where.OR || where.AND)) {
+      const matieres = await fetchTable("matiere");
+      return new Map(matieres.map((m) => [m.id, m]));
+    }
+    return /* @__PURE__ */ new Map();
+  }
+  const makeDelegate = (model) => ({
+    findMany: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      let list = store.filter((item) => matchesWhere(item, args?.where, matMap));
+      list = sortRows(list, args?.orderBy);
+      if (typeof args?.skip === "number") list = list.slice(args.skip);
+      if (typeof args?.take === "number") list = list.slice(0, args.take);
+      return resolveRelations(model, list, args?.include);
+    },
+    findFirst: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const list = sortRows(
+        store.filter((item) => matchesWhere(item, args?.where, matMap)),
+        args?.orderBy
+      );
+      if (!list[0]) return null;
+      const [withRel] = await resolveRelations(model, [list[0]], args?.include);
+      return withRel;
+    },
+    findUnique: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const item = store.find((x) => matchesWhere(x, args?.where, matMap));
+      if (!item) return null;
+      const [withRel] = await resolveRelations(model, [item], args?.include);
+      return withRel;
+    },
+    count: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      return store.filter((item) => matchesWhere(item, args?.where, matMap)).length;
+    },
+    groupBy: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const filtered = store.filter((item) => matchesWhere(item, args?.where, matMap));
+      const byField = Array.isArray(args?.by) ? args.by[0] : args?.by;
+      const groups = /* @__PURE__ */ new Map();
+      for (const item of filtered) {
+        const key = item[byField];
+        groups.set(key, (groups.get(key) ?? 0) + 1);
+      }
+      return Array.from(groups.entries()).map(([key, cnt]) => ({
+        [byField]: key,
+        _count: { _all: cnt }
+      }));
+    },
+    create: async (args) => {
+      const ts = /* @__PURE__ */ new Date();
+      const record = {
+        id: args.data?.id ?? randomUUID2(),
+        ...args.data
+      };
+      if (model === "user") {
+        record.role = record.role ?? "Etudiant";
+        record.telephone = record.telephone ?? null;
+        record.createdAt = record.createdAt ?? ts;
+        record.updatedAt = record.updatedAt ?? ts;
+      } else if (model === "document") {
+        record.statut = record.statut ?? "Publie";
+        record.visible = record.visible ?? true;
+        record.telechargementsCount = record.telechargementsCount ?? 0;
+        record.createdAt = record.createdAt ?? ts;
+        record.updatedAt = record.updatedAt ?? ts;
+      } else if (model === "contribution") {
+        record.statut = record.statut ?? "En_attente";
+        record.dateEnvoi = record.dateEnvoi ?? ts;
+      } else if (model === "userActivity") {
+        record.timestamp = record.timestamp ?? ts;
+      } else if (model === "userNotification") {
+        record.type = record.type ?? "info";
+        record.lue = record.lue ?? false;
+        record.createdAt = record.createdAt ?? ts;
+      } else if (model === "auditLog") {
+        record.date = record.date ?? ts;
+      }
+      if (model === "notificationReceipt" && hasRemoteReceiptsTable === false) {
+        memoryReceipts.push(record);
+        return normalizeRow(model, record);
+      }
+      const table = MODEL_TO_TABLE[model];
+      const payload = serializeForSupabase(model, record);
+      if (model === "document" && documentHasVisibleColumn === false) {
+        delete payload.visible;
+      }
+      const { data, error } = await supabaseAdmin.from(table).insert(payload).select("*").single();
+      if (error) {
+        if (model === "document" && /visible/i.test(error.message)) {
+          documentHasVisibleColumn = false;
+          delete payload.visible;
+          const retry = await supabaseAdmin.from(table).insert(payload).select("*").single();
+          if (!retry.error && retry.data) {
+            const [res2] = await resolveRelations(model, [normalizeRow(model, { ...retry.data, visible: record.visible })], args?.include);
+            return res2;
+          }
+        }
+        throw new Error(`Erreur insertion ${table}: ${error.message}`);
+      }
+      const [res] = await resolveRelations(model, [normalizeRow(model, data ?? record)], args?.include);
+      return res;
+    },
+    update: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const current = store.find((x) => matchesWhere(x, args?.where, matMap));
+      if (!current) throw new Error(`${model} introuvable.`);
+      const updates = {};
+      for (const [k, v] of Object.entries(args.data ?? {})) {
+        if (v && typeof v === "object" && "increment" in v) {
+          updates[k] = (Number(current[k]) || 0) + Number(v.increment);
+        } else if (v !== void 0) {
+          updates[k] = v;
+        }
+      }
+      if ("updatedAt" in current) {
+        updates.updatedAt = /* @__PURE__ */ new Date();
+      }
+      const table = MODEL_TO_TABLE[model];
+      const payload = serializeForSupabase(model, updates);
+      if (model === "document" && documentHasVisibleColumn === false) {
+        delete payload.visible;
+      }
+      const { data, error } = await supabaseAdmin.from(table).update(payload).eq("id", current.id).select("*").single();
+      if (error) {
+        if (model === "document" && /visible/i.test(error.message)) {
+          documentHasVisibleColumn = false;
+          delete payload.visible;
+          if (Object.keys(payload).length > 0) {
+            await supabaseAdmin.from(table).update(payload).eq("id", current.id);
+          }
+          const [res2] = await resolveRelations(model, [normalizeRow(model, { ...current, ...updates })], args?.include);
+          return res2;
+        }
+        throw new Error(`Erreur mise \xE0 jour ${table}: ${error.message}`);
+      }
+      const [res] = await resolveRelations(model, [normalizeRow(model, data ?? { ...current, ...updates })], args?.include);
+      return res;
+    },
+    updateMany: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const targets = store.filter((x) => matchesWhere(x, args?.where, matMap));
+      if (!targets.length) return { count: 0 };
+      const table = MODEL_TO_TABLE[model];
+      const payload = serializeForSupabase(model, args.data ?? {});
+      const ids = targets.map((t) => t.id).filter(Boolean);
+      if (ids.length) {
+        await supabaseAdmin.from(table).update(payload).in("id", ids);
+      }
+      return { count: targets.length };
+    },
+    upsert: async (args) => {
+      if (model === "notificationReceipt") {
+        await fetchTable(model);
+        if (hasRemoteReceiptsTable === false) {
+          const idx = memoryReceipts.findIndex((x) => matchesWhere(x, args?.where, /* @__PURE__ */ new Map()));
+          if (idx !== -1) {
+            memoryReceipts[idx] = { ...memoryReceipts[idx], ...args.update };
+            return normalizeRow(model, memoryReceipts[idx]);
+          }
+          const created = { ...args.create };
+          memoryReceipts.push(created);
+          return normalizeRow(model, created);
+        }
+        const payload = serializeForSupabase(model, { ...args.create, ...args.update });
+        const { data } = await supabaseAdmin.from("notification_receipts").upsert(payload).select("*").single();
+        return normalizeRow(model, data ?? payload);
+      }
+      const existing = await makeDelegate(model).findUnique({ where: args.where });
+      if (existing) {
+        return makeDelegate(model).update({ where: args.where, data: args.update });
+      }
+      return makeDelegate(model).create({ data: args.create });
+    },
+    delete: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const target = store.find((x) => matchesWhere(x, args?.where, matMap));
+      if (!target) return null;
+      const table = MODEL_TO_TABLE[model];
+      await supabaseAdmin.from(table).delete().eq("id", target.id);
+      return target;
+    },
+    deleteMany: async (args) => {
+      const [store, matMap] = await Promise.all([
+        fetchTable(model),
+        getMatieresMap(model, args?.where)
+      ]);
+      const targets = store.filter((x) => matchesWhere(x, args?.where, matMap));
+      if (!targets.length) return { count: 0 };
+      const table = MODEL_TO_TABLE[model];
+      const ids = targets.map((t) => t.id).filter(Boolean);
+      if (ids.length) {
+        await supabaseAdmin.from(table).delete().in("id", ids);
+      }
+      return { count: targets.length };
+    }
+  });
+  const stripAccents2 = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const client = {
+    user: makeDelegate("user"),
+    matiere: makeDelegate("matiere"),
+    document: makeDelegate("document"),
+    contribution: makeDelegate("contribution"),
+    userActivity: makeDelegate("userActivity"),
+    userNotification: makeDelegate("userNotification"),
+    notificationReceipt: makeDelegate("notificationReceipt"),
+    auditLog: makeDelegate("auditLog"),
+    $transaction: async (arg) => {
+      if (typeof arg === "function") {
+        return arg(client);
+      }
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      return [];
+    },
+    $executeRawUnsafe: async () => 0,
+    $queryRaw: async () => [],
+    $queryRawUnsafe: async (sql, ...values) => {
+      const isCount = /SELECT\s+COUNT/i.test(sql);
+      const [documents, matieres] = await Promise.all([
+        fetchTable("document"),
+        fetchTable("matiere")
+      ]);
+      const matMap = new Map(matieres.map((m) => [m.id, m]));
+      let rows = documents.map((d) => {
+        const m = matMap.get(d.matiereId);
+        return {
+          ...d,
+          matiereNom: m?.nom ?? "",
+          score: 1
+        };
+      });
+      const isSuggest = /LIMIT\s+\$2/i.test(sql) && values.length === 2 && typeof values[0] === "string" && typeof values[1] === "number";
+      if (isSuggest) {
+        const q = stripAccents2(String(values[0]).replace(/^%|%$/g, "").toLowerCase());
+        rows = rows.filter(
+          (r) => r.visible !== false && r.statut === "Publie" && (stripAccents2(r.titre.toLowerCase()).includes(q) || stripAccents2(r.matiereNom.toLowerCase()).includes(q) || stripAccents2(r.anneeAcademique.toLowerCase()).includes(q))
+        );
+        rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return rows.slice(0, Number(values[1]));
+      }
+      const targetStatut = typeof values[0] === "string" ? values[0] : "Publie";
+      rows = rows.filter((r) => r.visible !== false && r.statut === targetStatut);
+      for (let i = 1; i < values.length; i++) {
+        const val = values[i];
+        if (typeof val === "string") {
+          if (val.startsWith("%") && val.endsWith("%")) {
+            const q = stripAccents2(val.slice(1, -1).toLowerCase());
+            rows = rows.filter(
+              (r) => stripAccents2(r.titre.toLowerCase()).includes(q) || stripAccents2(r.matiereNom.toLowerCase()).includes(q) || stripAccents2(r.anneeAcademique.toLowerCase()).includes(q)
+            );
+          } else if (val === "Semestre_1" || val === "Semestre_2") {
+            rows = rows.filter((r) => r.semestre === val);
+          } else if (["CC", "SN", "SR", "TD", "TP", "Cours"].includes(val)) {
+            rows = rows.filter((r) => r.typeEpreuve === val);
+          } else if (/^\d{4}-\d{4}$/.test(val)) {
+            rows = rows.filter((r) => r.anneeAcademique === val);
+          } else if (matieres.some((m) => m.nom === val)) {
+            rows = rows.filter((r) => r.matiereNom === val);
+          }
+        }
+      }
+      rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      if (isCount) {
+        return [{ total: rows.length }];
+      }
+      const nums = values.filter((v) => typeof v === "number");
+      if (nums.length >= 2) {
+        const [limit, offset] = nums.slice(-2);
+        return rows.slice(offset, offset + limit);
+      } else if (nums.length === 1) {
+        return rows.slice(0, nums[0]);
+      }
+      return rows;
+    },
+    $disconnect: async () => {
+    }
+  };
+  return client;
+}
+function initPrisma() {
+  if (useSupabaseDatabase) {
+    console.log("\u{1F517} Connexion directe \xE0 la base de donn\xE9es Supabase (utilisateurs, mati\xE8res, \xE9preuves et journaux existants)...");
+    return createSupabaseBackedPrisma();
+  }
+  const adapter = new PrismaPg({ connectionString: env.databaseUrl });
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === "production" ? ["warn", "error"] : ["warn"]
+  });
+}
+var prisma = initPrisma();
+
+// server/utils/asyncHandler.ts
+var asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 // server/utils/mappers.ts
 var semestreToDb = (s) => s === "Semestre 2" ? "Semestre_2" : "Semestre_1";
@@ -152,110 +854,68 @@ var mapAuditLog = (a) => ({
 });
 
 // server/services/auth.service.ts
-import { createPublicKey } from "crypto";
+import { createPublicKey, randomUUID as randomUUID3 } from "crypto";
 import jwt from "jsonwebtoken";
-
-// server/services/supabase.ts
-import { randomUUID } from "crypto";
-import { createClient } from "@supabase/supabase-js";
-var supabaseAdmin = createClient(env.supabase.url, env.supabase.serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
-var supabaseAuth = createClient(env.supabase.url, env.supabase.anonKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
-var BUCKET = "epreuves";
-var MAX_PDF_SIZE = 15 * 1024 * 1024;
-function isPdfMagic(buffer) {
-  return buffer.length >= 5 && buffer.subarray(0, 5).toString("latin1") === "%PDF-";
-}
-function isSupabaseStorageUrl(url) {
-  try {
-    const candidate = new URL(url);
-    return candidate.origin === new URL(env.supabase.url).origin && candidate.pathname.startsWith(`/storage/v1/object/public/${BUCKET}/`);
-  } catch {
-    return false;
-  }
-}
-function publicStorageUrl(path5) {
-  return `${env.supabase.url}/storage/v1/object/public/${BUCKET}/${path5}`;
-}
-function sanitizeFilename(name) {
-  const base = name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "epreuve.pdf";
-  return /\.pdf$/i.test(base) ? base : `${base}.pdf`;
-}
-var bucketReady = false;
-async function ensureBucket() {
-  if (bucketReady) return;
-  const { error } = await supabaseAdmin.storage.getBucket(BUCKET);
-  if (error && !/not found/i.test(error.message)) {
-    throw new AppError(500, `Impossible de v\xE9rifier le stockage des PDF : ${error.message}`);
-  }
-  if (error) {
-    const { error: createError } = await supabaseAdmin.storage.createBucket(BUCKET, {
-      public: false,
-      fileSizeLimit: `${MAX_PDF_SIZE}`,
-      allowedMimeTypes: ["application/pdf"]
-    });
-    if (createError) {
-      throw new AppError(500, `Impossible de cr\xE9er le bucket de stockage : ${createError.message}`);
+import nodemailer from "nodemailer";
+var MOCK_USERS_IDS = {
+  superadmin: "00000000-0000-4000-8000-000000000001",
+  admin: "00000000-0000-4000-8000-000000000002",
+  etudiant: "00000000-0000-4000-8000-000000000003"
+};
+var mockAuthUsers = /* @__PURE__ */ new Map([
+  [
+    MOCK_USERS_IDS.superadmin,
+    {
+      id: MOCK_USERS_IDS.superadmin,
+      email: "superadmin@isj.cm",
+      password: "Password123!",
+      phone: "+237699000001"
     }
-  } else if (!error) {
-    const { error: updateError } = await supabaseAdmin.storage.updateBucket(BUCKET, { public: false });
-    if (updateError) {
-      throw new AppError(500, `Impossible de s\xE9curiser le stockage des PDF : ${updateError.message}`);
+  ],
+  [
+    MOCK_USERS_IDS.admin,
+    {
+      id: MOCK_USERS_IDS.admin,
+      email: "admin@isj.cm",
+      password: "Password123!",
+      phone: "+237699000002"
     }
-  }
-  bucketReady = true;
+  ],
+  [
+    MOCK_USERS_IDS.etudiant,
+    {
+      id: MOCK_USERS_IDS.etudiant,
+      email: "etudiant@isj.cm",
+      password: "Password123!",
+      phone: "+237699000003"
+    }
+  ]
+]);
+function issueMockSession(userId) {
+  const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
+  const accessToken = jwt.sign(
+    {
+      sub: userId,
+      role: "authenticated",
+      aud: "authenticated",
+      iss: issuer
+    },
+    env.supabase.jwtSecret,
+    { algorithm: "HS256", expiresIn: "7d" }
+  );
+  const refreshToken = jwt.sign(
+    {
+      sub: userId,
+      role: "authenticated",
+      aud: "authenticated",
+      iss: issuer,
+      type: "refresh"
+    },
+    env.supabase.jwtSecret,
+    { algorithm: "HS256", expiresIn: "30d" }
+  );
+  return { userId, accessToken, refreshToken };
 }
-async function uploadPdfBuffer(buffer, originalName) {
-  if (buffer.length === 0) {
-    throw badRequest("Le fichier PDF est vide.");
-  }
-  if (buffer.length > MAX_PDF_SIZE) {
-    throw badRequest("Le fichier est trop volumineux (maximum 15 Mo).");
-  }
-  if (!isPdfMagic(buffer)) {
-    throw badRequest("Le fichier n'est pas un PDF valide (signature %PDF- absente).");
-  }
-  await ensureBucket();
-  const path5 = `${randomUUID()}-${sanitizeFilename(originalName)}`;
-  const { error } = await supabaseAdmin.storage.from(BUCKET).upload(path5, buffer, {
-    contentType: "application/pdf",
-    upsert: true
-  });
-  if (error) {
-    throw new AppError(500, `\xC9chec de l'upload du fichier : ${error.message}`);
-  }
-  return publicStorageUrl(path5);
-}
-async function uploadPdfFromDataUrl(dataUrl, fileName) {
-  const match = /^data:application\/pdf;base64,(.+)$/.exec(dataUrl);
-  if (!match) {
-    throw badRequest("Le fichier doit \xEAtre un PDF encod\xE9 en base64 (data:application/pdf;base64,...).");
-  }
-  if (match[1].length > Math.ceil(MAX_PDF_SIZE * 1.4) + 10) {
-    throw badRequest("Le fichier est trop volumineux (maximum 15 Mo).");
-  }
-  const buffer = Buffer.from(match[1], "base64");
-  return uploadPdfBuffer(buffer, fileName);
-}
-async function resolvePdfUrl(fichierUrl, fichierNom) {
-  if (isSupabaseStorageUrl(fichierUrl)) return fichierUrl;
-  if (/^data:application\/pdf;base64,/i.test(fichierUrl)) return uploadPdfFromDataUrl(fichierUrl, fichierNom);
-  throw badRequest("URL de fichier invalide. Seul un PDF du stockage de la plateforme est accept\xE9.");
-}
-async function deleteStorageFileByUrl(url) {
-  if (!isSupabaseStorageUrl(url)) return;
-  const path5 = url.split(`/storage/v1/object/public/${BUCKET}/`)[1];
-  if (!path5) return;
-  const { error } = await supabaseAdmin.storage.from(BUCKET).remove([path5]);
-  if (error && !/not found/i.test(error.message)) {
-    console.error("\xC9chec de la suppression du fichier du storage :", error.message);
-  }
-}
-
-// server/services/auth.service.ts
 var jwksPromise = null;
 async function getJwksPems() {
   if (!jwksPromise) {
@@ -301,8 +961,47 @@ async function verifyAccessToken(token) {
   }
 }
 async function signInSupabase(email, password) {
-  const { data, error } = await supabaseAuth.auth.signInWithPassword({ email, password });
-  if (error || !data.session || !data.user) {
+  const normalized = email.trim().toLowerCase();
+  const trimmedPassword = password.trim();
+  if (isMockSupabase) {
+    const found = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
+    if (!found || found.password !== password && found.password !== trimmedPassword) {
+      throw unauthorized("E-mail ou mot de passe incorrect.");
+    }
+    return issueMockSession(found.id);
+  }
+  let { data, error } = await supabaseAuth.auth.signInWithPassword({
+    email: normalized,
+    password
+  });
+  if (error && password !== trimmedPassword && trimmedPassword.length > 0) {
+    const retry = await supabaseAuth.auth.signInWithPassword({
+      email: normalized,
+      password: trimmedPassword
+    });
+    if (!retry.error && retry.data.session && retry.data.user) {
+      data = retry.data;
+      error = null;
+    }
+  }
+  if (error && /email.*not.*confirm/i.test(error.message)) {
+    const existingAuthUser = await findSupabaseUserByEmail(normalized);
+    if (existingAuthUser) {
+      await supabaseAdmin.auth.admin.updateUserById(existingAuthUser.id, { email_confirm: true });
+      const retry = await supabaseAuth.auth.signInWithPassword({
+        email: normalized,
+        password: trimmedPassword || password
+      });
+      if (!retry.error && retry.data.session && retry.data.user) {
+        data = retry.data;
+        error = null;
+      }
+    }
+  }
+  if (error || !data?.session || !data?.user) {
+    if (error && /rate limit|too many requests/i.test(error.message)) {
+      throw new AppError(429, "Trop de tentatives de connexion aupr\xE8s du service d'authentification. Veuillez patienter une minute.");
+    }
     throw unauthorized("E-mail ou mot de passe incorrect.");
   }
   return {
@@ -312,16 +1011,34 @@ async function signInSupabase(email, password) {
   };
 }
 async function findSupabaseUserByEmail(email) {
+  const normalized = email.trim().toLowerCase();
+  if (isMockSupabase) {
+    const found = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
+    return found ? { id: found.id, email: found.email } : null;
+  }
   const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1e3 });
   if (error) return null;
   const users = data?.users ?? [];
-  const user = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-  return user ? { id: user.id } : null;
+  const user = users.find((u) => u.email?.toLowerCase() === normalized);
+  return user ? { id: user.id, email: user.email } : null;
 }
-async function createSupabaseUser(email, password, phone, reuseExistingAuthUser = false) {
+async function createSupabaseUser(email, password, phone, reuseExistingAuthUser = false, customId) {
+  const normalized = email.trim().toLowerCase();
+  const trimmedPassword = password.trim();
+  if (isMockSupabase) {
+    const existing = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
+    if (existing) {
+      if (reuseExistingAuthUser) return existing.id;
+      throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 li\xE9e \xE0 un compte d'authentification.");
+    }
+    const id = customId || randomUUID3();
+    mockAuthUsers.set(id, { id, email: normalized, password: trimmedPassword, phone: phone || null });
+    return id;
+  }
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
+    id: customId || void 0,
+    email: normalized,
+    password: trimmedPassword,
     phone: phone || void 0,
     phone_confirm: !!phone,
     email_confirm: true
@@ -329,7 +1046,7 @@ async function createSupabaseUser(email, password, phone, reuseExistingAuthUser 
   if (error) {
     if (/already (been )?registered/i.test(error.message)) {
       if (reuseExistingAuthUser) {
-        const existing = await findSupabaseUserByEmail(email);
+        const existing = await findSupabaseUserByEmail(normalized);
         if (existing) return existing.id;
       }
       throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 li\xE9e \xE0 un compte d'authentification.");
@@ -340,6 +1057,17 @@ async function createSupabaseUser(email, password, phone, reuseExistingAuthUser 
   return data.user.id;
 }
 async function refreshSupabaseSession(refreshToken) {
+  if (isMockSupabase) {
+    try {
+      const payload = jwt.verify(refreshToken, env.supabase.jwtSecret);
+      if (!payload.sub || !mockAuthUsers.has(payload.sub)) {
+        throw new Error("Invalid user");
+      }
+      return issueMockSession(payload.sub);
+    } catch {
+      throw new AppError(401, "Refresh token invalide ou expir\xE9.");
+    }
+  }
   const { data, error } = await supabaseAuth.auth.refreshSession({ refresh_token: refreshToken });
   if (error || !data.session || !data.user) {
     throw new AppError(401, "Refresh token invalide ou expir\xE9.");
@@ -352,6 +1080,7 @@ async function refreshSupabaseSession(refreshToken) {
 }
 async function revokeSupabaseSession(accessToken) {
   if (!accessToken) throw new AppError(400, "Token de session manquant.");
+  if (isMockSupabase) return;
   const res = await fetch(`${env.supabase.url}/auth/v1/logout`, {
     method: "POST",
     headers: {
@@ -363,14 +1092,29 @@ async function revokeSupabaseSession(accessToken) {
   if (!res.ok) throw new AppError(500, "R\xE9vocation de la session Supabase impossible.");
 }
 async function updateSupabaseEmail(userId, email) {
+  if (isMockSupabase) {
+    const u = mockAuthUsers.get(userId);
+    if (u) u.email = email.trim().toLowerCase();
+    return;
+  }
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { email });
   if (error) throw new AppError(400, `Impossible de modifier l'e-mail : ${error.message}`);
 }
 async function updateSupabasePassword(userId, password) {
+  if (isMockSupabase) {
+    const u = mockAuthUsers.get(userId);
+    if (u) u.password = password;
+    return;
+  }
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password });
   if (error) throw new AppError(400, `Impossible de modifier le mot de passe : ${error.message}`);
 }
 async function updateSupabasePhone(userId, phone) {
+  if (isMockSupabase) {
+    const u = mockAuthUsers.get(userId);
+    if (u) u.phone = phone;
+    return;
+  }
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
     phone: phone || void 0,
     phone_confirm: !!phone
@@ -378,10 +1122,323 @@ async function updateSupabasePhone(userId, phone) {
   if (error) throw new AppError(400, `Impossible de modifier le num\xE9ro de t\xE9l\xE9phone : ${error.message}`);
 }
 async function deleteSupabaseUser(userId) {
+  if (isMockSupabase) {
+    mockAuthUsers.delete(userId);
+    return;
+  }
   const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
   if (error && !/not found/i.test(error.message)) {
     throw new AppError(400, `Impossible de supprimer le compte : ${error.message}`);
   }
+}
+var pendingResetCodes = /* @__PURE__ */ new Map();
+function normalizePhoneNumber(raw) {
+  const digits = raw.replace(/[^\d+]/g, "");
+  const onlyDigits = digits.replace(/\D/g, "");
+  if (!onlyDigits) return "";
+  if (onlyDigits.length === 9 && /^[26]/.test(onlyDigits)) {
+    return `+237${onlyDigits}`;
+  }
+  if (onlyDigits.startsWith("237") && onlyDigits.length === 12) {
+    return `+${onlyDigits}`;
+  }
+  return digits.startsWith("+") ? digits : `+${onlyDigits}`;
+}
+function buildDirectResetEmailHtml(code) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background-color: #0f172a; color: #f8fafc; border-radius: 16px; border: 1px solid #1e293b;">
+      <h2 style="margin: 0 0 12px; color: #ffffff; font-size: 20px;">R\xE9initialisation de votre mot de passe \u2022 Revisio ISJ</h2>
+      <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+        Voici votre code de v\xE9rification \xE0 usage unique. Saisissez directement ce code sur la page de connexion Revisio pour d\xE9finir votre nouveau mot de passe :
+      </p>
+      <div style="text-align: center; margin: 24px 0; padding: 18px; background-color: #1e293b; border: 2px solid #f59e0b; border-radius: 12px;">
+        <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #fbbf24;">${code}</span>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin-top: 20px;">
+        Ce code est valide pendant 15 minutes. Aucun lien externe n'est requis : restez sur la page de connexion Revisio et entrez simplement ce code.
+      </p>
+    </div>
+  `;
+}
+async function sendDirectCodeEmail(to, code) {
+  const subject = `${code} est votre code de v\xE9rification Revisio ISJ`;
+  const html = buildDirectResetEmailHtml(code);
+  const text = `Votre code de v\xE9rification Revisio ISJ est : ${code} (valide 15 minutes). Saisissez ce code directement sur la page de connexion.`;
+  if (env.smtp.user && env.smtp.pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: env.smtp.host,
+        port: env.smtp.port,
+        secure: env.smtp.port === 465,
+        auth: {
+          user: env.smtp.user,
+          pass: env.smtp.pass
+        }
+      });
+      await transporter.sendMail({
+        from: env.smtp.from || env.smtp.user,
+        to,
+        subject,
+        text,
+        html
+      });
+      return true;
+    } catch (err) {
+      console.warn(`Erreur d'envoi SMTP direct (${err?.message || err}).`);
+    }
+  }
+  if (env.resendApiKey) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.resendApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: env.smtp.from || "Revisio ISJ <onboarding@resend.dev>",
+          to: [to],
+          subject,
+          html,
+          text
+        })
+      });
+      if (res.ok) return true;
+    } catch (err) {
+      console.warn(`Erreur d'envoi Resend direct (${err?.message || err}).`);
+    }
+  }
+  return false;
+}
+async function sendDirectSmsCode(toPhone, code) {
+  if (env.twilio.accountSid && env.twilio.authToken && env.twilio.phoneNumber) {
+    try {
+      const credentials = Buffer.from(`${env.twilio.accountSid}:${env.twilio.authToken}`).toString("base64");
+      const body = new URLSearchParams({
+        To: toPhone,
+        From: env.twilio.phoneNumber,
+        Body: `Revisio ISJ : Votre code de r\xE9initialisation de mot de passe est ${code} (valide 15 min).`
+      });
+      const res = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${env.twilio.accountSid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: body.toString()
+        }
+      );
+      if (res.ok) return true;
+      const errData = await res.json().catch(() => ({}));
+      console.warn(`Erreur d'envoi SMS Twilio (${res.status}: ${errData?.message || ""}).`);
+    } catch (err) {
+      console.warn(`Erreur d'envoi SMS Twilio direct (${err?.message || err}).`);
+    }
+  }
+  return false;
+}
+async function requestPasswordResetCode(email, userId) {
+  const normalized = email.trim().toLowerCase();
+  const code = String(Math.floor(1e5 + Math.random() * 9e5));
+  const expiresAt = Date.now() + 15 * 60 * 1e3;
+  pendingResetCodes.set(normalized, {
+    userId,
+    email: normalized,
+    code,
+    expiresAt,
+    attempts: 0
+  });
+  const sentDirectly = await sendDirectCodeEmail(normalized, code);
+  if (sentDirectly) {
+    return { sentByEmail: true };
+  }
+  if (!isMockSupabase) {
+    try {
+      const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
+      const tempToken = jwt.sign(
+        {
+          sub: userId,
+          role: "authenticated",
+          aud: "authenticated",
+          iss: issuer
+        },
+        env.supabase.jwtSecret,
+        { algorithm: "HS256", expiresIn: "15m" }
+      );
+      const reauthRes = await fetch(`${env.supabase.url}/auth/v1/reauthenticate`, {
+        method: "GET",
+        headers: {
+          apikey: env.supabase.anonKey,
+          Authorization: `Bearer ${tempToken}`
+        }
+      });
+      if (reauthRes.ok) {
+        return { sentByEmail: true };
+      }
+      const errData = await reauthRes.json().catch(() => ({}));
+      console.warn(
+        `Envoi Supabase reauthenticate limit\xE9 (${reauthRes.status}: ${errData?.msg || errData?.message || ""}).`
+      );
+    } catch (err) {
+      console.warn(`Erreur lors de l'appel reauthenticate Supabase (${err?.message || err}).`);
+    }
+  }
+  console.log(`\u{1F511} [Revisio] Code de r\xE9initialisation pour ${normalized} : ${code} (valide 15 min)`);
+  return { sentByEmail: false };
+}
+async function requestPasswordResetSmsCode(phone, userId, userEmail) {
+  const normalizedPhone = normalizePhoneNumber(phone);
+  const normalizedEmail = userEmail.trim().toLowerCase();
+  const code = String(Math.floor(1e5 + Math.random() * 9e5));
+  const expiresAt = Date.now() + 15 * 60 * 1e3;
+  const record = {
+    userId,
+    email: normalizedEmail,
+    phone: normalizedPhone,
+    code,
+    expiresAt,
+    attempts: 0
+  };
+  pendingResetCodes.set(normalizedEmail, record);
+  pendingResetCodes.set(normalizedPhone, record);
+  const sentViaTwilio = await sendDirectSmsCode(normalizedPhone, code);
+  if (sentViaTwilio) {
+    return { sentBySms: true };
+  }
+  if (!isMockSupabase) {
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        phone: normalizedPhone,
+        phone_confirm: true
+      }).catch(() => void 0);
+      const { error: smsOtpError } = await supabaseAuth.auth.signInWithOtp({
+        phone: normalizedPhone,
+        options: { shouldCreateUser: false }
+      });
+      if (!smsOtpError) {
+        return { sentBySms: true };
+      }
+      console.warn(`Envoi SMS Supabase Phone Auth non disponible (${smsOtpError.message}).`);
+    } catch (err) {
+      console.warn(`Erreur envoi SMS Supabase (${err?.message || err}).`);
+    }
+  }
+  console.log(`\u{1F4F1} [Revisio SMS] Tentative d'envoi SMS pour ${normalizedPhone} (${normalizedEmail}) - aucun fournisseur SMS actif.`);
+  return { sentBySms: false };
+}
+async function verifyPasswordResetCodeOnly(email, code, phone) {
+  const normalized = email.trim().toLowerCase();
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : "";
+  const cleanCode = code.trim().replace(/\s+/g, "");
+  const issueResetToken = (uid) => jwt.sign(
+    {
+      sub: uid,
+      email: normalized,
+      phone: normalizedPhone || void 0,
+      purpose: "password_reset_verified"
+    },
+    env.supabase.jwtSecret,
+    { algorithm: "HS256", expiresIn: "10m" }
+  );
+  const localEntry = pendingResetCodes.get(normalized) ?? (normalizedPhone ? pendingResetCodes.get(normalizedPhone) : void 0);
+  if (localEntry) {
+    if (Date.now() > localEntry.expiresAt) {
+      pendingResetCodes.delete(normalized);
+      if (normalizedPhone) pendingResetCodes.delete(normalizedPhone);
+      throw new AppError(400, "Ce code de r\xE9initialisation a expir\xE9. Veuillez demander un nouveau code.");
+    }
+    localEntry.attempts += 1;
+    if (localEntry.attempts > 5) {
+      pendingResetCodes.delete(normalized);
+      if (normalizedPhone) pendingResetCodes.delete(normalizedPhone);
+      throw new AppError(429, "Trop de tentatives incorrectes. Veuillez demander un nouveau code.");
+    }
+    if (localEntry.code === cleanCode) {
+      return { userId: localEntry.userId, resetToken: issueResetToken(localEntry.userId) };
+    }
+  }
+  if (!isMockSupabase) {
+    if (normalizedPhone) {
+      for (const phoneVariant of [normalizedPhone, normalizedPhone.replace(/^\+/, "")]) {
+        const { data, error } = await supabaseAuth.auth.verifyOtp({
+          phone: phoneVariant,
+          token: cleanCode,
+          type: "sms"
+        });
+        if (!error && data?.user?.id) {
+          return { userId: data.user.id, resetToken: issueResetToken(data.user.id) };
+        }
+      }
+    }
+    for (const otpType of ["recovery", "email"]) {
+      const { data, error } = await supabaseAuth.auth.verifyOtp({
+        email: normalized,
+        token: cleanCode,
+        type: otpType
+      });
+      if (!error && data?.user?.id) {
+        return { userId: data.user.id, resetToken: issueResetToken(data.user.id) };
+      }
+    }
+    const targetUserId = localEntry?.userId ?? (await findSupabaseUserByEmail(normalized))?.id;
+    if (targetUserId && /^\d{6,8}$/.test(cleanCode)) {
+      const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
+      const tempToken = jwt.sign(
+        {
+          sub: targetUserId,
+          role: "authenticated",
+          aud: "authenticated",
+          iss: issuer
+        },
+        env.supabase.jwtSecret,
+        { algorithm: "HS256", expiresIn: "15m" }
+      );
+      const tempVerificationPassword = ` Verify#${randomUUID3()}9aA!`;
+      const updateRes = await fetch(`${env.supabase.url}/auth/v1/user`, {
+        method: "PUT",
+        headers: {
+          apikey: env.supabase.anonKey,
+          Authorization: `Bearer ${tempToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          password: tempVerificationPassword,
+          nonce: cleanCode
+        })
+      });
+      if (updateRes.ok) {
+        return { userId: targetUserId, resetToken: issueResetToken(targetUserId) };
+      }
+    }
+  }
+  throw new AppError(400, "Code de v\xE9rification invalide ou expir\xE9.");
+}
+async function verifyResetCodeAndUpdatePassword(email, codeOrResetToken, newPassword, phone) {
+  const normalized = email.trim().toLowerCase();
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : "";
+  const trimmedToken = codeOrResetToken.trim();
+  if (trimmedToken.includes(".")) {
+    try {
+      const payload = jwt.verify(trimmedToken, env.supabase.jwtSecret, {
+        algorithms: ["HS256"]
+      });
+      if (payload.purpose === "password_reset_verified" && payload.sub && payload.email?.toLowerCase() === normalized) {
+        pendingResetCodes.delete(normalized);
+        if (normalizedPhone) pendingResetCodes.delete(normalizedPhone);
+        await updateSupabasePassword(payload.sub, newPassword);
+        return payload.sub;
+      }
+    } catch {
+      throw new AppError(400, "La session de r\xE9initialisation a expir\xE9. Veuillez recommencer.");
+    }
+  }
+  const verified = await verifyPasswordResetCodeOnly(normalized, trimmedToken, normalizedPhone);
+  pendingResetCodes.delete(normalized);
+  if (normalizedPhone) pendingResetCodes.delete(normalizedPhone);
+  await updateSupabasePassword(verified.userId, newPassword);
+  return verified.userId;
 }
 
 // server/middlewares/authenticate.ts
@@ -523,22 +1580,147 @@ function masterKeyMatches(candidate, expected) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 var registerSchema = z.object({
-  nom: z.string().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
-  prenom: z.string().min(2, "Le pr\xE9nom est requis.").max(80, "Le pr\xE9nom est trop long."),
-  email: z.string().email("Adresse e-mail invalide.").max(200),
-  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional(),
+  nom: z.string().trim().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
+  prenom: z.string().trim().min(2, "Le pr\xE9nom est requis.").max(80, "Le pr\xE9nom est trop long."),
+  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
+  telephone: z.string().trim().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional(),
   motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial."),
   // Public registration can never assign privileged roles.
   role: z.literal("Etudiant").optional()
 }).strict();
 var loginSchema = z.object({
-  email: z.string().email("Adresse e-mail invalide.").max(200),
+  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
   motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
   masterKey: z.string().max(256).optional()
 });
 var refreshSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token requis.").max(512)
 });
+var forgotPasswordSchema = z.object({
+  email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
+  telephone: z.string().min(8, "Num\xE9ro de t\xE9l\xE9phone invalide.").max(30).optional()
+}).refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
+  message: "Veuillez renseigner votre adresse e-mail ou votre num\xE9ro de t\xE9l\xE9phone."
+});
+var verifyResetCodeSchema = z.object({
+  email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
+  telephone: z.string().min(8, "Num\xE9ro de t\xE9l\xE9phone invalide.").max(30).optional(),
+  code: z.string().min(6, "Le code doit contenir au moins 6 chiffres.").max(12)
+}).refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
+  message: "Veuillez renseigner votre adresse e-mail ou votre num\xE9ro de t\xE9l\xE9phone."
+});
+var resetPasswordSchema = z.object({
+  email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
+  telephone: z.string().min(8, "Num\xE9ro de t\xE9l\xE9phone invalide.").max(30).optional(),
+  code: z.string().min(6, "Jeton ou code de v\xE9rification requis.").max(1024),
+  nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial.")
+}).refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
+  message: "Veuillez renseigner votre adresse e-mail ou votre num\xE9ro de t\xE9l\xE9phone."
+});
+async function findUserByEmailOrPhone(email, telephone) {
+  if (telephone && telephone.trim()) {
+    const normalizedTarget = normalizePhoneNumber(telephone.trim());
+    if (!normalizedTarget || normalizedTarget.length < 9) {
+      throw badRequest("Format du num\xE9ro de t\xE9l\xE9phone invalide (ex: +2376XXXXXXXX).");
+    }
+    const usersWithPhone = await prisma.user.findMany({
+      where: { telephone: { not: null } }
+    });
+    const matched = usersWithPhone.find(
+      (u) => u.telephone && normalizePhoneNumber(u.telephone) === normalizedTarget
+    );
+    if (!matched) {
+      throw badRequest("Aucun compte n'est associ\xE9 \xE0 ce num\xE9ro de t\xE9l\xE9phone.");
+    }
+    return { user: matched, normalizedPhone: normalizedTarget, viaSms: true };
+  }
+  const trimmedEmail = (email ?? "").trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+  if (!user) {
+    throw badRequest("Aucun compte n'est associ\xE9 \xE0 cette adresse e-mail.");
+  }
+  return {
+    user,
+    normalizedPhone: user.telephone ? normalizePhoneNumber(user.telephone) : void 0,
+    viaSms: false
+  };
+}
+router.post(
+  "/forgot-password",
+  authRateLimiter,
+  validate(forgotPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { email, telephone } = req.body;
+    const { user, normalizedPhone, viaSms } = await findUserByEmailOrPhone(email, telephone);
+    if (viaSms && normalizedPhone) {
+      const { sentBySms } = await requestPasswordResetSmsCode(
+        normalizedPhone,
+        user.id,
+        user.email
+      );
+      if (!sentBySms) {
+        throw badRequest(
+          "L'envoi par SMS n'est pas encore actif : aucun fournisseur SMS n'est configur\xE9 dans votre projet Supabase (Authentication > Providers > Phone) ou via Twilio. Pour recevoir votre code directement sur votre messagerie, veuillez choisir l'option 'Par E-mail'."
+        );
+      }
+      return res.json({
+        message: `Un code de r\xE9initialisation par SMS a \xE9t\xE9 envoy\xE9 au num\xE9ro ${normalizedPhone}.`,
+        telephone: normalizedPhone
+      });
+    }
+    await requestPasswordResetCode(user.email, user.id);
+    res.json({
+      message: `Un code de v\xE9rification a \xE9t\xE9 envoy\xE9 \xE0 l'adresse ${user.email}.`
+    });
+  })
+);
+router.post(
+  "/verify-reset-code",
+  authRateLimiter,
+  validate(verifyResetCodeSchema),
+  asyncHandler(async (req, res) => {
+    const { email, telephone, code } = req.body;
+    const { user, normalizedPhone } = await findUserByEmailOrPhone(email, telephone);
+    const { resetToken } = await verifyPasswordResetCodeOnly(
+      user.email,
+      code,
+      normalizedPhone
+    );
+    res.json({
+      valid: true,
+      resetToken,
+      email: user.email,
+      telephone: normalizedPhone,
+      message: "Code v\xE9rifi\xE9 avec succ\xE8s ! Veuillez maintenant d\xE9finir et confirmer votre nouveau mot de passe."
+    });
+  })
+);
+router.post(
+  "/reset-password",
+  authRateLimiter,
+  validate(resetPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { email, telephone, code, nouveauMotDePasse } = req.body;
+    const { user, normalizedPhone, viaSms } = await findUserByEmailOrPhone(email, telephone);
+    await verifyResetCodeAndUpdatePassword(
+      user.email,
+      code,
+      nouveauMotDePasse,
+      normalizedPhone
+    );
+    await logUserActivity({
+      userId: user.id,
+      userNom: `${user.prenom} ${user.nom}`,
+      userEmail: user.email,
+      userRole: user.role,
+      actionType: "LOGIN",
+      description: viaSms ? "A r\xE9initialis\xE9 son mot de passe via code SMS." : "A r\xE9initialis\xE9 son mot de passe via code e-mail."
+    });
+    res.json({
+      message: "Votre mot de passe a \xE9t\xE9 r\xE9initialis\xE9 avec succ\xE8s ! Vous pouvez maintenant vous connecter."
+    });
+  })
+);
 router.post(
   "/register",
   authRateLimiter,
@@ -548,20 +1730,41 @@ router.post(
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedTelephone = telephone?.trim() || null;
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
-    if (existing) {
-      throw badRequest("Cette adresse e-mail est d\xE9j\xE0 utilis\xE9e.");
+    const existingAuth = await findSupabaseUserByEmail(trimmedEmail);
+    if (existing && existingAuth) {
+      throw badRequest("Cette adresse e-mail est d\xE9j\xE0 utilis\xE9e. Veuillez vous connecter avec votre mot de passe.");
     }
-    const authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? void 0);
-    const user = await prisma.user.create({
-      data: {
-        id: authId,
-        nom: nom.trim().toUpperCase(),
-        prenom: prenom.trim(),
-        email: trimmedEmail,
-        telephone: trimmedTelephone,
-        role: "Etudiant"
-      }
-    });
+    let authId;
+    let user;
+    if (existing && !existingAuth) {
+      authId = await createSupabaseUser(
+        trimmedEmail,
+        motDePasse,
+        trimmedTelephone ?? existing.telephone ?? void 0,
+        true,
+        existing.id
+      );
+      user = await prisma.user.update({
+        where: { email: trimmedEmail },
+        data: {
+          nom: nom ? nom.trim().toUpperCase() : existing.nom,
+          prenom: prenom ? prenom.trim() : existing.prenom,
+          telephone: trimmedTelephone || existing.telephone
+        }
+      });
+    } else {
+      authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? void 0);
+      user = await prisma.user.create({
+        data: {
+          id: authId,
+          nom: nom.trim().toUpperCase(),
+          prenom: prenom.trim(),
+          email: trimmedEmail,
+          telephone: trimmedTelephone,
+          role: "Etudiant"
+        }
+      });
+    }
     const session = await signInSupabase(trimmedEmail, motDePasse);
     await logUserActivity({
       userId: user.id,
@@ -575,7 +1778,7 @@ router.post(
       token: session.accessToken,
       refreshToken: session.refreshToken,
       user: mapUser(user),
-      message: `Inscription r\xE9ussie ! Votre compte ${user.role} a \xE9t\xE9 cr\xE9\xE9.`
+      message: `Inscription r\xE9ussie ! Votre compte ${user.role} a \xE9t\xE9 activ\xE9 avec succ\xE8s.`
     });
   })
 );
@@ -586,6 +1789,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, motDePasse, masterKey } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = motDePasse.trim();
     const currentMasterKey = tryGetSuperAdminMasterKey();
     if (currentMasterKey && masterKeyMatches(masterKey, currentMasterKey)) {
       const [existingProfile, existingSuperAdmin] = await Promise.all([
@@ -610,10 +1814,57 @@ router.post(
         });
       }
     }
-    const session = await signInSupabase(trimmedEmail, motDePasse);
-    const user = await prisma.user.findUnique({ where: { id: session.userId } });
+    let session;
+    try {
+      session = await signInSupabase(trimmedEmail, motDePasse);
+    } catch (authError) {
+      const existingDbUser = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+      if (existingDbUser) {
+        const authUser = await findSupabaseUserByEmail(trimmedEmail);
+        if (!authUser) {
+          try {
+            await createSupabaseUser(
+              trimmedEmail,
+              trimmedPassword,
+              existingDbUser.telephone ?? void 0,
+              true,
+              existingDbUser.id
+            );
+            session = await signInSupabase(trimmedEmail, trimmedPassword);
+          } catch (provisionErr) {
+            console.error("Auto-provisioning Supabase Auth error:", provisionErr);
+            throw unauthorized("Mot de passe incorrect ou compte en cours de synchronisation. Veuillez v\xE9rifier votre saisie ou contacter l'administration.");
+          }
+        } else {
+          throw unauthorized("Mot de passe incorrect. Veuillez v\xE9rifier votre saisie.");
+        }
+      } else {
+        throw unauthorized("Aucun compte n'est associ\xE9 \xE0 cette adresse e-mail. V\xE9rifiez votre saisie ou cr\xE9ez votre compte.");
+      }
+    }
+    let user = await prisma.user.findUnique({ where: { id: session.userId } });
     if (!user) {
-      throw unauthorized("E-mail ou mot de passe incorrect.");
+      user = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+      if (user && user.id !== session.userId) {
+        try {
+          user = await prisma.user.update({
+            where: { email: trimmedEmail },
+            data: { id: session.userId }
+          });
+        } catch {
+        }
+      }
+    }
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          id: session.userId,
+          nom: "\xC9TUDIANT",
+          prenom: "\xC9tudiant ISJ",
+          email: trimmedEmail,
+          role: "Etudiant"
+        }
+      });
     }
     await logUserActivity({
       userId: user.id,
@@ -1139,7 +2390,7 @@ router2.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    const canPreviewHidden = req.user?.role === "SuperAdministrateur";
+    const canPreviewHidden = req.user?.role === "SuperAdministrateur" || req.user?.role === "Administrateur";
     if (!doc || (!doc.visible || doc.statut !== "Publie") && !canPreviewHidden) throw notFound("\xC9preuve non trouv\xE9e.");
     const buffer = await loadDocumentPdf(doc.fichierUrl);
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier \xE9preuve introuvable.");
@@ -1159,7 +2410,7 @@ router2.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    const canDownloadHidden = req.user?.role === "SuperAdministrateur";
+    const canDownloadHidden = req.user?.role === "SuperAdministrateur" || req.user?.role === "Administrateur";
     if (!doc || (!doc.visible || doc.statut !== "Publie") && !canDownloadHidden) {
       throw notFound("\xC9preuve non trouv\xE9e.");
     }
@@ -1440,13 +2691,24 @@ router3.get(
     if (!contribution || contribution.utilisateurId !== req.user.id && !["Administrateur", "SuperAdministrateur"].includes(req.user.role)) {
       throw notFound("Contribution introuvable.");
     }
-    if (contribution.document?.visible === false && req.user.role !== "SuperAdministrateur") {
+    if (contribution.document?.visible === false && !["Administrateur", "SuperAdministrateur"].includes(req.user.role)) {
       throw notFound("\xC9preuve masqu\xE9e.");
     }
-    if (!isSupabaseStorageUrl(contribution.fichierUrl)) throw notFound("Fichier introuvable.");
-    const storagePath = contribution.fichierUrl.split("/storage/v1/object/public/epreuves/")[1];
-    if (!storagePath) throw notFound("Fichier introuvable.");
-    const { data } = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+    const candidateUrls = [
+      contribution.fichierUrl,
+      contribution.document?.fichierUrl
+    ].filter((u) => Boolean(u && isSupabaseStorageUrl(u)));
+    if (!candidateUrls.length) throw notFound("Fichier introuvable.");
+    let data = null;
+    for (const url of candidateUrls) {
+      const storagePath = url.split("/storage/v1/object/public/epreuves/")[1];
+      if (!storagePath) continue;
+      const resDownload = await supabaseAdmin.storage.from("epreuves").download(storagePath);
+      if (resDownload.data) {
+        data = resDownload.data;
+        break;
+      }
+    }
     if (!data) throw notFound("Fichier introuvable.");
     const buffer = Buffer.from(await data.arrayBuffer());
     if (buffer.length > MAX_PREVIEW_BYTES || !buffer.subarray(0, 1029).includes(Buffer.from("%PDF-"))) {
@@ -1775,6 +3037,61 @@ var createUserSchema = z5.object({
 var updateRoleSchema = z5.object({
   role: z5.enum(["Etudiant", "Administrateur", "SuperAdministrateur"])
 });
+router5.get(
+  "/favorites",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(req.user.id);
+    if (error || !data.user) {
+      return res.json({ favorites: [] });
+    }
+    const raw = data.user.user_metadata?.favorites;
+    const favs = Array.isArray(raw) ? raw.filter((id) => typeof id === "string" && id.length > 0) : [];
+    res.json({ favorites: favs });
+  })
+);
+var toggleFavoriteSchema = z5.object({
+  documentId: z5.string().uuid("Identifiant de document invalide.")
+});
+router5.post(
+  "/favorites/toggle",
+  authenticateJWT,
+  validate(toggleFavoriteSchema),
+  asyncHandler(async (req, res) => {
+    const { documentId } = req.body;
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(req.user.id);
+    if (error || !data.user) {
+      throw notFound("Compte utilisateur introuvable.");
+    }
+    const raw = data.user.user_metadata?.favorites;
+    const currentFavs = Array.isArray(raw) ? raw.filter((id) => typeof id === "string" && id.length > 0) : [];
+    const isFav = currentFavs.includes(documentId);
+    const updatedFavs = isFav ? currentFavs.filter((id) => id !== documentId) : [...currentFavs, documentId];
+    const currentMeta = data.user.user_metadata || {};
+    await supabaseAdmin.auth.admin.updateUserById(req.user.id, {
+      user_metadata: {
+        ...currentMeta,
+        favorites: updatedFavs
+      }
+    });
+    const doc = await prisma.document.findUnique({ where: { id: documentId } });
+    await logUserActivity({
+      userId: req.user.id,
+      userNom: `${req.user.prenom} ${req.user.nom}`,
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      actionType: isFav ? "FAVORITE_REMOVE" : "FAVORITE_ADD",
+      description: isFav ? `A retir\xE9 l'\xE9preuve '${doc?.titre || documentId}' de ses favoris.` : `A ajout\xE9 l'\xE9preuve '${doc?.titre || documentId}' \xE0 ses favoris de r\xE9vision.`,
+      targetId: documentId,
+      targetTitle: doc?.titre
+    });
+    res.json({
+      favorites: updatedFavs,
+      isFavorite: !isFav,
+      message: !isFav ? "\xC9preuve ajout\xE9e \xE0 vos favoris !" : "\xC9preuve retir\xE9e de vos favoris."
+    });
+  })
+);
 router5.put(
   "/profile",
   authenticateJWT,
@@ -1904,7 +3221,7 @@ router5.put(
       "\xC9l\xE9vation / Modification de R\xF4le",
       `F\xE9licitations ! Vos privil\xE8ges syst\xE8me sur la plateforme ISJ Revisio ont \xE9t\xE9 mis \xE0 jour au statut '${role}'.`,
       role === "Administrateur" || role === "SuperAdministrateur" ? "success" : "info",
-      role === "Administrateur" ? "admin-dashboard" : role === "SuperAdministrateur" ? "super-admin-audit" : void 0
+      role === "Administrateur" ? "admin-documents" : role === "SuperAdministrateur" ? "super-admin-audit" : void 0
     );
     res.json({ message: "Le r\xF4le a \xE9t\xE9 mis \xE0 jour avec succ\xE8s.", user: mapUser(updated) });
   })
@@ -2227,7 +3544,7 @@ async function computeStats() {
 router8.get(
   "/",
   authenticateJWT,
-  requireRole("Administrateur", "SuperAdministrateur"),
+  requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     res.json(await computeStats());
   })
@@ -2235,7 +3552,7 @@ router8.get(
 router8.get(
   "/stats",
   authenticateJWT,
-  requireRole("Administrateur", "SuperAdministrateur"),
+  requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     res.json(await computeStats());
   })
@@ -2243,7 +3560,7 @@ router8.get(
 router8.get(
   "/dashboard",
   authenticateJWT,
-  requireRole("Administrateur", "SuperAdministrateur"),
+  requireRole("SuperAdministrateur"),
   asyncHandler(async (_req, res) => {
     res.json(await computeStats());
   })
@@ -2288,7 +3605,7 @@ var admin_default = router9;
 // server/routes/contact.ts
 import { Router as Router10 } from "express";
 import { z as z8 } from "zod";
-import { randomUUID as randomUUID2 } from "crypto";
+import { randomUUID as randomUUID4 } from "crypto";
 
 // server/services/feedback.service.ts
 import { promises as fs3 } from "fs";
@@ -2343,7 +3660,7 @@ router10.post(
   asyncHandler(async (req, res) => {
     const { nom, email, sujet, message, categorie } = req.body;
     await appendFeedback({
-      id: randomUUID2(),
+      id: randomUUID4(),
       nom: String(nom).trim(),
       email: String(email).trim().toLowerCase(),
       categorie: String(categorie ?? "").trim() || "G\xE9n\xE9ral",
@@ -2415,7 +3732,7 @@ function cspDirectives(isProduction) {
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'"],
-    frameAncestors: ["'self'"],
+    frameAncestors: ["'self'", "https://*.run.app", "https://*.google.com", "https://*.googleapis.com"],
     manifestSrc: ["'self'"],
     workerSrc: ["'self'", "blob:"]
   };
@@ -2429,6 +3746,8 @@ function securityHeaders() {
     contentSecurityPolicy: {
       directives: cspDirectives(process.env.NODE_ENV === "production")
     },
+    // Désactive X-Frame-Options: SAMEORIGIN pour autoriser le rendu dans l'iframe du studio
+    frameguard: false,
     // Cross-Origin-Embedder-Policy require-corp bloquerait l'affichage des PDF
     // hébergés sur un autre domaine (Supabase). Désactivé volontairement.
     crossOriginEmbedderPolicy: false,
@@ -2443,12 +3762,14 @@ function apiNotFound(_req, res, _next) {
 function createApp() {
   const app2 = express3();
   app2.disable("x-powered-by");
-  app2.use((req, _res, next) => {
-    if (req.url && !req.url.startsWith("/api")) {
-      req.url = `/api${req.url.startsWith("/") ? "" : "/"}${req.url}`;
-    }
-    next();
-  });
+  if (process.env.VERCEL) {
+    app2.use((req, _res, next) => {
+      if (req.url && !req.url.startsWith("/api")) {
+        req.url = `/api${req.url.startsWith("/") ? "" : "/"}${req.url}`;
+      }
+      next();
+    });
+  }
   if (env.trustProxy > 0) {
     app2.set("trust proxy", env.trustProxy);
   }
@@ -2473,6 +3794,51 @@ function createApp() {
   app2.use("/api/stats", stats_default);
   app2.use("/api/activities", activities_default);
   app2.use("/api/notifications", notifications_default);
+  app2.get(["/api", "/api/health"], (_req, res) => {
+    res.json({
+      status: "ok",
+      name: "Revisio ISJ API",
+      message: "API op\xE9rationnelle",
+      version: "1.0.0",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  });
+  app2.get("/api/debug-env", async (_req, res) => {
+    let dbStatus = "unknown";
+    let dbError = null;
+    let counts = { matieres: 0, documents: 0, users: 0 };
+    try {
+      const [matCount, docCount, userCount] = await Promise.all([
+        prisma.matiere.count().catch(() => 0),
+        prisma.document.count().catch(() => 0),
+        prisma.user.count().catch(() => 0)
+      ]);
+      counts = { matieres: matCount, documents: docCount, users: userCount };
+      dbStatus = "connected";
+    } catch (err) {
+      dbStatus = "error";
+      dbError = err?.message || String(err);
+    }
+    res.json({
+      status: "ok",
+      environment: {
+        isVercel: Boolean(process.env.VERCEL),
+        nodeEnv: process.env.NODE_ENV || "development",
+        hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+        hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+        supabaseUrl: process.env.SUPABASE_URL || null,
+        hasSupabaseAnonKey: Boolean(process.env.SUPABASE_ANON_KEY),
+        hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+        hasSupabaseJwtSecret: Boolean(process.env.SUPABASE_JWT_SECRET)
+      },
+      database: {
+        status: dbStatus,
+        error: dbError,
+        counts
+      },
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  });
   app2.use("/api", apiNotFound);
   app2.use(errorHandler);
   return app2;

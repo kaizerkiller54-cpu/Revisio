@@ -221,7 +221,7 @@ router.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    const canPreviewHidden = req.user?.role === "SuperAdministrateur";
+    const canPreviewHidden = req.user?.role === "SuperAdministrateur" || req.user?.role === "Administrateur";
     if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canPreviewHidden)) throw notFound("Épreuve non trouvée.");
     const buffer = await loadDocumentPdf(doc.fichierUrl);
     if (!isPdfBuffer(buffer) || buffer.length > MAX_DOWNLOAD_BYTES) throw notFound("Fichier épreuve introuvable.");
@@ -242,7 +242,7 @@ router.get(
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
     const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
-    const canDownloadHidden = req.user?.role === "SuperAdministrateur";
+    const canDownloadHidden = req.user?.role === "SuperAdministrateur" || req.user?.role === "Administrateur";
     if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canDownloadHidden)) {
       throw notFound("Épreuve non trouvée.");
     }

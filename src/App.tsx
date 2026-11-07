@@ -10,12 +10,15 @@ import {
   getHiddenDocumentsApi,
   getContributionsApi,
   getAdminStatsApi,
-  downloadDocumentFileApi
+  downloadDocumentFileApi,
+  getUserFavoritesApi,
+  toggleUserFavoriteApi
 } from "./lib/api";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { PdfViewerModal } from "./components/PdfViewerModal";
 import { CookieConsent } from "./components/CookieConsent";
+import { DownloadStatusToast, DownloadToastState } from "./components/DownloadStatusToast";
 import { HomeView } from "./views/HomeView";
 import { SubjectsView } from "./views/SubjectsView";
 import { ExamsView } from "./views/ExamsView";
@@ -27,6 +30,8 @@ import { UserActivityLogView } from "./views/UserActivityLogView";
 import { LoginView } from "./views/LoginView";
 import { RegisterView } from "./views/RegisterView";
 import { SettingsView } from "./views/SettingsView";
+import { FavoritesView } from "./views/FavoritesView";
+import { PlanningView } from "./views/PlanningView";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -37,6 +42,9 @@ export default function App() {
     if (saved === "dark" || saved === "light" || saved === "system") return saved;
     return "light";
   });
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+  const [downloadToast, setDownloadToast] = useState<DownloadToastState | null>(null);
 
   const [documents, setDocuments] = useState<DocumentModel[]>([]);
   const [hiddenDocuments, setHiddenDocuments] = useState<DocumentModel[]>([]);
@@ -53,29 +61,43 @@ export default function App() {
 
   // Load initial datasets from API
   const loadData = async () => {
+    let fetchFailed = false;
     try {
-      const me = await getMeApi();
+      const me = await getMeApi().catch(() => null);
       if (me) {
         setUser(me);
       } else {
         setUser(null);
-        setActiveTab("login");
       }
 
-      const [docsData, subjectsData, contribsData, statsData, hiddenData] = await Promise.all([
-        getDocumentsApi({ statut: "Publié" }),
-        getSubjectsApi(),
-        getContributionsApi().catch(() => []),
-        getAdminStatsApi().catch(() => null),
-        me?.role === "SuperAdministrateur" ? getHiddenDocumentsApi().catch(() => []) : Promise.resolve([]),
-      ]);
+      let docsFailed = false;
+      let subjectsFailed = false;
 
-      setDocuments(docsData);
-      setHiddenDocuments(hiddenData);
-      setMatieres(subjectsData);
-      setContributions(contribsData);
+      const docsData = await getDocumentsApi({ statut: "Publié" }).catch(() => {
+        docsFailed = true;
+        return [];
+      });
+
+      const subjectsData = await getSubjectsApi().catch(() => {
+        subjectsFailed = true;
+        return [];
+      });
+
+      const contribsData = await getContributionsApi().catch(() => []);
+      const statsData = me?.role === "SuperAdministrateur" ? await getAdminStatsApi().catch(() => null) : null;
+      const hiddenData = me?.role === "SuperAdministrateur" ? await getHiddenDocumentsApi().catch(() => []) : [];
+
+      if (Array.isArray(docsData)) setDocuments(docsData);
+      if (Array.isArray(hiddenData)) setHiddenDocuments(hiddenData);
+      
+      if (Array.isArray(subjectsData) && subjectsData.length > 0) {
+        setMatieres(subjectsData);
+      }
+      if (Array.isArray(contribsData)) setContributions(contribsData);
       if (statsData) setAdminStats(statsData);
-      setDataLoadError(false);
+
+      // Error only if API calls explicitly failed due to network / server down
+      setDataLoadError(docsFailed && subjectsFailed);
     } catch (err) {
       console.error("Erreur de chargement des données:", err);
       setDataLoadError(true);
@@ -87,6 +109,44 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Sync favorites strictly for the currently authenticated user
+  useEffect(() => {
+    // Purge any legacy shared favorites key to prevent cross-account pollution
+    try {
+      localStorage.removeItem("isj_favorites");
+    } catch {}
+
+    if (user?.id) {
+      const userKey = `revisio_user_favs_${user.id}`;
+      // 1. Read immediate isolated cache for this specific user
+      try {
+        const cached = localStorage.getItem(userKey);
+        if (cached) {
+          setFavorites(JSON.parse(cached));
+        } else {
+          setFavorites([]);
+        }
+      } catch {
+        setFavorites([]);
+      }
+
+      // 2. Fetch fresh user favorites from their own backend account
+      getUserFavoritesApi()
+        .then((serverFavs) => {
+          if (Array.isArray(serverFavs)) {
+            setFavorites(serverFavs);
+            try {
+              localStorage.setItem(userKey, JSON.stringify(serverFavs));
+            } catch {}
+          }
+        })
+        .catch(() => undefined);
+    } else {
+      // Unauthenticated: always empty
+      setFavorites([]);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user || typeof Notification === "undefined" || Notification.permission !== "granted") return;
@@ -119,8 +179,19 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    if (filterState) {
-      setExamsFilters(filterState);
+    if (filterState && typeof filterState === "object") {
+      const normalizedFilters: any = {};
+      if (typeof filterState.search === "string") normalizedFilters.search = filterState.search;
+      if (typeof filterState.matiere === "string") normalizedFilters.matiere = filterState.matiere;
+      else if (filterState.matiere && typeof filterState.matiere === "object" && typeof filterState.matiere.matiere === "string") {
+        normalizedFilters.matiere = filterState.matiere.matiere;
+      }
+      if (typeof filterState.semestre === "string") normalizedFilters.semestre = filterState.semestre;
+      if (typeof filterState.typeEpreuve === "string") normalizedFilters.typeEpreuve = filterState.typeEpreuve;
+      if (typeof filterState.anneeAcademique === "string") normalizedFilters.anneeAcademique = filterState.anneeAcademique;
+      setExamsFilters(normalizedFilters);
+    } else {
+      setExamsFilters({});
     }
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -131,6 +202,7 @@ export default function App() {
       await logoutApi();
     } finally {
       setUser(null);
+      setFavorites([]);
       localStorage.removeItem("isj_auth_token");
       setActiveTab("login");
     }
@@ -139,6 +211,46 @@ export default function App() {
   const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
     setTheme(newTheme);
     localStorage.setItem("isj_app_theme", newTheme);
+  };
+
+  const handleToggleFavorite = (doc: DocumentModel) => {
+    if (!user) {
+      setAuthNotice(
+        "Connexion Requise : Veuillez vous connecter ou créer un compte pour marquer des épreuves comme favorites."
+      );
+      setActiveTab("login");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const currentUserId = user.id;
+    const userKey = `revisio_user_favs_${currentUserId}`;
+
+    // 1. Optimistic update in state and user-specific local storage
+    setFavorites((prev) => {
+      const isFav = prev.includes(doc.id);
+      const updated = isFav ? prev.filter((id) => id !== doc.id) : [...prev, doc.id];
+      try {
+        localStorage.setItem(userKey, JSON.stringify(updated));
+      } catch (err) {
+        console.error("Erreur de sauvegarde locale des favoris:", err);
+      }
+      return updated;
+    });
+
+    // 2. Synchronize with the student's personal backend account
+    toggleUserFavoriteApi(doc.id)
+      .then((res) => {
+        if (res && Array.isArray(res.favorites)) {
+          setFavorites(res.favorites);
+          try {
+            localStorage.setItem(userKey, JSON.stringify(res.favorites));
+          } catch {}
+        }
+      })
+      .catch((err) => {
+        console.error("Erreur synchronisation favoris serveur:", err);
+      });
   };
 
   const handleDownloadDocument = async (doc: DocumentModel) => {
@@ -151,16 +263,32 @@ export default function App() {
       return;
     }
 
+    if (downloadingDocId) return; // Évite les doubles clics simultanés
+
+    setDownloadingDocId(doc.id);
+    setDownloadToast({
+      id: doc.id,
+      title: doc.titre,
+      status: "preparing",
+    });
+
     try {
       const result = await downloadDocumentFileApi(doc.id);
       if (!result) {
-        console.error("Échec du téléchargement du document.");
+        setDownloadToast({
+          id: doc.id,
+          title: doc.titre,
+          status: "error",
+          error: "Impossible de récupérer le document. Veuillez vérifier votre connexion et réessayer.",
+        });
         return;
       }
+
+      const filename = result.filename || doc.fichierNom || `${doc.titre}.pdf`;
       const url = URL.createObjectURL(result.blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = result.filename || doc.fichierNom || `${doc.titre}.pdf`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -172,8 +300,23 @@ export default function App() {
           d.id === doc.id ? { ...d, telechargementsCount: (d.telechargementsCount || 0) + 1 } : d
         )
       );
-    } catch (err) {
+
+      setDownloadToast({
+        id: doc.id,
+        title: doc.titre,
+        filename,
+        status: "success",
+      });
+    } catch (err: any) {
       console.error("Erreur lors du téléchargement:", err);
+      setDownloadToast({
+        id: doc.id,
+        title: doc.titre,
+        status: "error",
+        error: err?.message || "Une erreur est survenue lors du téléchargement du document.",
+      });
+    } finally {
+      setDownloadingDocId(null);
     }
   };
 
@@ -202,6 +345,7 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={handleNavigate}
           onLogout={handleLogout}
+          favoritesCount={favorites.length}
         />
       )}
 
@@ -225,6 +369,9 @@ export default function App() {
                 onNavigate={handleNavigate}
                 onViewDoc={(doc) => setPreviewDocument(doc)}
                 onDownloadDoc={handleDownloadDocument}
+                favoriteIds={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                downloadingDocId={downloadingDocId}
               />
             )}
 
@@ -242,7 +389,34 @@ export default function App() {
                 documents={documents}
                 onViewDoc={(doc) => setPreviewDocument(doc)}
                 onDownloadDoc={handleDownloadDocument}
+                favoriteIds={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                downloadingDocId={downloadingDocId}
                 initialFilters={examsFilters}
+              />
+            )}
+
+            {activeTab === "favorites" && (
+              <FavoritesView
+                documents={documents}
+                favoriteIds={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                onViewDoc={(doc) => setPreviewDocument(doc)}
+                onDownloadDoc={handleDownloadDocument}
+                downloadingDocId={downloadingDocId}
+                onNavigateToExams={() => handleNavigate("exams")}
+              />
+            )}
+
+            {activeTab === "planning" && (
+              <PlanningView
+                user={user}
+                documents={documents}
+                matieres={matieres}
+                onNavigateToExams={(filters) =>
+                  handleNavigate("exams", typeof filters === "string" ? { matiere: filters } : filters)
+                }
+                onNavigateToLogin={() => setActiveTab("login")}
               />
             )}
 
@@ -255,7 +429,7 @@ export default function App() {
               />
             )}
 
-            {(activeTab === "admin-dashboard") && (user?.role === "Administrateur" || user?.role === "SuperAdministrateur") && (
+            {(activeTab === "admin-dashboard") && user?.role === "SuperAdministrateur" && (
               <AdminDashboardView
                 stats={adminStats}
                 statsUnavailable={!adminStats}
@@ -294,6 +468,8 @@ export default function App() {
                 onChangeTheme={handleThemeChange}
                 onUpdateUser={(updated) => setUser(updated)}
                 onNavigateToRegister={() => setActiveTab("register")}
+                onNavigateToFavorites={() => handleNavigate("favorites")}
+                favoritesCount={favorites.length}
               />
             )}
 
@@ -348,10 +524,14 @@ export default function App() {
         document={previewDocument}
         onClose={() => setPreviewDocument(null)}
         onDownload={handleDownloadDocument}
+        isDownloading={previewDocument?.id === downloadingDocId}
       />
 
       {/* Bannière de consentement aux cookies (1ère visite) */}
       <CookieConsent reminderKey={consentReminderKey} />
+
+      {/* Toast flottant de progression de téléchargement */}
+      <DownloadStatusToast toast={downloadToast} onDismiss={() => setDownloadToast(null)} />
     </div>
     </MotionConfig>
   );
