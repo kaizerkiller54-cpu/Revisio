@@ -209,77 +209,77 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isAdmin && (
                 <>
                   <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5 shrink-0" />
-                  {isSuperAdmin ? (
-                    <div className="relative shrink-0">
-                      <button
-                        onClick={() => setAdminMenuOpen(!adminMenuOpen)}
-                        title="Espace Administration & Gouvernance"
-                        className={`h-9 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                          isAdminTabActive || adminMenuOpen
-                            ? "bg-blue-900 text-white dark:bg-blue-600 shadow-xs"
-                            : "text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                  <div className="relative shrink-0">
+                    <button
+                      onClick={() => setAdminMenuOpen(!adminMenuOpen)}
+                      title="Espace Administration & Gouvernance"
+                      className={`h-9 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                        isAdminTabActive || adminMenuOpen
+                          ? "bg-blue-900 text-white dark:bg-blue-600 shadow-xs"
+                          : "text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
+                      <span>
+                        {activeTab === "admin-documents"
+                          ? "Modération"
+                          : activeTab === "super-admin-audit"
+                          ? "Audit"
+                          : "Admin"}
+                      </span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                          adminMenuOpen ? "rotate-180" : ""
                         }`}
-                      >
-                        <LayoutDashboard className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
-                        <span>
-                          {activeTab === "admin-documents"
-                            ? "Modération"
-                            : activeTab === "super-admin-audit"
-                            ? "Audit"
-                            : "Admin"}
-                        </span>
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                            adminMenuOpen ? "rotate-180" : ""
-                          }`}
+                      />
+                    </button>
+
+                    {adminMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setAdminMenuOpen(false)}
                         />
-                      </button>
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-1.5 z-50 animate-fadeIn">
+                          <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                            Pôle Administration ISJ
+                          </div>
 
-                      {adminMenuOpen && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setAdminMenuOpen(false)}
-                          />
-                          <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-1.5 z-50 animate-fadeIn">
-                            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
-                              Pôle Administration ISJ
+                          <button
+                            onClick={() => handleNavClick("admin-dashboard")}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
+                              activeTab === "admin-dashboard"
+                                ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
+                                : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-bold">Dashboard Admin</div>
+                              <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                Statistiques, diagrammes et pilotage
+                              </div>
                             </div>
+                          </button>
 
-                            <button
-                              onClick={() => handleNavClick("admin-dashboard")}
-                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
-                                activeTab === "admin-dashboard"
-                                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
-                                  : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                              }`}
-                            >
-                              <LayoutDashboard className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
-                              <div>
-                                <div className="font-bold">Dashboard Admin</div>
-                                <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
-                                  Statistiques et gestion des comptes
-                                </div>
+                          <button
+                            onClick={() => handleNavClick("admin-documents")}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
+                              activeTab === "admin-documents"
+                                ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
+                                : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <FileCheck className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-bold">Modération</div>
+                              <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                Validation et publication des épreuves
                               </div>
-                            </button>
+                            </div>
+                          </button>
 
-                            <button
-                              onClick={() => handleNavClick("admin-documents")}
-                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
-                                activeTab === "admin-documents"
-                                  ? "bg-blue-50 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300"
-                                  : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                              }`}
-                            >
-                              <FileCheck className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" />
-                              <div>
-                                <div className="font-bold">Modération</div>
-                                <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
-                                  Validation et publication des épreuves
-                                </div>
-                              </div>
-                            </button>
-
+                          {isSuperAdmin && (
                             <button
                               onClick={() => handleNavClick("super-admin-audit")}
                               className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 transition-all cursor-pointer ${
@@ -296,24 +296,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 </div>
                               </div>
                             </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleNavClick("admin-documents")}
-                      title="Modération des documents"
-                      className={`h-9 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                        activeTab === "admin-documents"
-                          ? "bg-blue-900 text-white dark:bg-blue-600 shadow-xs"
-                          : "text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      <FileCheck className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
-                      <span>Modération</span>
-                    </button>
-                  )}
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -581,34 +568,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Section Espace Administration Compacte */}
             {isAdmin && (
-              <div className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-slate-800/80 border border-amber-200/80 dark:border-slate-700 space-y-1.5">
-                <div className="px-1 text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
+                <div className="px-1 text-[10px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider">
                   Espace Administration
                 </div>
-                <div className={`grid gap-1.5 ${isSuperAdmin ? "grid-cols-2" : "grid-cols-1"}`}>
-                  {isSuperAdmin && (
-                    <button
-                      onClick={() => handleNavClick("admin-dashboard")}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
-                        activeTab === "admin-dashboard"
-                          ? "bg-amber-600 text-white border-amber-600 shadow-xs"
-                          : "bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-300 border-amber-200/80 dark:border-slate-700"
-                      }`}
-                    >
-                      <LayoutDashboard className="w-4 h-4 shrink-0" />
-                      <span className="truncate">Dashboard Admin</span>
-                    </button>
-                  )}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => handleNavClick("admin-dashboard")}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                      activeTab === "admin-dashboard"
+                        ? "bg-blue-900 text-white border-blue-900 shadow-xs"
+                        : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    <LayoutDashboard className="w-4 h-4 shrink-0 text-blue-700 dark:text-blue-400" />
+                    <span className="truncate">Dashboard Admin</span>
+                  </button>
 
                   <button
                     onClick={() => handleNavClick("admin-documents")}
                     className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
                       activeTab === "admin-documents"
-                        ? "bg-amber-600 text-white border-amber-600 shadow-xs"
-                        : "bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-300 border-amber-200/80 dark:border-slate-700"
+                        ? "bg-blue-900 text-white border-blue-900 shadow-xs"
+                        : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    <FileCheck className="w-4 h-4 shrink-0" />
+                    <FileCheck className="w-4 h-4 shrink-0 text-blue-700 dark:text-blue-400" />
                     <span className="truncate">Modération</span>
                   </button>
 
@@ -618,10 +603,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className={`col-span-2 px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
                         activeTab === "super-admin-audit"
                           ? "bg-blue-900 text-white border-blue-900 dark:bg-sky-600 shadow-xs"
-                          : "bg-white dark:bg-slate-900 text-blue-900 dark:text-sky-300 border-blue-200/80 dark:border-slate-700"
+                          : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700"
                       }`}
                     >
-                      <ShieldAlert className="w-4 h-4 shrink-0" />
+                      <ShieldAlert className="w-4 h-4 shrink-0 text-blue-700 dark:text-blue-400" />
                       <span className="truncate">Journal d'Audit & Historique Admins</span>
                     </button>
                   )}

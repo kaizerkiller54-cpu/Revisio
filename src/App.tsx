@@ -78,11 +78,12 @@ export default function App() {
         setUser(null);
       }
 
+      const isAdminRole = me?.role === "Administrateur" || me?.role === "SuperAdministrateur";
       const [docsData, subjectsData, contribsData, statsData, hiddenData] = await Promise.all([
         getDocumentsApi().catch(() => []),
         getSubjectsApi().catch(() => []),
         getContributionsApi().catch(() => []),
-        me?.role === "SuperAdministrateur" ? getAdminStatsApi().catch(() => null) : Promise.resolve(null),
+        isAdminRole ? getAdminStatsApi().catch(() => null) : Promise.resolve(null),
         me?.role === "SuperAdministrateur" ? getHiddenDocumentsApi().catch(() => []) : Promise.resolve([]),
       ]);
 
@@ -428,11 +429,22 @@ export default function App() {
               />
             )}
 
-            {(activeTab === "admin-dashboard") && user?.role === "SuperAdministrateur" && (
+            {(activeTab === "admin-dashboard") && (user?.role === "Administrateur" || user?.role === "SuperAdministrateur") && (
               <AdminDashboardView
                 stats={adminStats}
                 statsUnavailable={!adminStats}
+                documents={documents}
+                hiddenDocuments={hiddenDocuments}
+                matieres={matieres}
+                contributions={contributions}
                 onNavigateToModeration={() => setActiveTab("admin-documents")}
+                onNavigateToAudit={
+                  user?.role === "SuperAdministrateur"
+                    ? () => setActiveTab("super-admin-audit")
+                    : undefined
+                }
+                onPreviewDoc={(doc) => setPreviewDocument(doc)}
+                onRefreshData={loadData}
               />
             )}
 
