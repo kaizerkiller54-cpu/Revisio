@@ -10,6 +10,7 @@ interface ContributeViewProps {
   onNavigateToLogin: () => void;
   userContributions: ContributionModel[];
   onContributionSuccess: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 }
 
 const MATIERES_S1 = [
@@ -50,6 +51,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
   onNavigateToLogin,
   userContributions,
   onContributionSuccess,
+  onSubmittingChange,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileBase64, setFileBase64] = useState<string>("");
@@ -114,6 +116,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
     }
 
     setIsSubmitting(true);
+    onSubmittingChange?.(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
@@ -142,6 +145,7 @@ export const ContributeView: React.FC<ContributeViewProps> = ({
       setErrorMsg(err.message || "Erreur lors de l'envoi de l'épreuve.");
     } finally {
       setIsSubmitting(false);
+      onSubmittingChange?.(false);
     }
   };
 

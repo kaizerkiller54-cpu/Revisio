@@ -19,6 +19,7 @@ import { Footer } from "./components/Footer";
 import { PdfViewerModal } from "./components/PdfViewerModal";
 import { CookieConsent } from "./components/CookieConsent";
 import { DownloadStatusToast, DownloadToastState } from "./components/DownloadStatusToast";
+import { GlobalProgressBar } from "./components/GlobalProgressBar";
 import { HomeView } from "./views/HomeView";
 import { SubjectsView } from "./views/SubjectsView";
 import { ExamsView } from "./views/ExamsView";
@@ -65,11 +66,16 @@ export default function App() {
 
   const [examsFilters, setExamsFilters] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingData, setIsRefreshingData] = useState(false);
+  const [isContributionSubmitting, setIsContributionSubmitting] = useState(false);
   const [dataLoadError, setDataLoadError] = useState(false);
   const [consentReminderKey, setConsentReminderKey] = useState(0);
 
   // Load initial datasets from API (real Supabase database)
-  const loadData = async () => {
+  const loadData = async (showProgress = false) => {
+    if (showProgress && !isLoading) {
+      setIsRefreshingData(true);
+    }
     try {
       const me = await getMeApi().catch(() => null);
       if (me) {
@@ -103,6 +109,7 @@ export default function App() {
       setDataLoadError(false);
     } finally {
       setIsLoading(false);
+      setIsRefreshingData(false);
     }
   };
 
@@ -338,6 +345,25 @@ export default function App() {
         isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >
+      {/* Barre de progression globale en haut de l'écran (chargement des données & soumission d'épreuves) */}
+      <GlobalProgressBar
+        active={isLoading || isRefreshingData || isContributionSubmitting}
+        variant={
+          isContributionSubmitting
+            ? "submit"
+            : isRefreshingData
+            ? "refresh"
+            : "load"
+        }
+        label={
+          isContributionSubmitting
+            ? "Transmission de votre épreuve en cours (analyse & archivage)..."
+            : isRefreshingData
+            ? "Actualisation des ressources et épreuves..."
+            : "Chargement initial des ressources ISJ..."
+        }
+      />
+
       {/* Top Navbar - Hidden on Auth pages */}
       {!isAuthPage && (
         <Navbar
@@ -352,11 +378,16 @@ export default function App() {
       {/* Main Container */}
       <main className={`flex-1 ${isAuthPage ? "w-full p-0 flex flex-col justify-center" : "max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"}`}>
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-slate-400 font-semibold">
-              Chargement des anciennes épreuves de l'ISJ...
-            </p>
+          <div className="flex flex-col items-center justify-center py-24 space-y-4">
+            <div className="w-11 h-11 border-4 border-blue-900 dark:border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-center space-y-1">
+              <p className="text-sm text-slate-800 dark:text-slate-200 font-bold">
+                Chargement des anciennes épreuves de l'ISJ...
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Synchronisation de la base académique et du catalogue des examens
+              </p>
+            </div>
           </div>
         ) : (
           <AnimatePresence mode="wait" initial={false}>
@@ -425,7 +456,8 @@ export default function App() {
                 user={user}
                 onNavigateToLogin={() => setActiveTab("login")}
                 userContributions={userContributions}
-                onContributionSuccess={loadData}
+                onContributionSuccess={() => loadData(true)}
+                onSubmittingChange={setIsContributionSubmitting}
               />
             )}
 
@@ -444,7 +476,7 @@ export default function App() {
                     : undefined
                 }
                 onPreviewDoc={(doc) => setPreviewDocument(doc)}
-                onRefreshData={loadData}
+                onRefreshData={() => loadData(true)}
               />
             )}
 
@@ -454,7 +486,7 @@ export default function App() {
                 documents={documents}
                 hiddenDocuments={hiddenDocuments}
                 isSuperAdmin={user?.role === "SuperAdministrateur"}
-                onRefreshData={loadData}
+                onRefreshData={() => loadData(true)}
                 onPreviewPdf={(doc) => setPreviewDocument(doc)}
               />
             )}
@@ -462,7 +494,7 @@ export default function App() {
             {activeTab === "super-admin-audit" && user?.role === "SuperAdministrateur" && (
               <SuperAdminAuditView
                 currentUser={user}
-                onRefreshData={loadData}
+                onRefreshData={() => loadData(true)}
                 documents={documents}
                 contributions={contributions}
                 onPreviewDoc={(doc) => setPreviewDocument(doc)}
@@ -531,8 +563,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <Footer onNavigate={handleNavigate} />
+      {/* Footer - masqué sur les pages d'authentification pour une mise en page épurée sur mobile */}
+      {!isAuthPage && <Footer onNavigate={handleNavigate} />}
 
       {/* PDF View Modal */}
       <PdfViewerModal
