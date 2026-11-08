@@ -27,7 +27,7 @@ import {
   X,
   ShieldCheck,
   Calendar,
-  Sparkles,
+  GraduationCap,
   UserPlus,
 } from "lucide-react";
 import { AppLogo } from "../components/AppLogo";
@@ -48,21 +48,24 @@ const carouselSlides = [
   {
     image: heroEtudiants,
     kicker: "Promotion 2026 • Niveau 1 (ING1)",
-    title: "Votre Pass Réussite pour Dompter la Première Année",
+    titleStart: "Votre Pass Réussite pour ",
+    titleHighlight: "Dompter la Première Année",
     subtitle:
       "Bienvenue à l'Institut Saint Jean ! Pour votre rentrée, bénéficiez d'un accès direct et exclusif aux annales d'examens et contrôles continus conçus pour vous propulser vers l'excellence.",
   },
   {
     image: heroCampus,
     kicker: "Institut Universitaire Saint Jean",
-    title: "Préparez vos Évaluations avec Méthode et Rigueur",
+    titleStart: "Préparez vos Évaluations avec ",
+    titleHighlight: "Méthode et Rigueur",
     subtitle:
       "Consultez les archives validées par l'administration académique, suivez le calendrier des CC et organisez vos révisions personnelles.",
   },
   {
     image: heroTp,
     kicker: "Entraide & Excellence Académique",
-    title: "Consultez en Ligne ou Téléchargez vos Sujets en PDF",
+    titleStart: "Consultez en Ligne ou ",
+    titleHighlight: "Téléchargez vos Sujets en PDF",
     subtitle:
       "Prévisualisez chaque épreuve directement dans votre navigateur et téléchargez vos PDF pour réviser facilement en ligne et hors ligne.",
   },
@@ -348,7 +351,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 >
                   <img
                     src={slide.image}
-                    alt={slide.title}
+                    alt={`${slide.titleStart}${slide.titleHighlight}`}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover object-center scale-105 transition-transform duration-[7000ms] ease-out"
                   />
@@ -362,7 +365,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* En-tête institutionnel */}
             <div className="relative z-10 flex items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <GraduationCap className="w-3.5 h-3.5 text-sky-300" />
                 <span>Institut Saint Jean • ING1</span>
               </div>
               <span className="text-xs font-semibold text-slate-200 tracking-wide">
@@ -377,7 +380,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   {activeSlide.kicker}
                 </p>
                 <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-sm">
-                  {activeSlide.title}
+                  {activeSlide.titleStart}
+                  <span className="text-amber-300">{activeSlide.titleHighlight}</span>
                 </h1>
                 <p className="text-sm text-slate-200/95 leading-relaxed">
                   {activeSlide.subtitle}
@@ -492,7 +496,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 >
                   <img
                     src={slide.image}
-                    alt={slide.title}
+                    alt={`${slide.titleStart}${slide.titleHighlight}`}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover object-center"
                   />
@@ -525,7 +529,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* Titre et fonctionnalités en badges doux */}
             <div className="relative z-10 space-y-1.5">
               <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight leading-snug drop-shadow-sm">
-                {activeSlide.title}
+                {activeSlide.titleStart}
+                <span className="text-amber-300">{activeSlide.titleHighlight}</span>
               </h2>
               <div className="flex items-center gap-2 pt-0.5">
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-200 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10">

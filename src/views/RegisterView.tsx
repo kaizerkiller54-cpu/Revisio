@@ -17,7 +17,7 @@ import {
   BookOpen,
   Download,
   Calendar,
-  Sparkles,
+  GraduationCap,
   ChevronLeft,
   ChevronRight,
   LogIn,
@@ -40,21 +40,24 @@ const carouselSlides = [
   {
     image: heroEtudiants,
     kicker: "Promotion 2026 • Niveau 1 (ING1)",
-    title: "Rejoignez la Communauté d'Excellence Saint Jean",
+    titleStart: "Rejoignez la Communauté ",
+    titleHighlight: "d'Excellence Saint Jean",
     subtitle:
       "Créez votre compte étudiant en quelques secondes pour débloquer l'accès intégral aux annales d'examens, contrôles continus et corrigés officiels.",
   },
   {
     image: heroCampus,
     kicker: "Institut Universitaire Saint Jean",
-    title: "Tous vos Outils de Révision au Même Endroit",
+    titleStart: "Tous vos Outils de Révision ",
+    titleHighlight: "au Même Endroit",
     subtitle:
       "Téléchargez directement vos épreuves en PDF, organisez vos favoris et suivez le calendrier des évaluations tout au long de votre première année.",
   },
   {
     image: heroTp,
     kicker: "Cycle Ingénieur • Promotion 2026",
-    title: "Entraide, Rigueur & Réussite Académique",
+    titleStart: "Entraide, Rigueur & ",
+    titleHighlight: "Réussite Académique",
     subtitle:
       "Bénéficiez d'une plateforme sécurisée, intuitive et optimisée pour tous vos appareils, du smartphone à l'ordinateur.",
   },
@@ -165,7 +168,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 >
                   <img
                     src={slide.image}
-                    alt={slide.title}
+                    alt={`${slide.titleStart}${slide.titleHighlight}`}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover object-center scale-105 transition-transform duration-[7000ms] ease-out"
                   />
@@ -179,7 +182,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             {/* En-tête institutionnel */}
             <div className="relative z-10 flex items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <GraduationCap className="w-3.5 h-3.5 text-sky-300" />
                 <span>Institut Universitaire Saint Jean</span>
               </div>
               <span className="text-xs font-semibold text-slate-200 tracking-wide">
@@ -194,7 +197,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                   {activeSlide.kicker}
                 </p>
                 <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-sm">
-                  {activeSlide.title}
+                  {activeSlide.titleStart}
+                  <span className="text-amber-300">{activeSlide.titleHighlight}</span>
                 </h1>
                 <p className="text-sm text-slate-200/95 leading-relaxed">
                   {activeSlide.subtitle}
@@ -315,7 +319,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 >
                   <img
                     src={slide.image}
-                    alt={slide.title}
+                    alt={`${slide.titleStart}${slide.titleHighlight}`}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover object-center"
                   />
@@ -348,7 +352,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             {/* Titre et badges doux */}
             <div className="relative z-10 space-y-1">
               <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight leading-snug drop-shadow-sm">
-                {activeSlide.title}
+                {activeSlide.titleStart}
+                <span className="text-amber-300">{activeSlide.titleHighlight}</span>
               </h2>
               <div className="flex items-center gap-2 pt-0.5">
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-200 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10">
