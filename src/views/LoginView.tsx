@@ -81,6 +81,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [resetMethod, setResetMethod] = useState<"email" | "sms">("email");
   const [motDePasse, setMotDePasse] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -143,7 +144,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setSuccessMsg(null);
 
     try {
-      const res = await loginApi(trimmedEmail, motDePasse);
+      const res = await loginApi(trimmedEmail, motDePasse, undefined, rememberMe);
       if (!res || !res.user || !res.token) {
         throw new Error(
           res?.message ||
@@ -694,6 +695,28 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         )}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Option de connexion persistante sur cet appareil */}
+                  <div className="flex items-center justify-between pt-0.5">
+                    <label
+                      htmlFor="login-remember-device"
+                      className="inline-flex items-center gap-2.5 cursor-pointer select-none group"
+                    >
+                      <input
+                        id="login-remember-device"
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-900 focus:ring-blue-600 cursor-pointer accent-blue-900"
+                      />
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                        Rester connecté sur cet appareil
+                      </span>
+                    </label>
+                    <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-800/60 px-2 py-0.5 rounded-md">
+                      Session sécurisée
+                    </span>
                   </div>
 
                   {/* Bouton de connexion bleu officiel ISJ */}

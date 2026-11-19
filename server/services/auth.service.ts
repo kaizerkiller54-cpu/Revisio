@@ -9,6 +9,8 @@ export interface JwtPayload {
   userId: string;
   role: string;
   tokenType: "access" | "refresh";
+  sessionId?: string;
+  deviceId?: string;
 }
 
 export interface AuthUser {
@@ -119,12 +121,24 @@ async function getJwksPems(): Promise<Record<string, string>> {
 export async function verifyAccessToken(token: string): Promise<JwtPayload> {
   try {
     const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
-    const verifyClaims = (payload: { sub?: string; role?: string; aud?: string | string[] }) => {
+    const verifyClaims = (payload: {
+      sub?: string;
+      role?: string;
+      aud?: string | string[];
+      sid?: string;
+      did?: string;
+    }) => {
       const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
       if (!payload.sub || payload.role !== "authenticated" || !audiences.includes("authenticated")) {
         throw new Error("Claims de session invalides");
       }
-      return { userId: payload.sub, role: payload.role, tokenType: "access" as const };
+      return {
+        userId: payload.sub,
+        role: payload.role,
+        tokenType: "access" as const,
+        sessionId: payload.sid,
+        deviceId: payload.did,
+      };
     };
     const header = JSON.parse(Buffer.from(token.split(".")[0], "base64url").toString()) as {
       alg?: string;
@@ -136,6 +150,8 @@ export async function verifyAccessToken(token: string): Promise<JwtPayload> {
         sub?: string;
         role?: string;
         aud?: string | string[];
+        sid?: string;
+        did?: string;
       };
       return verifyClaims(payload);
     }
@@ -147,6 +163,8 @@ export async function verifyAccessToken(token: string): Promise<JwtPayload> {
       sub?: string;
       role?: string;
       aud?: string | string[];
+      sid?: string;
+      did?: string;
     };
     return verifyClaims(payload);
   } catch {

@@ -12,7 +12,11 @@ import {
   getAdminStatsApi,
   downloadDocumentFileApi,
   getUserFavoritesApi,
-  toggleUserFavoriteApi
+  toggleUserFavoriteApi,
+  clearClientAuthSession,
+  saveClientAuthSession,
+  hasStoredSessionCandidate,
+  getAuthHeader,
 } from "./lib/api";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
@@ -155,14 +159,43 @@ export default function App() {
     }
   }, [user?.id]);
 
+  // Vérification automatique et transparente de la validité de la session de l'appareil au retour sur l'onglet
+  useEffect(() => {
+    let lastCheckedAt = Date.now();
+    const verifyDeviceSessionOnResume = async () => {
+      if (document.visibilityState === "hidden") return;
+      // Limiter les vérifications automatiques à une toutes les 2 minutes maximum
+      if (Date.now() - lastCheckedAt < 2 * 60 * 1000) return;
+      if (!user && !hasStoredSessionCandidate()) return;
+      lastCheckedAt = Date.now();
+      const verifiedUser = await getMeApi().catch(() => null);
+      if (verifiedUser) {
+        setUser(verifiedUser);
+      } else if (user) {
+        // La session de cet appareil a expiré ou a été révoquée côté serveur
+        setUser(null);
+        setFavorites([]);
+      }
+    };
+
+    window.addEventListener("focus", verifyDeviceSessionOnResume);
+    document.addEventListener("visibilitychange", verifyDeviceSessionOnResume);
+    return () => {
+      window.removeEventListener("focus", verifyDeviceSessionOnResume);
+      document.removeEventListener("visibilitychange", verifyDeviceSessionOnResume);
+    };
+  }, [user]);
+
   useEffect(() => {
     if (!user || typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    const token = localStorage.getItem("isj_auth_token");
-    if (!token) return;
+    if (!hasStoredSessionCandidate()) return;
     const seenKey = `revisio_seen_publications_${user.id}`;
     let cancelled = false;
 
-    fetch("/api/notifications", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/notifications", {
+      credentials: "include",
+      headers: { ...getAuthHeader() },
+    })
       .then((response) => response.ok ? response.json() : [])
       .then((items: Array<{ id: string; titre: string; message: string; userId: string; date: string }>) => {
         if (cancelled) return;
@@ -208,9 +241,9 @@ export default function App() {
     try {
       await logoutApi();
     } finally {
+      clearClientAuthSession();
       setUser(null);
       setFavorites([]);
-      localStorage.removeItem("isj_auth_token");
       setActiveTab("login");
     }
   };
@@ -516,6 +549,7 @@ export default function App() {
                 onUpdateUser={(updated) => setUser(updated)}
                 onNavigateToRegister={() => setActiveTab("register")}
                 onNavigateToFavorites={() => handleNavigate("favorites")}
+                onLogout={handleLogout}
                 favoritesCount={favorites.length}
               />
             )}
@@ -524,7 +558,9 @@ export default function App() {
               <LoginView
                 onLoginSuccess={(loggedUser, token) => {
                   setUser(loggedUser);
-                  localStorage.setItem("isj_auth_token", token);
+                  if (token) {
+                    saveClientAuthSession({ token });
+                  }
                   if (typeof Notification !== "undefined" && Notification.permission === "default") {
                     Notification.requestPermission().catch(() => undefined);
                   }
@@ -545,7 +581,9 @@ export default function App() {
               <RegisterView
                 onRegisterSuccess={(registeredUser, token) => {
                   setUser(registeredUser);
-                  localStorage.setItem("isj_auth_token", token);
+                  if (token) {
+                    saveClientAuthSession({ token });
+                  }
                   if (typeof Notification !== "undefined" && Notification.permission === "default") {
                     Notification.requestPermission().catch(() => undefined);
                   }

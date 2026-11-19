@@ -18,9 +18,23 @@ import {
   requestPasswordResetSmsCode,
   revokeSupabaseSession,
   signInSupabase,
+  verifyAccessToken,
   verifyPasswordResetCodeOnly,
   verifyResetCodeAndUpdatePassword,
 } from "../services/auth.service";
+import {
+  attachSessionCookiesAndHeaders,
+  clearSessionCookies,
+  createOrReplaceDeviceSession,
+  extractAccessTokenFromRequest,
+  extractDeviceSessionTokenFromRequest,
+  listActiveUserDeviceSessions,
+  resolveDeviceId,
+  revokeAllUserSessions,
+  revokeCurrentDeviceSession,
+  revokeDeviceSessionById,
+  verifyAndRotateDeviceSessionToken,
+} from "../services/session.service";
 import { tryGetSuperAdminMasterKey } from "../config/superadmin";
 
 const router = Router();
@@ -43,16 +57,23 @@ const registerSchema = z.object({
     .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial."),
   // Public registration can never assign privileged roles.
   role: z.literal("Etudiant").optional(),
-}).strict();
+  deviceId: z.string().max(128).optional(),
+  rememberMe: z.boolean().optional(),
+  masterKey: z.string().max(256).optional(),
+});
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
   motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
   masterKey: z.string().max(256).optional(),
+  deviceId: z.string().max(128).optional(),
+  rememberMe: z.boolean().optional(),
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token requis.").max(512),
+  refreshToken: z.string().max(1024).optional(),
+  deviceSessionToken: z.string().max(1024).optional(),
+  deviceId: z.string().max(128).optional(),
 });
 
 const forgotPasswordSchema = z
@@ -229,7 +250,7 @@ router.post(
   authRateLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { nom, prenom, email, telephone, motDePasse } = req.body;
+    const { nom, prenom, email, telephone, motDePasse, deviceId, rememberMe } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedTelephone = telephone?.trim() || null;
 
@@ -274,7 +295,20 @@ router.post(
       });
     }
 
-    const session = await signInSupabase(trimmedEmail, motDePasse);
+    await signInSupabase(trimmedEmail, motDePasse);
+
+    const deviceSession = await createOrReplaceDeviceSession(req, user.id, {
+      deviceId,
+      persistent: rememberMe !== false,
+    });
+
+    attachSessionCookiesAndHeaders(req, res, {
+      accessToken: deviceSession.accessToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      persistent: deviceSession.persistent,
+    });
 
     await logUserActivity({
       userId: user.id,
@@ -282,12 +316,16 @@ router.post(
       userEmail: user.email,
       userRole: user.role,
       actionType: "REGISTER",
-      description: `Création du compte ${user.role} ${user.prenom} ${user.nom}.`,
+      description: `Création du compte ${user.role} ${user.prenom} ${user.nom} (${deviceSession.deviceName}).`,
     });
 
     res.status(201).json({
-      token: session.accessToken,
-      refreshToken: session.refreshToken,
+      token: deviceSession.accessToken,
+      refreshToken: deviceSession.deviceSessionToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      expiresAt: deviceSession.expiresAt,
       user: mapUser(user),
       message: `Inscription réussie ! Votre compte ${user.role} a été activé avec succès.`,
     });
@@ -299,7 +337,7 @@ router.post(
   authRateLimiter,
   validate(loginSchema),
   asyncHandler(async (req, res) => {
-    const { email, motDePasse, masterKey } = req.body;
+    const { email, motDePasse, masterKey, deviceId, rememberMe } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = motDePasse.trim();
     const currentMasterKey = tryGetSuperAdminMasterKey();
@@ -313,17 +351,32 @@ router.post(
       ]);
       if (!existingProfile && !existingSuperAdmin) {
         const result = await bootstrapFirstSuperAdmin(trimmedEmail, motDePasse);
+        const deviceSession = await createOrReplaceDeviceSession(req, result.user.id, {
+          deviceId,
+          persistent: rememberMe !== false,
+        });
+        attachSessionCookiesAndHeaders(req, res, {
+          accessToken: deviceSession.accessToken,
+          deviceSessionToken: deviceSession.deviceSessionToken,
+          deviceId: deviceSession.deviceId,
+          sessionId: deviceSession.sessionId,
+          persistent: deviceSession.persistent,
+        });
         await logUserActivity({
           userId: result.user.id,
           userNom: `${result.user.prenom} ${result.user.nom}`,
           userEmail: result.user.email,
           userRole: result.user.role,
           actionType: "LOGIN",
-          description: "A initialisé le premier compte SuperAdministrateur.",
+          description: `A initialisé le premier compte SuperAdministrateur (${deviceSession.deviceName}).`,
         });
         return res.json({
-          token: result.session.accessToken,
-          refreshToken: result.session.refreshToken,
+          token: deviceSession.accessToken,
+          refreshToken: deviceSession.deviceSessionToken,
+          deviceSessionToken: deviceSession.deviceSessionToken,
+          deviceId: deviceSession.deviceId,
+          sessionId: deviceSession.sessionId,
+          expiresAt: deviceSession.expiresAt,
           user: mapUser(result.user),
           message: "Compte SuperAdministrateur initialisé avec succès.",
         });
@@ -394,18 +447,35 @@ router.post(
       });
     }
 
+    const deviceSession = await createOrReplaceDeviceSession(req, user.id, {
+      deviceId,
+      persistent: rememberMe !== false,
+    });
+
+    attachSessionCookiesAndHeaders(req, res, {
+      accessToken: deviceSession.accessToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      persistent: deviceSession.persistent,
+    });
+
     await logUserActivity({
       userId: user.id,
       userNom: `${user.prenom} ${user.nom}`,
       userEmail: user.email,
       userRole: user.role,
       actionType: "LOGIN",
-      description: "S'est connecté à la plateforme ISJ Revisio.",
+      description: `S'est connecté à la plateforme ISJ Revisio (${deviceSession.deviceName}).`,
     });
 
     res.json({
-      token: session.accessToken,
-      refreshToken: session.refreshToken,
+      token: deviceSession.accessToken,
+      refreshToken: deviceSession.deviceSessionToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      expiresAt: deviceSession.expiresAt,
       user: mapUser(user),
       message: `Bienvenue ${user.prenom} ${user.nom} !`,
     });
@@ -417,40 +487,120 @@ router.post(
   refreshRateLimiter,
   validate(refreshSchema),
   asyncHandler(async (req, res) => {
-    const session = await refreshSupabaseSession(req.body.refreshToken);
-    const user = await prisma.user.findUnique({ where: { id: session.userId } });
-    if (!user) {
-      throw unauthorized("Compte introuvable.");
+    const candidateToken =
+      req.body?.deviceSessionToken ||
+      req.body?.refreshToken ||
+      extractDeviceSessionTokenFromRequest(req);
+
+    if (!candidateToken) {
+      clearSessionCookies(req, res);
+      throw unauthorized("Aucun jeton de session persistant trouvé sur cet appareil.");
     }
-    res.json({
-      token: session.accessToken,
-      refreshToken: session.refreshToken,
-      user: mapUser(user),
-    });
+
+    // 1. Renouvellement et rotation via notre gestionnaire de sessions par appareil
+    const rotated = await verifyAndRotateDeviceSessionToken(req, candidateToken, true);
+    if (rotated) {
+      const user = await prisma.user.findUnique({ where: { id: rotated.userId } });
+      if (!user) {
+        clearSessionCookies(req, res);
+        throw unauthorized("Compte introuvable.");
+      }
+
+      attachSessionCookiesAndHeaders(req, res, {
+        accessToken: rotated.accessToken,
+        deviceSessionToken: rotated.deviceSessionToken,
+        deviceId: rotated.deviceId,
+        sessionId: rotated.sessionId,
+        persistent: rotated.persistent,
+      });
+
+      return res.json({
+        token: rotated.accessToken,
+        refreshToken: rotated.deviceSessionToken,
+        deviceSessionToken: rotated.deviceSessionToken,
+        deviceId: rotated.deviceId,
+        sessionId: rotated.sessionId,
+        user: mapUser(user),
+      });
+    }
+
+    // 2. Fallback de compatibilité si un ancien refreshToken Supabase était transmis
+    try {
+      const supaSession = await refreshSupabaseSession(candidateToken);
+      const user = await prisma.user.findUnique({ where: { id: supaSession.userId } });
+      if (!user) {
+        clearSessionCookies(req, res);
+        throw unauthorized("Compte introuvable.");
+      }
+      const upgraded = await createOrReplaceDeviceSession(req, user.id, {
+        deviceId: req.body?.deviceId,
+        persistent: true,
+      });
+      attachSessionCookiesAndHeaders(req, res, {
+        accessToken: upgraded.accessToken,
+        deviceSessionToken: upgraded.deviceSessionToken,
+        deviceId: upgraded.deviceId,
+        sessionId: upgraded.sessionId,
+        persistent: upgraded.persistent,
+      });
+      return res.json({
+        token: upgraded.accessToken,
+        refreshToken: upgraded.deviceSessionToken,
+        deviceSessionToken: upgraded.deviceSessionToken,
+        deviceId: upgraded.deviceId,
+        sessionId: upgraded.sessionId,
+        user: mapUser(user),
+      });
+    } catch {
+      clearSessionCookies(req, res);
+      throw unauthorized("Session expirée ou révoquée. Veuillez vous reconnecter.");
+    }
   })
 );
 
 router.post(
   "/logout",
-  authenticateJWT,
   asyncHandler(async (req, res) => {
-    // Révoque la session Supabase côté serveur (best-effort), puis trace
-    // la déconnexion dans le journal d'activité de l'utilisateur.
-    const header = req.headers.authorization ?? "";
-    try {
-      await revokeSupabaseSession(header.replace(/^Bearer\s+/i, ""));
-    } catch {
-      // La déconnexion locale ne doit jamais échouer à cause de Supabase.
+    // Identifie l'utilisateur (même si son accessToken court terme a déjà expiré)
+    let userId: string | undefined;
+    let sessionId: string | undefined;
+
+    const rawAccess = extractAccessTokenFromRequest(req);
+    if (rawAccess) {
+      try {
+        const verified = await verifyAccessToken(rawAccess);
+        userId = verified.userId;
+        sessionId = verified.sessionId;
+      } catch {
+        // Ignore access token expiration during logout
+      }
+      try {
+        await revokeSupabaseSession(rawAccess);
+      } catch {
+        // Best-effort
+      }
     }
-    await logUserActivity({
-      userId: req.user!.id,
-      userNom: `${req.user!.prenom} ${req.user!.nom}`,
-      userEmail: req.user!.email,
-      userRole: req.user!.role,
-      actionType: "LOGOUT",
-      description: "S'est déconnecté de la plateforme ISJ Revisio.",
-    });
-    res.json({ message: "Déconnexion réussie." });
+
+    // Révoque strictement la session de l'appareil actuel côté serveur
+    await revokeCurrentDeviceSession(req, userId, sessionId);
+    // Supprime les cookies d'authentification HttpOnly sur cet appareil
+    clearSessionCookies(req, res);
+
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
+      if (user) {
+        await logUserActivity({
+          userId: user.id,
+          userNom: `${user.prenom} ${user.nom}`,
+          userEmail: user.email,
+          userRole: user.role,
+          actionType: "LOGOUT",
+          description: "S'est déconnecté de la plateforme ISJ Revisio sur cet appareil.",
+        }).catch(() => undefined);
+      }
+    }
+
+    res.json({ message: "Déconnexion réussie sur cet appareil." });
   })
 );
 
@@ -460,9 +610,104 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) {
+      clearSessionCookies(req, res);
       throw new AppError(401, "Session expirée ou invalide.");
     }
-    res.json({ user: mapUser(user) });
+
+    // Si l'utilisateur possédait une session valide sans cookie/jeton d'appareil enregistré, on en provisionne un
+    const existingDeviceSession = extractDeviceSessionTokenFromRequest(req);
+    let activeAccessToken = extractAccessTokenFromRequest(req) || undefined;
+    let activeDeviceSessionToken = existingDeviceSession || undefined;
+    let activeDeviceId = req.tokenPayload?.deviceId || resolveDeviceId(req);
+    let activeSessionId = req.tokenPayload?.sessionId;
+
+    if (!existingDeviceSession && !req.tokenPayload?.sessionId) {
+      const created = await createOrReplaceDeviceSession(req, user.id, {
+        deviceId: activeDeviceId,
+        persistent: true,
+      });
+      attachSessionCookiesAndHeaders(req, res, {
+        accessToken: created.accessToken,
+        deviceSessionToken: created.deviceSessionToken,
+        deviceId: created.deviceId,
+        sessionId: created.sessionId,
+        persistent: created.persistent,
+      });
+      activeAccessToken = created.accessToken;
+      activeDeviceSessionToken = created.deviceSessionToken;
+      activeDeviceId = created.deviceId;
+      activeSessionId = created.sessionId;
+    }
+
+    // Si authenticateJWT a renouvelé le jeton en cours de requête, récupérer les en-têtes
+    const renewedAccess = res.getHeader("X-Renewed-Access-Token");
+    const rotatedSession = res.getHeader("X-Rotated-Device-Session");
+
+    res.json({
+      user: mapUser(user),
+      token: typeof renewedAccess === "string" ? renewedAccess : activeAccessToken,
+      deviceSessionToken:
+        typeof rotatedSession === "string" ? rotatedSession : activeDeviceSessionToken,
+      deviceId: activeDeviceId,
+      sessionId: activeSessionId,
+    });
+  })
+);
+
+router.get(
+  "/sessions",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const currentSessionId = req.tokenPayload?.sessionId;
+    const currentDeviceId = req.tokenPayload?.deviceId || resolveDeviceId(req);
+    const sessions = await listActiveUserDeviceSessions(
+      req.user!.id,
+      currentSessionId,
+      currentDeviceId
+    );
+    res.json({ sessions });
+  })
+);
+
+router.delete(
+  "/sessions/:sessionId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const targetSessionId = String(req.params.sessionId || "").trim();
+    if (!targetSessionId) {
+      throw badRequest("Identifiant de session manquant.");
+    }
+    await revokeDeviceSessionById(req.user!.id, targetSessionId);
+    const isCurrent = req.tokenPayload?.sessionId === targetSessionId;
+    if (isCurrent) {
+      clearSessionCookies(req, res);
+    }
+    res.json({
+      revokedSessionId: targetSessionId,
+      revokedCurrentDevice: isCurrent,
+      message: isCurrent
+        ? "Session de cet appareil révoquée."
+        : "L'appareil sélectionné a été déconnecté à distance.",
+    });
+  })
+);
+
+router.post(
+  "/logout-all",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const keepCurrent = req.body?.keepCurrentDevice !== false;
+    const currentSessionId = keepCurrent ? req.tokenPayload?.sessionId : undefined;
+    const revokedCount = await revokeAllUserSessions(req.user!.id, currentSessionId);
+    if (!keepCurrent) {
+      clearSessionCookies(req, res);
+    }
+    res.json({
+      revokedCount,
+      message: keepCurrent
+        ? `${revokedCount} autre(s) appareil(s) déconnecté(s) avec succès.`
+        : "Toutes vos sessions ont été déconnectées.",
+    });
   })
 );
 

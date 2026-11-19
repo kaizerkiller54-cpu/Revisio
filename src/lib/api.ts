@@ -13,15 +13,160 @@ import {
   UserNotification
 } from "../types";
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem("isj_auth_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+const AUTH_TOKEN_KEY = "isj_auth_token";
+const DEVICE_SESSION_KEY = "isj_device_session";
+const REFRESH_TOKEN_KEY = "isj_refresh_token";
+const DEVICE_ID_KEY = "isj_device_id";
+const SESSION_ID_KEY = "isj_session_id";
+const PERSISTENT_PREF_KEY = "isj_remember_device";
+
+export function getOrCreateDeviceId(): string {
+  try {
+    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId || deviceId.length < 8) {
+      deviceId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `dev-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(DEVICE_ID_KEY, deviceId);
+    }
+    return deviceId;
+  } catch {
+    return "web-device-default";
+  }
+}
+
+export function getStoredAccessToken(): string | null {
+  try {
+    return (
+      localStorage.getItem(AUTH_TOKEN_KEY) ||
+      sessionStorage.getItem(AUTH_TOKEN_KEY) ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredDeviceSessionToken(): string | null {
+  try {
+    return (
+      localStorage.getItem(DEVICE_SESSION_KEY) ||
+      sessionStorage.getItem(DEVICE_SESSION_KEY) ||
+      localStorage.getItem(REFRESH_TOKEN_KEY) ||
+      sessionStorage.getItem(REFRESH_TOKEN_KEY) ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function hasStoredSessionCandidate(): boolean {
+  return Boolean(getStoredAccessToken() || getStoredDeviceSessionToken());
+}
+
+export function saveClientAuthSession(params: {
+  token?: string;
+  deviceSessionToken?: string;
+  refreshToken?: string;
+  deviceId?: string;
+  sessionId?: string;
+  rememberMe?: boolean;
+}): void {
+  try {
+    const remember =
+      params.rememberMe !== undefined
+        ? params.rememberMe
+        : localStorage.getItem(PERSISTENT_PREF_KEY) !== "false";
+
+    localStorage.setItem(PERSISTENT_PREF_KEY, remember ? "true" : "false");
+    const primaryStore = remember ? localStorage : sessionStorage;
+    const secondaryStore = remember ? sessionStorage : localStorage;
+
+    if (params.deviceId) {
+      localStorage.setItem(DEVICE_ID_KEY, params.deviceId);
+    }
+    if (params.sessionId) {
+      primaryStore.setItem(SESSION_ID_KEY, params.sessionId);
+    }
+    if (params.token) {
+      primaryStore.setItem(AUTH_TOKEN_KEY, params.token);
+      secondaryStore.removeItem(AUTH_TOKEN_KEY);
+    }
+    const sessionToken = params.deviceSessionToken || params.refreshToken;
+    if (sessionToken) {
+      primaryStore.setItem(DEVICE_SESSION_KEY, sessionToken);
+      primaryStore.setItem(REFRESH_TOKEN_KEY, sessionToken);
+      secondaryStore.removeItem(DEVICE_SESSION_KEY);
+      secondaryStore.removeItem(REFRESH_TOKEN_KEY);
+    }
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function clearClientAuthSession(): void {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(DEVICE_SESSION_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(SESSION_ID_KEY);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(DEVICE_SESSION_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(SESSION_ID_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function syncRotatedTokensFromHeaders(res: Response): void {
+  try {
+    const revoked = res.headers.get("X-Session-Revoked");
+    if (revoked === "true") {
+      clearClientAuthSession();
+      return;
+    }
+    const renewedAccess = res.headers.get("X-Renewed-Access-Token");
+    const rotatedSession = res.headers.get("X-Rotated-Device-Session");
+    const deviceId = res.headers.get("X-Device-Id");
+    const sessionId = res.headers.get("X-Session-Id");
+
+    if (renewedAccess || rotatedSession || deviceId || sessionId) {
+      saveClientAuthSession({
+        token: renewedAccess || undefined,
+        deviceSessionToken: rotatedSession || undefined,
+        deviceId: deviceId || undefined,
+        sessionId: sessionId || undefined,
+      });
+    }
+  } catch {
+    // Ignore header inspection errors
+  }
+}
+
+export const getAuthHeader = (): Record<string, string> => {
+  const headers: Record<string, string> = {
+    "X-Device-Id": getOrCreateDeviceId(),
+  };
+  const token = getStoredAccessToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const deviceSession = getStoredDeviceSessionToken();
+  if (deviceSession) {
+    headers["X-Device-Session"] = deviceSession;
+  }
+  return headers;
 };
 
 async function parseJsonResponse<T = any>(
   res: Response,
   defaultErrorMessage = "Erreur de communication avec le serveur"
 ): Promise<T> {
+  syncRotatedTokensFromHeaders(res);
+
   const contentType = res.headers.get("content-type") || "";
   let data: any = null;
 
@@ -53,23 +198,47 @@ async function parseJsonResponse<T = any>(
   return data as T;
 }
 
-export async function loginApi(email: string, motDePasse: string, masterKey?: string) {
+export async function loginApi(
+  email: string,
+  motDePasse: string,
+  masterKey?: string,
+  rememberMe = true
+) {
+  const deviceId = getOrCreateDeviceId();
   const res = await fetch("/api/auth/login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Device-Id": deviceId,
+    },
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
       motDePasse,
       masterKey,
+      deviceId,
+      rememberMe,
     }),
   });
-  const data = await parseJsonResponse<{ token: string; refreshToken?: string; user: User; message?: string }>(
-    res,
-    "Échec de connexion."
-  );
+  const data = await parseJsonResponse<{
+    token: string;
+    refreshToken?: string;
+    deviceSessionToken?: string;
+    deviceId?: string;
+    sessionId?: string;
+    user: User;
+    message?: string;
+  }>(res, "Échec de connexion.");
   if (!data || typeof data !== "object" || !data.user || !data.token) {
     throw new Error(data?.message || "Données de connexion incomplètes reçues du serveur.");
   }
+  saveClientAuthSession({
+    token: data.token,
+    deviceSessionToken: data.deviceSessionToken || data.refreshToken,
+    deviceId: data.deviceId || deviceId,
+    sessionId: data.sessionId,
+    rememberMe,
+  });
   return data;
 }
 
@@ -79,6 +248,7 @@ export async function forgotPasswordApi(payload: {
 }): Promise<{ message: string; telephone?: string }> {
   const res = await fetch("/api/auth/forgot-password", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -93,6 +263,7 @@ export async function resetPasswordApi(payload: {
 }): Promise<{ message: string }> {
   const res = await fetch("/api/auth/reset-password", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -112,12 +283,12 @@ export async function verifyResetCodeApi(payload: {
 }> {
   const res = await fetch("/api/auth/verify-reset-code", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   return parseJsonResponse(res, "Code de vérification invalide ou expiré.");
 }
-
 
 export async function registerApi(
   nom: string,
@@ -126,31 +297,136 @@ export async function registerApi(
   motDePasse: string,
   role: string,
   masterKey?: string,
-  telephone?: string
+  telephone?: string,
+  rememberMe = true
 ) {
+  const deviceId = getOrCreateDeviceId();
   const res = await fetch("/api/auth/register", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nom, prenom, email, motDePasse, role, masterKey, telephone }),
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Device-Id": deviceId,
+    },
+    body: JSON.stringify({
+      nom,
+      prenom,
+      email,
+      motDePasse,
+      role,
+      masterKey,
+      telephone,
+      deviceId,
+      rememberMe,
+    }),
   });
-  const data = await parseJsonResponse<{ token: string; refreshToken?: string; user: User; message?: string }>(
-    res,
-    "Échec de l'inscription."
-  );
+  const data = await parseJsonResponse<{
+    token: string;
+    refreshToken?: string;
+    deviceSessionToken?: string;
+    deviceId?: string;
+    sessionId?: string;
+    user: User;
+    message?: string;
+  }>(res, "Échec de l'inscription.");
   if (!data || typeof data !== "object" || !data.user || !data.token) {
-    throw new Error(data?.message || "Compte créé mais session invalide reçue du serveur.");
+    throw new Error(data?.message || "Compte créé mais session invalide reçues du serveur.");
   }
+  saveClientAuthSession({
+    token: data.token,
+    deviceSessionToken: data.deviceSessionToken || data.refreshToken,
+    deviceId: data.deviceId || deviceId,
+    sessionId: data.sessionId,
+    rememberMe,
+  });
   return data;
+}
+
+export async function refreshSessionApi(): Promise<User | null> {
+  try {
+    const deviceSessionToken = getStoredDeviceSessionToken();
+    const deviceId = getOrCreateDeviceId();
+    const res = await fetch("/api/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({
+        deviceSessionToken: deviceSessionToken || undefined,
+        refreshToken: deviceSessionToken || undefined,
+        deviceId,
+      }),
+    });
+    syncRotatedTokensFromHeaders(res);
+    if (!res.ok) {
+      if (res.status === 401) {
+        clearClientAuthSession();
+      }
+      return null;
+    }
+    const data = await parseJsonResponse<{
+      token: string;
+      refreshToken?: string;
+      deviceSessionToken?: string;
+      deviceId?: string;
+      sessionId?: string;
+      user: User;
+    }>(res, "Session expirée");
+
+    if (data?.user && data?.token) {
+      saveClientAuthSession({
+        token: data.token,
+        deviceSessionToken: data.deviceSessionToken || data.refreshToken,
+        deviceId: data.deviceId || deviceId,
+        sessionId: data.sessionId,
+      });
+      return data.user;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getMeApi(): Promise<User | null> {
   try {
     const res = await fetch("/api/auth/me", {
+      credentials: "include",
       headers: { ...getAuthHeader() },
     });
-    if (!res.ok) return null;
-    const data = await parseJsonResponse<{ user: User }>(res, "Erreur session");
-    return data?.user ? (data.user as User) : null;
+    syncRotatedTokensFromHeaders(res);
+
+    if (res.ok) {
+      const data = await parseJsonResponse<{
+        user: User;
+        token?: string;
+        deviceSessionToken?: string;
+        deviceId?: string;
+        sessionId?: string;
+      }>(res, "Erreur session");
+      if (data?.token || data?.deviceSessionToken) {
+        saveClientAuthSession({
+          token: data.token,
+          deviceSessionToken: data.deviceSessionToken,
+          deviceId: data.deviceId,
+          sessionId: data.sessionId,
+        });
+      }
+      return data?.user ? (data.user as User) : null;
+    }
+
+    // Si /api/auth/me renvoie 401 mais qu'un jeton de session persistant est disponible, tenter une rotation explicite
+    if (res.status === 401 && getStoredDeviceSessionToken()) {
+      const refreshedUser = await refreshSessionApi();
+      if (refreshedUser) return refreshedUser;
+    }
+
+    if (res.status === 401) {
+      clearClientAuthSession();
+    }
+    return null;
   } catch {
     return null;
   }
@@ -160,11 +436,72 @@ export async function logoutApi(): Promise<void> {
   try {
     await fetch("/api/auth/logout", {
       method: "POST",
+      credentials: "include",
       headers: { ...getAuthHeader() },
     });
   } catch {
     // La déconnexion locale prime : un échec réseau ne doit jamais bloquer l'utilisateur.
+  } finally {
+    clearClientAuthSession();
   }
+}
+
+export interface ActiveDeviceSessionInfo {
+  sessionId: string;
+  deviceId: string;
+  deviceName: string;
+  ipAddress: string;
+  createdAt: string;
+  lastActiveAt: string;
+  expiresAt: string;
+  persistent: boolean;
+  isCurrentDevice: boolean;
+}
+
+export async function getActiveDeviceSessionsApi(): Promise<ActiveDeviceSessionInfo[]> {
+  try {
+    const res = await fetch("/api/auth/sessions", {
+      credentials: "include",
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) return [];
+    const data = await parseJsonResponse<{ sessions: ActiveDeviceSessionInfo[] }>(
+      res,
+      "Impossible de charger les sessions."
+    );
+    return Array.isArray(data?.sessions) ? data.sessions : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function revokeDeviceSessionApi(sessionId: string): Promise<{
+  revokedSessionId: string;
+  revokedCurrentDevice: boolean;
+  message: string;
+}> {
+  const res = await fetch(`/api/auth/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { ...getAuthHeader() },
+  });
+  return parseJsonResponse(res, "Impossible de déconnecter cet appareil.");
+}
+
+export async function logoutAllDevicesApi(keepCurrentDevice = true): Promise<{
+  revokedCount: number;
+  message: string;
+}> {
+  const res = await fetch("/api/auth/logout-all", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ keepCurrentDevice }),
+  });
+  return parseJsonResponse(res, "Impossible de déconnecter les autres appareils.");
 }
 
 export async function updateUserProfileApi(data: {
@@ -177,6 +514,7 @@ export async function updateUserProfileApi(data: {
 }) {
   const res = await fetch("/api/users/profile", {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -195,6 +533,7 @@ export async function sendContactMessageApi(contactData: {
 }) {
   const res = await fetch("/api/contact", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(contactData),
   });
@@ -204,8 +543,10 @@ export async function sendContactMessageApi(contactData: {
 export async function downloadFeedbackApi(): Promise<{ blob: Blob; filename: string } | null> {
   try {
     const res = await fetch("/api/contact/feedback", {
+      credentials: "include",
       headers: { ...getAuthHeader() },
     });
+    syncRotatedTokensFromHeaders(res);
     if (!res.ok) return null;
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -217,7 +558,7 @@ export async function downloadFeedbackApi(): Promise<{ blob: Blob; filename: str
 }
 
 export async function getSubjectsApi(): Promise<MatiereModel[]> {
-  const res = await fetch("/api/subjects");
+  const res = await fetch("/api/subjects", { credentials: "include" });
   return parseJsonResponse<MatiereModel[]>(res, "Impossible de charger les matières.");
 }
 
@@ -237,12 +578,13 @@ export async function getDocumentsApi(params?: {
       }
     });
   }
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { credentials: "include" });
   return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves.");
 }
 
 export async function getHiddenDocumentsApi(): Promise<DocumentModel[]> {
   const res = await fetch("/api/documents/hidden", {
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<DocumentModel[]>(res, "Impossible de charger les épreuves masquées.");
@@ -251,6 +593,7 @@ export async function getHiddenDocumentsApi(): Promise<DocumentModel[]> {
 export async function setDocumentVisibilityApi(id: string, visible: boolean) {
   const res = await fetch(`/api/documents/${id}/visibility`, {
     method: "PUT",
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...getAuthHeader() },
     body: JSON.stringify({ visible }),
   });
@@ -307,7 +650,7 @@ export async function searchDocumentsApi(params: {
   pageSize?: number;
 } = {}): Promise<DocumentSearchPage> {
   const url = buildDocumentSearchUrl(params);
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { credentials: "include" });
   return parseJsonResponse<DocumentSearchPage>(res, "Impossible d'effectuer la recherche.");
 }
 
@@ -315,7 +658,7 @@ export async function suggestDocumentsApi(q: string, limit = 6): Promise<SearchS
   const url = new URL("/api/documents/suggest", window.location.origin);
   url.searchParams.append("q", q);
   url.searchParams.append("limit", String(limit));
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { credentials: "include" });
   if (!res.ok) return [];
   const data = await parseJsonResponse<{ data: SearchSuggestion[] }>(res, "").catch(() => null);
   return data?.data ?? [];
@@ -324,8 +667,10 @@ export async function suggestDocumentsApi(q: string, limit = 6): Promise<SearchS
 export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob; filename: string } | null> {
   try {
     const res = await fetch(`/api/documents/${id}/download`, {
+      credentials: "include",
       headers: { ...getAuthHeader() },
     });
+    syncRotatedTokensFromHeaders(res);
     if (!res.ok) return null;
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -337,7 +682,7 @@ export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob;
 }
 
 export async function getDocumentByIdApi(id: string): Promise<DocumentModel> {
-  const res = await fetch(`/api/documents/${id}`);
+  const res = await fetch(`/api/documents/${id}`, { credentials: "include" });
   return parseJsonResponse<DocumentModel>(res, "Épreuve non trouvée.");
 }
 
@@ -356,6 +701,7 @@ export async function submitContributionApi(payload: {
 }) {
   const res = await fetch("/api/contributions", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -369,6 +715,7 @@ export async function getContributionsApi(statut?: DocumentStatut): Promise<Cont
   const url = new URL("/api/contributions", window.location.origin);
   if (statut) url.searchParams.append("statut", statut);
   const res = await fetch(url.toString(), {
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<ContributionModel[]>(res, "Impossible de charger les contributions.");
@@ -386,6 +733,7 @@ export async function approveContributionApi(
 ) {
   const res = await fetch(`/api/contributions/${id}/approve`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -398,6 +746,7 @@ export async function approveContributionApi(
 export async function rejectContributionApi(id: string) {
   const res = await fetch(`/api/contributions/${id}/reject`, {
     method: "POST",
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse(res, "Impossible de refuser le document.");
@@ -406,6 +755,7 @@ export async function rejectContributionApi(id: string) {
 export async function deleteDocumentApi(id: string) {
   const res = await fetch(`/api/documents/${id}`, {
     method: "DELETE",
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse(res, "Impossible de supprimer le document.");
@@ -417,6 +767,7 @@ export async function updateDocumentApi(
 ) {
   const res = await fetch(`/api/documents/${id}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -437,6 +788,7 @@ export async function getAuditLogsApi(params?: {
   if (params?.search) query.set("search", params.search);
 
   const res = await fetch(`/api/admin/audit-logs?${query.toString()}`, {
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<AuditLog[]>(res, "Impossible de récupérer le journal d'audit.");
@@ -455,6 +807,7 @@ export interface AdminUserDetails {
 
 export async function getUsersApi(): Promise<User[]> {
   const res = await fetch("/api/admin/users", {
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<User[]>(res, "Impossible de récupérer la liste des utilisateurs.");
@@ -462,6 +815,7 @@ export async function getUsersApi(): Promise<User[]> {
 
 export async function getUserDetailsApi(userId: string): Promise<AdminUserDetails> {
   const res = await fetch(`/api/admin/users/${userId}/details`, {
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<AdminUserDetails>(res, "Impossible de récupérer les détails de l'utilisateur.");
@@ -476,6 +830,7 @@ export async function createAdminUserApi(userData: {
 }): Promise<{ message: string; user: User }> {
   const res = await fetch("/api/admin/users", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -488,6 +843,7 @@ export async function createAdminUserApi(userData: {
 export async function deleteUserApi(userId: string): Promise<{ message: string }> {
   const res = await fetch(`/api/admin/users/${userId}`, {
     method: "DELETE",
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse(res, "Impossible de supprimer le compte.");
@@ -496,6 +852,7 @@ export async function deleteUserApi(userId: string): Promise<{ message: string }
 export async function updateUserRoleApi(userId: string, role: UserRole): Promise<{ message: string; user: User }> {
   const res = await fetch(`/api/admin/users/${userId}/role`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -507,9 +864,57 @@ export async function updateUserRoleApi(userId: string, role: UserRole): Promise
 
 export async function getAdminStatsApi(): Promise<DashboardStats> {
   const res = await fetch("/api/admin/stats", {
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
   return parseJsonResponse<DashboardStats>(res, "Impossible de charger les statistiques.");
+}
+
+export interface DailyAnalyticsPoint {
+  dateIso: string;
+  label: string;
+  fullLabel: string;
+  downloads: number;
+  contributions: number;
+  logins: number;
+  uniqueUsers: number;
+  connectedUsersList?: string[];
+  downloadedDocsList?: string[];
+  contributedDocsList?: string[];
+}
+
+export interface ContributionActivityEvent {
+  id: string;
+  userId: string;
+  userNom: string;
+  userEmail: string;
+  userRole: string;
+  actionType: string;
+  description: string;
+  targetId?: string;
+  targetTitle?: string;
+  matiere?: string;
+  typeEpreuve?: string;
+  statut?: string;
+  timestamp: string;
+}
+
+export interface AdminDailyAnalyticsResponse {
+  dailySeries: DailyAnalyticsPoint[];
+  downloadEvents: UserActivity[];
+  loginEvents: UserActivity[];
+  contributionEvents: ContributionActivityEvent[];
+}
+
+export async function getAdminDailyAnalyticsApi(days = 30): Promise<AdminDailyAnalyticsResponse> {
+  const res = await fetch(`/api/admin/daily-analytics?days=${days}`, {
+    credentials: "include",
+    headers: { ...getAuthHeader() },
+  });
+  return parseJsonResponse<AdminDailyAnalyticsResponse>(
+    res,
+    "Impossible de charger l'évolution quotidienne."
+  );
 }
 
 // User Activity Logs API
@@ -527,6 +932,7 @@ const EMPTY_ACTIVITY_PAGE: UserActivityPage = { data: [], total: 0, page: 1, pag
 export async function getUserActivitiesApi(queryString: string): Promise<UserActivityPage> {
   try {
     const res = await fetch(`/api/activities?${queryString}`, {
+      credentials: "include",
       headers: { ...getAuthHeader() },
     });
     if (!res.ok) return EMPTY_ACTIVITY_PAGE;
@@ -547,6 +953,7 @@ export async function logUserActivityApi(activityData: {
   try {
     const res = await fetch("/api/activities", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -569,7 +976,7 @@ export async function getUserNotificationsApi(currentUser?: User | null): Promis
       headers["x-user-role"] = currentUser.role;
     }
 
-    const res = await fetch("/api/notifications", { headers });
+    const res = await fetch("/api/notifications", { credentials: "include", headers });
     if (!res.ok) return [];
     return (await parseJsonResponse<UserNotification[]>(res, "").catch(() => null)) ?? [];
   } catch {
@@ -580,8 +987,10 @@ export async function getUserNotificationsApi(currentUser?: User | null): Promis
 export async function markNotificationAsReadApi(id: string): Promise<void> {
   const res = await fetch(`/api/notifications/${id}/read`, {
     method: "PUT",
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
+  syncRotatedTokensFromHeaders(res);
   if (!res.ok) throw new Error("Impossible de marquer la notification comme lue.");
 }
 
@@ -594,16 +1003,20 @@ export async function markAllNotificationsAsReadApi(currentUser?: User | null): 
 
   const res = await fetch("/api/notifications/read-all", {
     method: "PUT",
+    credentials: "include",
     headers,
   });
+  syncRotatedTokensFromHeaders(res);
   if (!res.ok) throw new Error("Impossible de marquer toutes les notifications comme lues.");
 }
 
 export async function deleteNotificationApi(id: string): Promise<void> {
   const res = await fetch(`/api/notifications/${id}`, {
     method: "DELETE",
+    credentials: "include",
     headers: { ...getAuthHeader() },
   });
+  syncRotatedTokensFromHeaders(res);
   if (!res.ok) throw new Error("Impossible de supprimer la notification.");
 }
 
@@ -616,21 +1029,23 @@ export async function clearAllNotificationsApi(currentUser?: User | null): Promi
 
   const res = await fetch("/api/notifications", {
     method: "DELETE",
+    credentials: "include",
     headers,
   });
+  syncRotatedTokensFromHeaders(res);
   if (!res.ok) throw new Error("Impossible d'effacer les notifications.");
 }
 
 // User Personal Favorites API
 export async function getUserFavoritesApi(): Promise<string[]> {
-  const token = localStorage.getItem("isj_auth_token");
-  if (!token) return [];
+  if (!hasStoredSessionCandidate()) return [];
   try {
     const res = await fetch("/api/users/favorites", {
+      credentials: "include",
       headers: { ...getAuthHeader() },
     });
     if (!res.ok) return [];
-    const data = await res.json().catch(() => null);
+    const data = await parseJsonResponse<{ favorites?: string[] }>(res, "").catch(() => null);
     return Array.isArray(data?.favorites) ? data.favorites : [];
   } catch {
     return [];
@@ -640,6 +1055,7 @@ export async function getUserFavoritesApi(): Promise<string[]> {
 export async function toggleUserFavoriteApi(documentId: string): Promise<{ favorites: string[]; isFavorite: boolean }> {
   const res = await fetch("/api/users/favorites/toggle", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
