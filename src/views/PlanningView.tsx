@@ -101,71 +101,114 @@ const DEFAULT_ING1_EXAM_SCHEDULE: ExamEvent[] = [
     heureDebut: "10:30",
     heureFin: "12:30",
   },
-  // Samedi 28/11/2026
+  // Samedi 21/11/2026
   {
-    id: "ing1-cc-28-11-analyse1",
+    id: "ing1-cc-21-11-analyse1",
     matiereNom: "Analyse 1",
     typeEpreuve: "CC",
     semestre: "Semestre 1",
-    dateIso: "2026-11-28",
+    dateIso: "2026-11-21",
     heureDebut: "08:00",
     heureFin: "10:00",
   },
   {
-    id: "ing1-cc-28-11-mecanique",
+    id: "ing1-cc-21-11-mecanique",
     matiereNom: "Mécanique",
     typeEpreuve: "CC",
     semestre: "Semestre 1",
+    dateIso: "2026-11-21",
+    heureDebut: "10:30",
+    heureFin: "12:30",
+  },
+  // Samedi 28/11/2026
+  {
+    id: "ing1-cc-28-11-algebre",
+    matiereNom: "Algèbre linéaire",
+    typeEpreuve: "CC",
+    semestre: "Semestre 1",
+    dateIso: "2026-11-28",
+    heureDebut: "08:00",
+    heureFin: "10:00",
+  },
+  {
+    id: "ing1-cc-28-11-mesures",
+    matiereNom: "Mesures Physiques",
+    typeEpreuve: "CC",
+    semestre: "Semestre 1",
     dateIso: "2026-11-28",
     heureDebut: "10:30",
     heureFin: "12:30",
   },
-  // Samedi 05/12/2026
   {
-    id: "ing1-cc-05-12-algebre",
-    matiereNom: "Algèbre linéaire",
-    typeEpreuve: "CC",
-    semestre: "Semestre 1",
-    dateIso: "2026-12-05",
-    heureDebut: "08:00",
-    heureFin: "10:00",
-  },
-  {
-    id: "ing1-cc-05-12-mesures",
-    matiereNom: "Mesures Physiques",
-    typeEpreuve: "CC",
-    semestre: "Semestre 1",
-    dateIso: "2026-12-05",
-    heureDebut: "10:30",
-    heureFin: "12:30",
-  },
-  {
-    id: "ing1-cc-05-12-anglais",
+    id: "ing1-cc-28-11-anglais",
     matiereNom: "Anglais",
     typeEpreuve: "CC",
     semestre: "Semestre 1",
-    dateIso: "2026-12-05",
+    dateIso: "2026-11-28",
     heureDebut: "13:00",
     heureFin: "15:00",
   },
-  // Samedi 12/12/2026
+  // Samedi 05/12/2026
   {
-    id: "ing1-cc-12-12-electrocinetique",
+    id: "ing1-cc-05-12-electrocinetique",
     matiereNom: "Électrocinétique",
     typeEpreuve: "CC",
     semestre: "Semestre 1",
-    dateIso: "2026-12-12",
+    dateIso: "2026-12-05",
     heureDebut: "08:00",
     heureFin: "10:00",
   },
   {
-    id: "ing1-cc-12-12-communication",
+    id: "ing1-cc-05-12-communication",
     matiereNom: "Communication",
     typeEpreuve: "CC",
     semestre: "Semestre 1",
-    dateIso: "2026-12-12",
+    dateIso: "2026-12-05",
     heureDebut: "10:30",
     heureFin: "11:30",
+  },
+];
+
+const ING1_SEMESTER1_MILESTONES = [
+  {
+    id: "milestone-social-day",
+    titre: "Journée sociale / Social Day",
+    periode: "Samedi 12 décembre 2026",
+    badge: "Vie étudiante",
+    badgeClass:
+      "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30",
+  },
+  {
+    id: "milestone-noel",
+    titre: "Congé de Noël",
+    periode: "Du 23 décembre 2026 au 02 janvier 2027",
+    badge: "Congés",
+    badgeClass:
+      "bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-500/30",
+  },
+  {
+    id: "milestone-revision-sn",
+    titre: "Rattrapage & Révision (ING1)",
+    periode: "Du 04 janvier au 09 janvier 2027",
+    badge: "Révisions",
+    badgeClass:
+      "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30",
+  },
+  {
+    id: "milestone-sn",
+    titre: "Examens Session Normale (Final Exams - ING1)",
+    periode: "Du 11 janvier au 17 janvier 2027",
+    badge: "Session Normale",
+    badgeClass:
+      "bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30",
+  },
+  {
+    id: "milestone-rattrapage-sn",
+    titre: "Rattrapage SN (Catch-up Normal Session - ING1)",
+    periode: "Du 01 février au 05 février 2027",
+    badge: "Rattrapage",
+    badgeClass:
+      "bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30",
   },
 ];
 
@@ -208,21 +251,21 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
     return [
       {
         id: "task-1",
-        matiereNom: "Algèbre linéaire",
-        titre: "Refaire les exercices du CC d'Algèbre linéaire",
-        dateCibleIso: "2026-11-25",
+        matiereNom: "Analyse 1",
+        titre: "Réviser les développements limités et suites numériques (CC du 21/11)",
+        dateCibleIso: "2026-11-20",
         terminee: false,
         rappelActif: true,
-        notes: "Insister sur le calcul de déterminants et la réduction d'endomorphismes.",
+        notes: "Revoir la formule de Taylor-Young et les exercices types.",
       },
       {
         id: "task-2",
-        matiereNom: "Analyse 1",
-        titre: "Réviser les développements limités et suites numériques",
+        matiereNom: "Algèbre linéaire",
+        titre: "Refaire les exercices du CC d'Algèbre linéaire (CC du 28/11)",
         dateCibleIso: "2026-11-26",
-        terminee: true,
-        rappelActif: false,
-        notes: "Revoir la formule de Taylor-Young.",
+        terminee: false,
+        rappelActif: true,
+        notes: "Insister sur le calcul de déterminants et la réduction d'endomorphismes.",
       },
     ];
   });
@@ -230,7 +273,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
   // State for new task creation
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskMatiere, setNewTaskMatiere] = useState("Analyse 1");
-  const [newTaskDate, setNewTaskDate] = useState("2026-11-28");
+  const [newTaskDate, setNewTaskDate] = useState("2026-11-21");
   const [newTaskNotes, setNewTaskNotes] = useState("");
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   useEffect(() => {
@@ -855,6 +898,49 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                 </Reveal>
               ))}
             </div>
+          )}
+
+          {/* Key Semester 1 Academic Milestones (from official ISJ schedule) */}
+          {selectedSemestre === "Semestre 1" && (
+            <Reveal delay={0.15}>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
+                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 dark:text-blue-400 shrink-0" />
+                    <h3 className="text-xs sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                      Échéances & Sessions de fin du Semestre 1 (ING1)
+                    </h3>
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+                    2026 – 2027
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {ING1_SEMESTER1_MILESTONES.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between gap-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${item.badgeClass}`}
+                        >
+                          {item.badge}
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                        {item.titre}
+                      </h4>
+                      <p className="text-[11px] sm:text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                        <CalendarIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span>{item.periode}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
           )}
         </div>
 
