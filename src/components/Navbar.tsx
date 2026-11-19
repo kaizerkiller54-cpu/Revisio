@@ -648,88 +648,89 @@ export const Navbar: React.FC<NavbarProps> = ({
         </>
       )}
 
-      {/* BARRE FLOTTANTE SUR MOBILE LORS DU SCROLL */}
-      {isScrolled && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden animate-fadeIn max-w-[95vw]">
-          <div className="bg-slate-900/95 backdrop-blur-md text-white px-2 py-1.5 rounded-full shadow-2xl border border-slate-700/70 flex items-center gap-1 ring-1 ring-black/20">
-            <button
-              onClick={() => handleNavClick("home")}
-              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
-                activeTab === "home"
-                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
-              }`}
-            >
-              <School className="w-3.5 h-3.5 shrink-0 text-blue-300" />
-              <span className="text-[11px] font-bold">Accueil</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("exams")}
-              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
-                activeTab === "exams"
-                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
-              }`}
-            >
-              <Search className="w-3.5 h-3.5 shrink-0 text-blue-300" />
-              <span className="text-[11px] font-bold">Épreuves</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("planning")}
-              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
-                activeTab === "planning"
-                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5 shrink-0 text-blue-300" />
-              <span className="text-[11px] font-bold">Planning</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick("contribute")}
-              className={`px-2.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
-                activeTab === "contribute"
-                  ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
-              }`}
-            >
-              <Upload className="w-3.5 h-3.5 shrink-0 text-blue-300" />
-              <span className="text-[11px] font-bold">Déposer</span>
-            </button>
-
-            <div className="w-px h-5 bg-slate-700/80 mx-0.5 shrink-0" />
-
-            <button
-              onClick={() => {
-                setMobileMenuOpen(!mobileMenuOpen);
-                if (!mobileMenuOpen) {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-              }}
-              className={`p-2 rounded-full shrink-0 transition-all ${
-                mobileMenuOpen
-                  ? "bg-blue-600 text-white ring-1 ring-blue-400"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
-              }`}
-              title="Menu complet"
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 shrink-0 transition-colors"
-              title="Haut de page"
-            >
-              <ChevronUp className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
     </header>
+
+    {/* BARRE FLOTTANTE SUR MOBILE LORS DU SCROLL */}
+    {isScrolled && (
+      <div className="fixed bottom-3 sm:bottom-4 inset-x-0 z-50 lg:hidden flex justify-center px-2 sm:px-4 pointer-events-none animate-fadeIn">
+        <div className="pointer-events-auto w-full max-w-[420px] sm:w-auto sm:max-w-none bg-slate-900/95 backdrop-blur-md text-white p-1.5 sm:px-2.5 sm:py-1.5 rounded-2xl sm:rounded-full shadow-2xl border border-slate-700/70 flex items-center justify-between sm:justify-center gap-0.5 sm:gap-1 ring-1 ring-black/20">
+          <button
+            onClick={() => handleNavClick("home")}
+            className={`flex-1 sm:flex-initial min-w-0 px-1.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === "home"
+                ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
+                : "text-slate-300 hover:text-white hover:bg-slate-800"
+            }`}
+          >
+            <School className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 ${activeTab === "home" ? "text-white" : "text-blue-300"}`} />
+            <span className="text-[10px] sm:text-[11px] font-bold leading-tight truncate max-w-full">Accueil</span>
+          </button>
+
+          <button
+            onClick={() => handleNavClick("exams")}
+            className={`flex-1 sm:flex-initial min-w-0 px-1.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === "exams"
+                ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
+                : "text-slate-300 hover:text-white hover:bg-slate-800"
+            }`}
+          >
+            <Search className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 ${activeTab === "exams" ? "text-white" : "text-blue-300"}`} />
+            <span className="text-[10px] sm:text-[11px] font-bold leading-tight truncate max-w-full">Épreuves</span>
+          </button>
+
+          <button
+            onClick={() => handleNavClick("planning")}
+            className={`flex-1 sm:flex-initial min-w-0 px-1.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === "planning"
+                ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
+                : "text-slate-300 hover:text-white hover:bg-slate-800"
+            }`}
+          >
+            <Calendar className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 ${activeTab === "planning" ? "text-white" : "text-blue-300"}`} />
+            <span className="text-[10px] sm:text-[11px] font-bold leading-tight truncate max-w-full">Planning</span>
+          </button>
+
+          <button
+            onClick={() => handleNavClick("contribute")}
+            className={`flex-1 sm:flex-initial min-w-0 px-1.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === "contribute"
+                ? "bg-blue-600 text-white shadow-md ring-1 ring-blue-400"
+                : "text-slate-300 hover:text-white hover:bg-slate-800"
+            }`}
+          >
+            <Upload className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 ${activeTab === "contribute" ? "text-white" : "text-blue-300"}`} />
+            <span className="text-[10px] sm:text-[11px] font-bold leading-tight truncate max-w-full">Déposer</span>
+          </button>
+
+          <div className="w-px h-6 sm:h-5 bg-slate-700/80 mx-0.5 shrink-0" />
+
+          <button
+            onClick={() => {
+              setMobileMenuOpen(!mobileMenuOpen);
+              if (!mobileMenuOpen) {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            className={`p-2 rounded-xl sm:rounded-full shrink-0 transition-all cursor-pointer ${
+              mobileMenuOpen
+                ? "bg-blue-600 text-white ring-1 ring-blue-400"
+                : "text-slate-300 hover:text-white hover:bg-slate-800"
+            }`}
+            title="Menu complet"
+          >
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="p-2 text-slate-400 hover:text-white rounded-xl sm:rounded-full hover:bg-slate-800 shrink-0 transition-colors cursor-pointer"
+            title="Haut de page"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )}
 
     {/* Modal de confirmation de déconnexion (rendue hors du header en plein écran) */}
     {showLogoutConfirm && (
