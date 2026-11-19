@@ -51,12 +51,12 @@ router.get(
           timestamp: { gte: startDate },
         },
         orderBy: { timestamp: "desc" },
-        take: 1500,
+        take: 10000,
       }).catch(() => []),
       prisma.contribution.findMany({
         where: { dateEnvoi: { gte: startDate } },
         orderBy: { dateEnvoi: "desc" },
-        take: 500,
+        take: 2000,
       }).catch(() => []),
       prisma.user.findMany({
         orderBy: { createdAt: "desc" },

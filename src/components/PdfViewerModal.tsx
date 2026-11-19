@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { DocumentModel } from "../types";
+import { getAuthHeader } from "../lib/api";
 import {
   X,
   Download,
@@ -109,14 +110,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     setNumPages(0);
     setPreviewError(null);
     setIsLoading(true);
-    const token = localStorage.getItem("isj_auth_token");
-
     const previewEndpoint = doc.isContributionPreview
       ? `/api/contributions/${doc.id}/preview`
       : `/api/documents/${doc.id}/preview`;
 
     fetch(previewEndpoint, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: "include",
+      headers: { ...getAuthHeader() },
       signal: controller.signal,
     })
       .then(async (response) => {

@@ -235,13 +235,18 @@ router.get(
   })
 );
 
+// Garde anti-doublon pour éviter qu'un gestionnaire de téléchargement ou des requêtes rapprochées
+// du même utilisateur sur la même épreuve n'incrémentent plusieurs fois le compteur.
+const recentUserDocumentDownloads = new Map<string, number>();
+const DOWNLOAD_COUNT_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
 router.get(
   "/:id/download",
   authenticateJWT,
   downloadRateLimiter,
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
-    const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
+    const doc = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
     const canDownloadHidden = req.user?.role === "SuperAdministrateur" || req.user?.role === "Administrateur";
     if (!doc || ((!doc.visible || doc.statut !== "Publie") && !canDownloadHidden)) {
       throw notFound("Épreuve non trouvée.");
@@ -258,27 +263,61 @@ router.get(
 
     const outBuffer = Buffer.from(await stampPdf(buffer));
 
-    const updated = await prisma.document.update({
-      where: { id: doc.id },
-      data: { telechargementsCount: { increment: 1 } },
-    });
+    const userId = req.user!.id;
+    const dedupKey = `${userId}::${doc.id}`;
+    const nowMs = Date.now();
+    const lastMemoryDownload = recentUserDocumentDownloads.get(dedupKey);
+    let shouldCountDownload =
+      lastMemoryDownload === undefined || nowMs - lastMemoryDownload >= DOWNLOAD_COUNT_COOLDOWN_MS;
 
-    await logUserActivity({
-      userId: req.user!.id,
-      userNom: `${req.user!.prenom} ${req.user!.nom}`,
-      userEmail: req.user!.email,
-      userRole: req.user!.role,
-      actionType: "DOWNLOAD_DOCUMENT",
-      description: `A téléchargé l'épreuve '${doc.titre}' (${doc.matiereId}).`,
-      targetId: doc.id,
-      targetTitle: doc.titre,
-    });
+    if (shouldCountDownload) {
+      // Vérifie également dans la base d'activités si cet utilisateur a déjà téléchargé cette épreuve il y a moins de 5 minutes
+      const recentCutoff = new Date(nowMs - DOWNLOAD_COUNT_COOLDOWN_MS);
+      const existingRecentLog = await prisma.userActivity
+        .findFirst({
+          where: {
+            userId,
+            targetId: doc.id,
+            actionType: "DOWNLOAD_DOCUMENT",
+            timestamp: { gte: recentCutoff },
+          },
+        })
+        .catch(() => null);
+
+      if (existingRecentLog) {
+        shouldCountDownload = false;
+      }
+    }
+
+    let currentDownloadsCount = doc.telechargementsCount || 0;
+
+    if (shouldCountDownload) {
+      recentUserDocumentDownloads.set(dedupKey, nowMs);
+      const updated = await prisma.document.update({
+        where: { id: doc.id },
+        data: { telechargementsCount: { increment: 1 } },
+      });
+      currentDownloadsCount = updated.telechargementsCount;
+
+      const matiereLabel = (doc as any).matiere?.nom || doc.matiereId;
+      await logUserActivity({
+        userId,
+        userNom: `${req.user!.prenom} ${req.user!.nom}`,
+        userEmail: req.user!.email,
+        userRole: req.user!.role,
+        actionType: "DOWNLOAD_DOCUMENT",
+        description: `A téléchargé l'épreuve '${doc.titre}' (${matiereLabel}).`,
+        targetId: doc.id,
+        targetTitle: doc.titre,
+      });
+    }
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", buildAttachmentHeader(safeName));
     res.setHeader("Content-Length", String(outBuffer.length));
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Document-Downloads-Count", String(currentDownloadsCount));
     res.send(outBuffer);
   })
 );

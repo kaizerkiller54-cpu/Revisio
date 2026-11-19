@@ -664,7 +664,9 @@ export async function suggestDocumentsApi(q: string, limit = 6): Promise<SearchS
   return data?.data ?? [];
 }
 
-export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob; filename: string } | null> {
+export async function downloadDocumentFileApi(
+  id: string
+): Promise<{ blob: Blob; filename: string; telechargementsCount?: number } | null> {
   try {
     const res = await fetch(`/api/documents/${id}/download`, {
       credentials: "include",
@@ -675,7 +677,13 @@ export async function downloadDocumentFileApi(id: string): Promise<{ blob: Blob;
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition") ?? "";
     const match = /filename\*=UTF-8''([^;]+)/i.exec(disposition) ?? /filename="?([^";]+)"?/i.exec(disposition);
-    return { blob, filename: match ? decodeURIComponent(match[1]) : "epreuve.pdf" };
+    const countHeader = res.headers.get("X-Document-Downloads-Count");
+    const parsedCount = countHeader !== null ? Number(countHeader) : NaN;
+    return {
+      blob,
+      filename: match ? decodeURIComponent(match[1]) : "epreuve.pdf",
+      telechargementsCount: Number.isFinite(parsedCount) ? parsedCount : undefined,
+    };
   } catch {
     return null;
   }

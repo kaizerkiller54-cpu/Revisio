@@ -60,10 +60,67 @@ function createSupabaseBackedPrisma(): PrismaClient {
   let hasRemoteReceiptsTable: boolean | null = null;
   let documentHasVisibleColumn: boolean | null = null;
 
-  async function fetchTable(model: string): Promise<any[]> {
+  const MODEL_ORDER_COLUMN: Record<string, { column: string; ascending: boolean }> = {
+    user: { column: "createdAt", ascending: false },
+    matiere: { column: "nom", ascending: true },
+    document: { column: "createdAt", ascending: false },
+    contribution: { column: "dateEnvoi", ascending: false },
+    userActivity: { column: "timestamp", ascending: false },
+    userNotification: { column: "createdAt", ascending: false },
+    auditLog: { column: "date", ascending: false },
+  };
+
+  const PAGE_SIZE = 1000;
+  const MAX_FETCH_ROWS = 15000;
+  const CACHE_TTL_MS = 1500;
+  const tableCache = new Map<string, { rows: any[]; expiresAt: number }>();
+  const inFlightFetches = new Map<string, Promise<any[]>>();
+
+  function invalidateModelCache(model: string) {
+    tableCache.delete(model);
+    inFlightFetches.delete(model);
+  }
+
+  async function fetchAllRowsFromTable(
+    tableName: string,
+    orderSpec?: { column: string; ascending: boolean }
+  ): Promise<{ data: any[] | null; error: any }> {
+    const allRows: any[] = [];
+    let offset = 0;
+
+    while (offset < MAX_FETCH_ROWS) {
+      let query = supabaseAdmin.from(tableName).select("*");
+      if (orderSpec) {
+        query = query.order(orderSpec.column, { ascending: orderSpec.ascending });
+      }
+      query = query.range(offset, offset + PAGE_SIZE - 1);
+
+      const { data, error } = await query;
+      if (error) {
+        // Fallback without order if column name differs
+        if (offset === 0 && orderSpec) {
+          const fallback = await supabaseAdmin.from(tableName).select("*").range(0, PAGE_SIZE - 1);
+          return { data: fallback.data, error: fallback.error };
+        }
+        return { data: allRows.length > 0 ? allRows : null, error };
+      }
+
+      const batch = data ?? [];
+      allRows.push(...batch);
+
+      if (batch.length < PAGE_SIZE) {
+        break;
+      }
+      offset += PAGE_SIZE;
+    }
+
+    return { data: allRows, error: null };
+  }
+
+  async function fetchTableUncached(model: string): Promise<any[]> {
     if (model === "notificationReceipt") {
       if (hasRemoteReceiptsTable === false) return memoryReceipts.map((r) => normalizeRow(model, r));
-      const { data, error } = await supabaseAdmin.from("notification_receipts").select("*");
+      const { data, error } = await fetchAllRowsFromTable("notification_receipts");
       if (error) {
         hasRemoteReceiptsTable = false;
         return memoryReceipts.map((r) => normalizeRow(model, r));
@@ -74,7 +131,7 @@ function createSupabaseBackedPrisma(): PrismaClient {
 
     const table = MODEL_TO_TABLE[model];
     if (!table) return [];
-    const { data, error } = await supabaseAdmin.from(table).select("*");
+    const { data, error } = await fetchAllRowsFromTable(table, MODEL_ORDER_COLUMN[model]);
     if (error) {
       console.error(`Erreur Supabase lecture ${table}:`, error.message);
       return [];
@@ -84,6 +141,42 @@ function createSupabaseBackedPrisma(): PrismaClient {
     }
     return (data ?? []).map((r) => normalizeRow(model, r));
   }
+
+  async function fetchTable(model: string): Promise<any[]> {
+    const now = Date.now();
+    const cached = tableCache.get(model);
+    if (cached && cached.expiresAt > now) {
+      return cached.rows;
+    }
+
+    const existingPromise = inFlightFetches.get(model);
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    const fetchPromise = fetchTableUncached(model)
+      .then((rows) => {
+        tableCache.set(model, { rows, expiresAt: Date.now() + CACHE_TTL_MS });
+        inFlightFetches.delete(model);
+        return rows;
+      })
+      .catch((err) => {
+        inFlightFetches.delete(model);
+        throw err;
+      });
+
+    inFlightFetches.set(model, fetchPromise);
+    return fetchPromise;
+  }
+
+  const toComparableValue = (v: any): number | string => {
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === "string") {
+      const parsed = Date.parse(v);
+      if (!Number.isNaN(parsed) && /^\d{4}-\d{2}-\d{2}/.test(v)) return parsed;
+    }
+    return v;
+  };
 
   const matchesCondition = (val: any, cond: any, item: any, key: string, matieresMap: Map<string, any>): boolean => {
     if (cond === undefined) return true;
@@ -108,6 +201,15 @@ function createSupabaseBackedPrisma(): PrismaClient {
       const inMatch = cond.in.includes(val);
       if ("not" in cond) return inMatch && val !== cond.not;
       return inMatch;
+    }
+    if ("gte" in cond || "gt" in cond || "lte" in cond || "lt" in cond) {
+      if (val === null || val === undefined) return false;
+      const actual = toComparableValue(val);
+      if ("gte" in cond && cond.gte !== undefined && actual < toComparableValue(cond.gte)) return false;
+      if ("gt" in cond && cond.gt !== undefined && actual <= toComparableValue(cond.gt)) return false;
+      if ("lte" in cond && cond.lte !== undefined && actual > toComparableValue(cond.lte)) return false;
+      if ("lt" in cond && cond.lt !== undefined && actual >= toComparableValue(cond.lt)) return false;
+      return true;
     }
     if ("not" in cond) {
       return val !== cond.not;
@@ -288,11 +390,13 @@ function createSupabaseBackedPrisma(): PrismaClient {
       }
 
       const { data, error } = await supabaseAdmin.from(table).insert(payload).select("*").single();
+      invalidateModelCache(model);
       if (error) {
         if (model === "document" && /visible/i.test(error.message)) {
           documentHasVisibleColumn = false;
           delete payload.visible;
           const retry = await supabaseAdmin.from(table).insert(payload).select("*").single();
+          invalidateModelCache(model);
           if (!retry.error && retry.data) {
             const [res] = await resolveRelations(model, [normalizeRow(model, { ...retry.data, visible: record.visible })], args?.include);
             return res;
@@ -330,12 +434,14 @@ function createSupabaseBackedPrisma(): PrismaClient {
       }
 
       const { data, error } = await supabaseAdmin.from(table).update(payload).eq("id", current.id).select("*").single();
+      invalidateModelCache(model);
       if (error) {
         if (model === "document" && /visible/i.test(error.message)) {
           documentHasVisibleColumn = false;
           delete payload.visible;
           if (Object.keys(payload).length > 0) {
             await supabaseAdmin.from(table).update(payload).eq("id", current.id);
+            invalidateModelCache(model);
           }
           const [res] = await resolveRelations(model, [normalizeRow(model, { ...current, ...updates })], args?.include);
           return res;
@@ -358,6 +464,7 @@ function createSupabaseBackedPrisma(): PrismaClient {
       const ids = targets.map((t) => t.id).filter(Boolean);
       if (ids.length) {
         await supabaseAdmin.from(table).update(payload).in("id", ids);
+        invalidateModelCache(model);
       }
       return { count: targets.length };
     },
@@ -376,6 +483,7 @@ function createSupabaseBackedPrisma(): PrismaClient {
         }
         const payload = serializeForSupabase(model, { ...args.create, ...args.update });
         const { data } = await supabaseAdmin.from("notification_receipts").upsert(payload).select("*").single();
+        invalidateModelCache(model);
         return normalizeRow(model, data ?? payload);
       }
       const existing = await makeDelegate(model).findUnique({ where: args.where });
@@ -393,6 +501,7 @@ function createSupabaseBackedPrisma(): PrismaClient {
       if (!target) return null;
       const table = MODEL_TO_TABLE[model];
       await supabaseAdmin.from(table).delete().eq("id", target.id);
+      invalidateModelCache(model);
       return target;
     },
     deleteMany: async (args?: any) => {
@@ -406,6 +515,7 @@ function createSupabaseBackedPrisma(): PrismaClient {
       const ids = targets.map((t) => t.id).filter(Boolean);
       if (ids.length) {
         await supabaseAdmin.from(table).delete().in("id", ids);
+        invalidateModelCache(model);
       }
       return { count: targets.length };
     },

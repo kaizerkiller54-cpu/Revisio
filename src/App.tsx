@@ -334,11 +334,30 @@ export default function App() {
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-      // Optimistically increment download count
+      // Met à jour le compteur avec la valeur exacte renvoyée par le serveur
       setDocuments((prev) =>
         prev.map((d) =>
-          d.id === doc.id ? { ...d, telechargementsCount: (d.telechargementsCount || 0) + 1 } : d
+          d.id === doc.id
+            ? {
+                ...d,
+                telechargementsCount:
+                  typeof result.telechargementsCount === "number"
+                    ? result.telechargementsCount
+                    : (d.telechargementsCount || 0) + 1,
+              }
+            : d
         )
+      );
+      setPreviewDocument((prev) =>
+        prev && prev.id === doc.id
+          ? {
+              ...prev,
+              telechargementsCount:
+                typeof result.telechargementsCount === "number"
+                  ? result.telechargementsCount
+                  : (prev.telechargementsCount || 0) + 1,
+            }
+          : prev
       );
 
       setDownloadToast({

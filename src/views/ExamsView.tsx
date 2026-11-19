@@ -104,6 +104,21 @@ export const ExamsView: React.FC<ExamsViewProps> = ({
     };
   }, [debouncedSearch, selectedMatiere, selectedSemestre, selectedType, selectedAnnee, page]);
 
+  // Synchronise en temps réel le nombre de téléchargements affiché sur chaque carte
+  // lorsque l'utilisateur télécharge une épreuve depuis la vue Épreuves ou la modale PDF
+  useEffect(() => {
+    if (!documents.length) return;
+    const countMap = new Map(documents.map((d) => [d.id, d.telechargementsCount]));
+    setResults((prev) =>
+      prev.map((item) => {
+        const updatedCount = countMap.get(item.id);
+        return updatedCount !== undefined && updatedCount !== item.telechargementsCount
+          ? { ...item, telechargementsCount: updatedCount }
+          : item;
+      })
+    );
+  }, [documents]);
+
   const goToPage = (p: number) => {
     setPage(Math.max(1, Math.min(p, Math.max(1, Math.ceil(total / PAGE_SIZE)))));
     window.scrollTo({ top: 0, behavior: "smooth" });
