@@ -239,11 +239,22 @@ export async function findSupabaseUserByEmail(email: string): Promise<{ id: stri
     return found ? { id: found.id, email: found.email } : null;
   }
 
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (error) return null;
-  const users = (data?.users ?? []) as Array<{ id: string; email?: string | null }>;
-  const user = users.find((u) => u.email?.toLowerCase() === normalized);
-  return user ? { id: user.id, email: user.email } : null;
+  let page = 1;
+  const perPage = 200;
+  while (page <= 20) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error) return null;
+    const users = (data?.users ?? []) as Array<{ id: string; email?: string | null }>;
+    const user = users.find((u) => u.email?.toLowerCase() === normalized);
+    if (user) {
+      return { id: user.id, email: user.email };
+    }
+    if (users.length < perPage || !(data as any)?.nextPage) {
+      break;
+    }
+    page += 1;
+  }
+  return null;
 }
 
 export async function createSupabaseUser(
@@ -255,37 +266,74 @@ export async function createSupabaseUser(
 ): Promise<string> {
   const normalized = email.trim().toLowerCase();
   const trimmedPassword = password.trim();
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
 
   if (isMockSupabase) {
     const existing = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
     if (existing) {
-      if (reuseExistingAuthUser) return existing.id;
-      throw new AppError(409, "Cette adresse e-mail est déjà liée à un compte d'authentification.");
-    }
-    const id = customId || randomUUID();
-    mockAuthUsers.set(id, { id, email: normalized, password: trimmedPassword, phone: phone || null });
-    return id;
-  }
-
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    id: customId || undefined,
-    email: normalized,
-    password: trimmedPassword,
-    phone: phone || undefined,
-    phone_confirm: !!phone,
-    email_confirm: true,
-  });
-  if (error) {
-    if (/already (been )?registered/i.test(error.message)) {
       if (reuseExistingAuthUser) {
-        const existing = await findSupabaseUserByEmail(normalized);
-        if (existing) return existing.id;
+        existing.password = trimmedPassword;
+        if (normalizedPhone) existing.phone = normalizedPhone;
+        return existing.id;
       }
       throw new AppError(409, "Cette adresse e-mail est déjà liée à un compte d'authentification.");
     }
+    const id = customId || randomUUID();
+    mockAuthUsers.set(id, { id, email: normalized, password: trimmedPassword, phone: normalizedPhone || null });
+    return id;
+  }
+
+  let { data, error } = await supabaseAdmin.auth.admin.createUser({
+    id: customId || undefined,
+    email: normalized,
+    password: trimmedPassword,
+    phone: normalizedPhone || undefined,
+    phone_confirm: !!normalizedPhone,
+    email_confirm: true,
+    user_metadata: normalizedPhone ? { telephone: normalizedPhone } : undefined,
+  });
+
+  // Si le numéro de téléphone est déjà rattaché à un autre compte dans Supabase Auth (contrainte unique auth.users.phone),
+  // on crée le compte Auth avec l'e-mail uniquement et on conserve le numéro de téléphone dans user_metadata et public.users.
+  if (error && normalizedPhone && /phone/i.test(error.message)) {
+    const retryWithoutPhone = await supabaseAdmin.auth.admin.createUser({
+      id: customId || undefined,
+      email: normalized,
+      password: trimmedPassword,
+      email_confirm: true,
+      user_metadata: { telephone: normalizedPhone },
+    });
+    data = retryWithoutPhone.data;
+    error = retryWithoutPhone.error;
+  }
+
+  // Si customId existe déjà dans Supabase Auth sous un autre état, réessayer sans forcer customId
+  if (error && customId && /duplicate key|already exists|id/i.test(error.message) && !/email/i.test(error.message)) {
+    const retryWithoutCustomId = await supabaseAdmin.auth.admin.createUser({
+      email: normalized,
+      password: trimmedPassword,
+      email_confirm: true,
+      user_metadata: normalizedPhone ? { telephone: normalizedPhone } : undefined,
+    });
+    data = retryWithoutCustomId.data;
+    error = retryWithoutCustomId.error;
+  }
+
+  if (error) {
+    if (/already (been )?registered|email.*exists/i.test(error.message) && !/phone/i.test(error.message)) {
+      const existing = await findSupabaseUserByEmail(normalized);
+      if (existing && reuseExistingAuthUser) {
+        await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+          password: trimmedPassword,
+          email_confirm: true,
+        }).catch(() => undefined);
+        return existing.id;
+      }
+      throw new AppError(409, "Cette adresse e-mail est déjà utilisée. Veuillez vous connecter avec votre mot de passe.");
+    }
     throw new AppError(400, `Impossible de créer le compte : ${error.message}`);
   }
-  if (!data.user) throw new AppError(500, "Compte créé mais sans identifiant retourné.");
+  if (!data?.user) throw new AppError(500, "Compte créé mais sans identifiant retourné.");
   return data.user.id;
 }
 
@@ -359,11 +407,22 @@ export async function updateSupabasePhone(userId: string, phone: string | null) 
     if (u) u.phone = phone;
     return;
   }
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-    phone: phone || undefined,
-    phone_confirm: !!phone,
+    phone: normalizedPhone || undefined,
+    phone_confirm: !!normalizedPhone,
   });
-  if (error) throw new AppError(400, `Impossible de modifier le numéro de téléphone : ${error.message}`);
+  if (error) {
+    if (/phone/i.test(error.message)) {
+      const existing = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => null);
+      const currentMeta = existing?.data?.user?.user_metadata || {};
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { ...currentMeta, telephone: normalizedPhone || null },
+      }).catch(() => undefined);
+      return;
+    }
+    throw new AppError(400, `Impossible de modifier le numéro de téléphone : ${error.message}`);
+  }
 }
 
 export async function deleteSupabaseUser(userId: string) {

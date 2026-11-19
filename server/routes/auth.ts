@@ -11,6 +11,7 @@ import { authRateLimiter, refreshRateLimiter } from "../middlewares/rateLimit";
 import { logUserActivity } from "../services/activity.service";
 import {
   createSupabaseUser,
+  deleteSupabaseUser,
   findSupabaseUserByEmail,
   normalizePhoneNumber,
   refreshSupabaseSession,
@@ -18,6 +19,7 @@ import {
   requestPasswordResetSmsCode,
   revokeSupabaseSession,
   signInSupabase,
+  updateSupabasePassword,
   verifyAccessToken,
   verifyPasswordResetCodeOnly,
   verifyResetCodeAndUpdatePassword,
@@ -46,17 +48,23 @@ function masterKeyMatches(candidate: string | undefined, expected: string | null
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+const optionalCameroonPhoneSchema = z.preprocess((val) => {
+  if (typeof val !== "string") return undefined;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === "+237") return undefined;
+  return normalizePhoneNumber(trimmed);
+}, z.string().regex(/^\+237[0-9]{9}$/, "Numéro de téléphone invalide : saisissez les 9 chiffres après +237 (ex : 655123456).").optional());
+
 const registerSchema = z.object({
-  nom: z.string().trim().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
-  prenom: z.string().trim().min(2, "Le prénom est requis.").max(80, "Le prénom est trop long."),
+  nom: z.string().trim().min(1, "Veuillez renseigner votre nom.").max(80, "Le nom est trop long."),
+  prenom: z.string().trim().min(1, "Veuillez renseigner votre prénom.").max(80, "Le prénom est trop long."),
   email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
-  telephone: z.string().trim().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional(),
+  telephone: optionalCameroonPhoneSchema,
   motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
-    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
-    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
-    .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial."),
+    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir au moins une lettre.")
+    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre."),
   // Public registration can never assign privileged roles.
-  role: z.literal("Etudiant").optional(),
+  role: z.string().optional(),
   deviceId: z.string().max(128).optional(),
   rememberMe: z.boolean().optional(),
   masterKey: z.string().max(256).optional(),
@@ -104,9 +112,8 @@ const resetPasswordSchema = z
       .string()
       .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
       .max(128)
-      .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
-      .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
-      .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial."),
+      .regex(/[a-zA-Z]/, "Le mot de passe doit contenir au moins une lettre.")
+      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre."),
   })
   .refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
     message: "Veuillez renseigner votre adresse e-mail ou votre numéro de téléphone.",
@@ -281,8 +288,10 @@ router.post(
           telephone: trimmedTelephone || existing.telephone,
         },
       });
-    } else {
-      authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? undefined);
+    } else if (!existing && existingAuth) {
+      // Un compte Auth existait sans profil dans public.users (ex: inscription précédente interrompue)
+      authId = existingAuth.id;
+      await updateSupabasePassword(authId, motDePasse.trim()).catch(() => undefined);
       user = await prisma.user.create({
         data: {
           id: authId,
@@ -293,9 +302,26 @@ router.post(
           role: "Etudiant",
         },
       });
+    } else {
+      authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? undefined);
+      try {
+        user = await prisma.user.create({
+          data: {
+            id: authId,
+            nom: nom.trim().toUpperCase(),
+            prenom: prenom.trim(),
+            email: trimmedEmail,
+            telephone: trimmedTelephone,
+            role: "Etudiant",
+          },
+        });
+      } catch (dbErr) {
+        await deleteSupabaseUser(authId).catch(() => undefined);
+        throw dbErr;
+      }
     }
 
-    await signInSupabase(trimmedEmail, motDePasse);
+    await signInSupabase(trimmedEmail, motDePasse).catch(() => null);
 
     const deviceSession = await createOrReplaceDeviceSession(req, user.id, {
       deviceId,

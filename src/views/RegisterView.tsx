@@ -85,7 +85,17 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   const hasLetter = /[a-zA-Z]/.test(motDePasse);
   const hasDigit = /[0-9]/.test(motDePasse);
   const hasSpecial = /[^a-zA-Z0-9\s]/.test(motDePasse);
-  const isPasswordValid = hasMinLength && hasLetter && hasDigit && hasSpecial;
+  const isPasswordValid = hasMinLength && hasLetter && hasDigit;
+
+  const extractLocalPhoneDigits = (rawValue: string): string => {
+    let digits = rawValue.replace(/\D/g, "");
+    if (digits.startsWith("00237") && digits.length > 9) {
+      digits = digits.slice(5);
+    } else if (digits.startsWith("237") && digits.length > 9) {
+      digits = digits.slice(3);
+    }
+    return digits.slice(0, 9);
+  };
 
   // Indicatif +237 prédéfini : l'utilisateur ne saisit que ses 9 chiffres
   const telephone = phoneDigits ? `+237${phoneDigits}` : "";
@@ -103,17 +113,29 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!nom.trim()) {
+      setErrorMsg("Veuillez renseigner votre nom.");
+      return;
+    }
+    if (!prenom.trim()) {
+      setErrorMsg("Veuillez renseigner votre prénom.");
+      return;
+    }
+    if (!email.trim()) {
+      setErrorMsg("Veuillez renseigner votre adresse e-mail académique.");
+      return;
+    }
     if (!telephoneIsValid) {
-      setErrorMsg("Numéro incomplet : composez vos 9 chiffres après +237.");
+      setErrorMsg("Numéro de téléphone incomplet : saisissez vos 9 chiffres après +237 (ou laissez ce champ vide).");
       return;
     }
     if (!isPasswordValid) {
       setErrorMsg(
-        "Le mot de passe doit respecter tous les 4 critères de sécurité."
+        "Le mot de passe doit contenir au moins 8 caractères, des lettres et des chiffres."
       );
       return;
     }
-    if (passwordsMismatch) {
+    if (motDePasse !== confirmMotDePasse) {
       setErrorMsg("Les deux mots de passe ne correspondent pas.");
       return;
     }
@@ -494,19 +516,18 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     <input
                       type="tel"
                       value={phoneDigits}
-                      onChange={(e) =>
-                        setPhoneDigits(
-                          e.target.value.replace(/\D/g, "").slice(0, 9)
-                        )
-                      }
+                      onChange={(e) => {
+                        setPhoneDigits(extractLocalPhoneDigits(e.target.value));
+                        if (errorMsg) setErrorMsg(null);
+                      }}
                       placeholder="655123456"
                       inputMode="numeric"
-                      maxLength={9}
+                      maxLength={18}
                       className="w-full px-3 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none text-sm"
                     />
                   </div>
                   <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
-                    Composez uniquement vos 9 chiffres (ex : 655123456).
+                    Composez vos 9 chiffres après +237 (ex : 655123456).
                   </p>
                 </div>
 
@@ -524,8 +545,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                       required
                       minLength={8}
                       value={motDePasse}
-                      onChange={(e) => setMotDePasse(e.target.value)}
-                      placeholder="8 caractères min, chiffres, lettres, symbole"
+                      onChange={(e) => {
+                        setMotDePasse(e.target.value);
+                        if (errorMsg) setErrorMsg(null);
+                      }}
+                      placeholder="8 caractères min, lettres et chiffres"
                       className="w-full h-10 sm:h-11 pl-9 pr-10 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm transition-all"
                     />
                     <button
@@ -593,15 +617,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                         className={`flex items-center gap-1.5 ${
                           hasSpecial
                             ? "text-emerald-600 dark:text-emerald-400 font-semibold"
-                            : "text-rose-500"
+                            : "text-slate-400 dark:text-slate-500"
                         }`}
                       >
-                        {hasSpecial ? (
-                          <Check className="w-3.5 h-3.5 shrink-0" />
-                        ) : (
-                          <X className="w-3.5 h-3.5 shrink-0" />
-                        )}
-                        <span>Caractère spécial</span>
+                        <Check className="w-3.5 h-3.5 shrink-0" />
+                        <span>Symbole (bonus)</span>
                       </div>
                     </div>
                   </div>
@@ -620,7 +640,10 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                       type={showConfirmPassword ? "text" : "password"}
                       required
                       value={confirmMotDePasse}
-                      onChange={(e) => setConfirmMotDePasse(e.target.value)}
+                      onChange={(e) => {
+                        setConfirmMotDePasse(e.target.value);
+                        if (errorMsg) setErrorMsg(null);
+                      }}
                       placeholder="Retapez votre mot de passe"
                       className={`w-full h-10 sm:h-11 pl-9 pr-10 bg-slate-50 dark:bg-slate-800/80 border rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none text-sm transition-all ${
                         passwordsMismatch
@@ -652,7 +675,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 {/* Bouton de validation de l'inscription */}
                 <button
                   type="submit"
-                  disabled={isLoading || !isPasswordValid || passwordsMismatch}
+                  disabled={isLoading}
                   className="w-full h-11 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer mt-2"
                 >
                   {isLoading ? (

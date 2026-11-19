@@ -182,6 +182,9 @@ function createSupabaseBackedPrisma(): PrismaClient {
     if (cond === undefined) return true;
     if (cond === null || typeof cond !== "object" || cond instanceof Date) {
       if (cond instanceof Date && val instanceof Date) return val.getTime() === cond.getTime();
+      if (key === "email" && typeof val === "string" && typeof cond === "string") {
+        return val.trim().toLowerCase() === cond.trim().toLowerCase();
+      }
       return val === cond;
     }
     if ("equals" in cond) {

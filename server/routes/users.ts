@@ -11,6 +11,7 @@ import { validate } from "../middlewares/validate";
 import {
   createSupabaseUser,
   deleteSupabaseUser,
+  normalizePhoneNumber,
   signInSupabase,
   updateSupabaseEmail,
   updateSupabasePassword,
@@ -25,25 +26,32 @@ const router = Router();
 
 const uuidParam = z.object({ id: z.string().uuid("Identifiant invalide.") });
 
+const nullableCameroonPhoneSchema = z.preprocess((val) => {
+  if (val === null) return null;
+  if (typeof val !== "string") return undefined;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === "+237") return null;
+  return normalizePhoneNumber(trimmed);
+}, z.string().regex(/^\+237[0-9]{9}$/, "Numéro de téléphone invalide : saisissez les 9 chiffres après +237 (ex : 655123456).").optional().nullable());
+
 const profileSchema = z.object({
-  nom: z.string().min(2).max(80).optional(),
-  prenom: z.string().min(2).max(80).optional(),
+  nom: z.string().min(1).max(80).optional(),
+  prenom: z.string().min(1).max(80).optional(),
   email: z.string().email().max(200).optional(),
-  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
+  telephone: nullableCameroonPhoneSchema,
   currentMotDePasse: z.string().min(1).max(128).optional(),
   nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
-    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.")
-    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.")
-    .regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caractère spécial.").optional(),
+    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir au moins une lettre.")
+    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre.").optional(),
 });
 
 const createUserSchema = z.object({
-  nom: z.string().min(2).max(80),
-  prenom: z.string().min(2).max(80),
+  nom: z.string().min(1).max(80),
+  prenom: z.string().min(1).max(80),
   email: z.string().email().max(200),
   role: z.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
-  telephone: z.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres après +237)").optional().nullable(),
-  motDePasse: z.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9\s]/).optional(),
+  telephone: nullableCameroonPhoneSchema,
+  motDePasse: z.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).optional(),
 });
 
 const updateRoleSchema = z.object({

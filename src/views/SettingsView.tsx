@@ -70,7 +70,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const hasLetter = /[a-zA-Z]/.test(nouveauMotDePasse);
   const hasDigit = /[0-9]/.test(nouveauMotDePasse);
   const hasSpecial = /[^a-zA-Z0-9]/.test(nouveauMotDePasse);
-  const isNewPasswordValid = !nouveauMotDePasse.trim() || (hasMinLength && hasLetter && hasDigit && hasSpecial);
+  const isNewPasswordValid = !nouveauMotDePasse.trim() || (hasMinLength && hasLetter && hasDigit);
   const requiresReauthentication = !!user && (
     email.trim().toLowerCase() !== user.email.toLowerCase() || !!nouveauMotDePasse.trim()
   );

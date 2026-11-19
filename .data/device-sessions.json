@@ -1,0 +1,56 @@
+{
+  "e654c417-5c48-4881-874c-45637c85ce2f": [
+    {
+      "sessionId": "3d9ce4cd-bbed-4146-aa42-0772ed5452fa",
+      "userId": "e654c417-5c48-4881-874c-45637c85ce2f",
+      "deviceId": "0b357046-cdaa-44a9-937c-22b74b8001fb",
+      "deviceName": "Chrome sur Windows",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+      "ipAddress": "102.245.3.30",
+      "tokenHash": "4be6f4ce7218573fdcadf2bd41a6306f32a64902c2883977322611dac7a81df0",
+      "previousTokenHash": null,
+      "rotatedAt": "2026-11-19T06:32:31.096Z",
+      "createdAt": "2026-11-19T06:32:31.096Z",
+      "lastActiveAt": "2026-11-19T06:32:31.096Z",
+      "expiresAt": "2027-02-17T06:32:31.096Z",
+      "persistent": true,
+      "revokedAt": null
+    }
+  ],
+  "71604342-0a6e-483a-8b4c-0a5ce3d6f3af": [
+    {
+      "sessionId": "15a7450d-ec19-4f6b-8ed8-be9495c18812",
+      "userId": "71604342-0a6e-483a-8b4c-0a5ce3d6f3af",
+      "deviceId": "8c1648b4-9d93-4474-a12a-1fcc6eb8a851",
+      "deviceName": "Navigateur sur Appareil",
+      "userAgent": "node",
+      "ipAddress": "127.0.0.1",
+      "tokenHash": "f56018f3152b35d22d37e835b47d37fd87a5a44a58e3be8261285bfea67cd605",
+      "previousTokenHash": null,
+      "rotatedAt": "2026-11-19T07:29:11.843Z",
+      "createdAt": "2026-11-19T07:29:11.843Z",
+      "lastActiveAt": "2026-11-19T07:29:11.843Z",
+      "expiresAt": "2027-02-17T07:29:11.843Z",
+      "persistent": true,
+      "revokedAt": null
+    }
+  ],
+  "22b8a560-0279-4f14-99de-5f6f5e401aaf": [
+    {
+      "sessionId": "04050367-49f0-4d6e-bb43-6ff5b1045533",
+      "userId": "22b8a560-0279-4f14-99de-5f6f5e401aaf",
+      "deviceId": "a6d09406-2934-4835-8920-3f9de44f33a2",
+      "deviceName": "Navigateur sur Appareil",
+      "userAgent": "node",
+      "ipAddress": "127.0.0.1",
+      "tokenHash": "b38dbe3e5e878681232d4f4b62f29ba8953caa35d8fbce34fcf0fc1c97ed070f",
+      "previousTokenHash": null,
+      "rotatedAt": "2026-11-19T07:45:54.006Z",
+      "createdAt": "2026-11-19T07:45:54.006Z",
+      "lastActiveAt": "2026-11-19T07:45:54.006Z",
+      "expiresAt": "2027-02-17T07:45:54.006Z",
+      "persistent": true,
+      "revokedAt": null
+    }
+  ]
+}

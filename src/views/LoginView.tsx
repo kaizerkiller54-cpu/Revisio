@@ -108,7 +108,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const hasDigit = /[0-9]/.test(newPassword);
   const hasSpecial = /[^a-zA-Z0-9\s]/.test(newPassword);
   const isNewPasswordValid =
-    hasMinLength && hasLetter && hasDigit && hasSpecial;
+    hasMinLength && hasLetter && hasDigit;
   const passwordsMismatch =
     confirmNewPassword !== "" && newPassword !== confirmNewPassword;
 
@@ -1001,12 +1001,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                             hasSpecial ? "text-emerald-600 font-semibold" : "text-slate-400"
                           }`}
                         >
-                          {hasSpecial ? (
-                            <Check className="w-3.5 h-3.5 shrink-0" />
-                          ) : (
-                            <X className="w-3.5 h-3.5 shrink-0" />
-                          )}
-                          <span>Caractère spécial</span>
+                          <Check className="w-3.5 h-3.5 shrink-0" />
+                          <span>Symbole (bonus)</span>
                         </div>
                       </div>
                     </div>
@@ -1037,9 +1033,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
                   <button
                     type="submit"
-                    disabled={
-                      isLoading || !isNewPasswordValid || passwordsMismatch
-                    }
+                    disabled={isLoading}
                     className="w-full h-11 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer text-sm"
                   >
                     {isLoading ? (
