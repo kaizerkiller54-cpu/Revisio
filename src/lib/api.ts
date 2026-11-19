@@ -188,7 +188,27 @@ async function parseJsonResponse<T = any>(
   }
 
   if (!res.ok) {
-    throw new Error(data?.message || `${defaultErrorMessage} (Code HTTP ${res.status})`);
+    let detailedMsg = data?.message;
+    if (data?.details && typeof data.details === "object") {
+      const fieldErrors = data.details.fieldErrors;
+      const formErrors = data.details.formErrors;
+      const firstFieldErr =
+        fieldErrors && typeof fieldErrors === "object"
+          ? Object.values(fieldErrors)
+              .flat()
+              .find((m): m is string => typeof m === "string" && m.length > 0)
+          : undefined;
+      const firstFormErr =
+        Array.isArray(formErrors)
+          ? formErrors.find((m): m is string => typeof m === "string" && m.length > 0)
+          : undefined;
+      if (firstFieldErr) {
+        detailedMsg = firstFieldErr;
+      } else if (firstFormErr && (!detailedMsg || detailedMsg === "Données invalides.")) {
+        detailedMsg = firstFormErr;
+      }
+    }
+    throw new Error(detailedMsg || `${defaultErrorMessage} (Code HTTP ${res.status})`);
   }
 
   if (data === null || data === undefined) {
@@ -205,6 +225,12 @@ export async function loginApi(
   rememberMe = true
 ) {
   const deviceId = getOrCreateDeviceId();
+  const payload: Record<string, any> = {
+    email: email.trim().toLowerCase(),
+    motDePasse,
+  };
+  if (masterKey) payload.masterKey = masterKey;
+
   const res = await fetch("/api/auth/login", {
     method: "POST",
     credentials: "include",
@@ -212,13 +238,7 @@ export async function loginApi(
       "Content-Type": "application/json",
       "X-Device-Id": deviceId,
     },
-    body: JSON.stringify({
-      email: email.trim().toLowerCase(),
-      motDePasse,
-      masterKey,
-      deviceId,
-      rememberMe,
-    }),
+    body: JSON.stringify(payload),
   });
   const data = await parseJsonResponse<{
     token: string;
@@ -296,11 +316,22 @@ export async function registerApi(
   email: string,
   motDePasse: string,
   role: string,
-  masterKey?: string,
+  _masterKey?: string,
   telephone?: string,
   rememberMe = true
 ) {
   const deviceId = getOrCreateDeviceId();
+  const payload: Record<string, any> = {
+    nom: nom.trim(),
+    prenom: prenom.trim(),
+    email: email.trim().toLowerCase(),
+    motDePasse,
+    role: "Etudiant",
+  };
+  if (telephone && telephone.trim()) {
+    payload.telephone = telephone.trim();
+  }
+
   const res = await fetch("/api/auth/register", {
     method: "POST",
     credentials: "include",
@@ -308,17 +339,7 @@ export async function registerApi(
       "Content-Type": "application/json",
       "X-Device-Id": deviceId,
     },
-    body: JSON.stringify({
-      nom,
-      prenom,
-      email,
-      motDePasse,
-      role,
-      masterKey,
-      telephone,
-      deviceId,
-      rememberMe,
-    }),
+    body: JSON.stringify(payload),
   });
   const data = await parseJsonResponse<{
     token: string;

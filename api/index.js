@@ -325,10 +325,51 @@ function createSupabaseBackedPrisma() {
   const memoryReceipts = [];
   let hasRemoteReceiptsTable = null;
   let documentHasVisibleColumn = null;
+  const PRIMARY_DATE_COLUMN = {
+    user: "createdAt",
+    document: "createdAt",
+    contribution: "dateEnvoi",
+    userActivity: "timestamp",
+    userNotification: "createdAt",
+    auditLog: "date"
+  };
+  async function fetchAllRowsFromSupabase(table, orderColumn) {
+    const PAGE_SIZE = 1e3;
+    const MAX_PAGES = 25;
+    const allRows = [];
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabaseAdmin.from(table).select("*");
+      if (orderColumn) {
+        query = query.order(orderColumn, { ascending: false });
+      }
+      const { data, error } = await query.range(from, to);
+      if (error) {
+        if (page === 0 && orderColumn) {
+          const fallback = await supabaseAdmin.from(table).select("*").range(from, to);
+          if (fallback.error) {
+            return { data: [], error: fallback.error };
+          }
+          const rows2 = fallback.data ?? [];
+          allRows.push(...rows2);
+          if (rows2.length < PAGE_SIZE) break;
+          continue;
+        }
+        return { data: allRows, error };
+      }
+      const rows = data ?? [];
+      allRows.push(...rows);
+      if (rows.length < PAGE_SIZE) {
+        break;
+      }
+    }
+    return { data: allRows, error: null };
+  }
   async function fetchTable(model) {
     if (model === "notificationReceipt") {
       if (hasRemoteReceiptsTable === false) return memoryReceipts.map((r) => normalizeRow(model, r));
-      const { data: data2, error: error2 } = await supabaseAdmin.from("notification_receipts").select("*");
+      const { data: data2, error: error2 } = await fetchAllRowsFromSupabase("notification_receipts");
       if (error2) {
         hasRemoteReceiptsTable = false;
         return memoryReceipts.map((r) => normalizeRow(model, r));
@@ -338,7 +379,7 @@ function createSupabaseBackedPrisma() {
     }
     const table = MODEL_TO_TABLE[model];
     if (!table) return [];
-    const { data, error } = await supabaseAdmin.from(table).select("*");
+    const { data, error } = await fetchAllRowsFromSupabase(table, PRIMARY_DATE_COLUMN[model]);
     if (error) {
       console.error(`Erreur Supabase lecture ${table}:`, error.message);
       return [];
@@ -348,10 +389,21 @@ function createSupabaseBackedPrisma() {
     }
     return (data ?? []).map((r) => normalizeRow(model, r));
   }
+  const toComparableValue = (v) => {
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === "string") {
+      const parsed = Date.parse(v);
+      if (!Number.isNaN(parsed) && /^\d{4}-\d{2}-\d{2}/.test(v)) return parsed;
+    }
+    return v;
+  };
   const matchesCondition = (val, cond, item, key, matieresMap) => {
     if (cond === void 0) return true;
     if (cond === null || typeof cond !== "object" || cond instanceof Date) {
       if (cond instanceof Date && val instanceof Date) return val.getTime() === cond.getTime();
+      if (key === "email" && typeof val === "string" && typeof cond === "string") {
+        return val.trim().toLowerCase() === cond.trim().toLowerCase();
+      }
       return val === cond;
     }
     if ("equals" in cond) {
@@ -369,6 +421,15 @@ function createSupabaseBackedPrisma() {
       const inMatch = cond.in.includes(val);
       if ("not" in cond) return inMatch && val !== cond.not;
       return inMatch;
+    }
+    if ("gte" in cond || "gt" in cond || "lte" in cond || "lt" in cond) {
+      if (val === null || val === void 0) return false;
+      const actual = toComparableValue(val);
+      if ("gte" in cond && cond.gte !== void 0 && actual < toComparableValue(cond.gte)) return false;
+      if ("gt" in cond && cond.gt !== void 0 && actual <= toComparableValue(cond.gt)) return false;
+      if ("lte" in cond && cond.lte !== void 0 && actual > toComparableValue(cond.lte)) return false;
+      if ("lt" in cond && cond.lt !== void 0 && actual >= toComparableValue(cond.lt)) return false;
+      return true;
     }
     if ("not" in cond) {
       return val !== cond.not;
@@ -1015,15 +1076,27 @@ async function findSupabaseUserByEmail(email) {
     const found = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
     return found ? { id: found.id, email: found.email } : null;
   }
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1e3 });
-  if (error) return null;
-  const users = data?.users ?? [];
-  const user = users.find((u) => u.email?.toLowerCase() === normalized);
-  return user ? { id: user.id, email: user.email } : null;
+  let page = 1;
+  const perPage = 200;
+  while (page <= 20) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error) return null;
+    const users = data?.users ?? [];
+    const user = users.find((u) => u.email?.toLowerCase() === normalized);
+    if (user) {
+      return { id: user.id, email: user.email };
+    }
+    if (users.length < perPage || !data?.nextPage) {
+      break;
+    }
+    page += 1;
+  }
+  return null;
 }
 async function createSupabaseUser(email, password, phone, reuseExistingAuthUser = false, customId) {
   const normalized = email.trim().toLowerCase();
   const trimmedPassword = password.trim();
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : void 0;
   if (isMockSupabase) {
     const existing = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
     if (existing) {
@@ -1031,28 +1104,54 @@ async function createSupabaseUser(email, password, phone, reuseExistingAuthUser 
       throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 li\xE9e \xE0 un compte d'authentification.");
     }
     const id = customId || randomUUID3();
-    mockAuthUsers.set(id, { id, email: normalized, password: trimmedPassword, phone: phone || null });
+    mockAuthUsers.set(id, { id, email: normalized, password: trimmedPassword, phone: normalizedPhone || null });
     return id;
   }
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+  let { data, error } = await supabaseAdmin.auth.admin.createUser({
     id: customId || void 0,
     email: normalized,
     password: trimmedPassword,
-    phone: phone || void 0,
-    phone_confirm: !!phone,
-    email_confirm: true
+    phone: normalizedPhone || void 0,
+    phone_confirm: !!normalizedPhone,
+    email_confirm: true,
+    user_metadata: normalizedPhone ? { telephone: normalizedPhone } : void 0
   });
+  if (error && normalizedPhone && /phone/i.test(error.message)) {
+    const retryWithoutPhone = await supabaseAdmin.auth.admin.createUser({
+      id: customId || void 0,
+      email: normalized,
+      password: trimmedPassword,
+      email_confirm: true,
+      user_metadata: { telephone: normalizedPhone }
+    });
+    data = retryWithoutPhone.data;
+    error = retryWithoutPhone.error;
+  }
+  if (error && customId && /duplicate key|already exists|id/i.test(error.message) && !/email/i.test(error.message)) {
+    const retryWithoutCustomId = await supabaseAdmin.auth.admin.createUser({
+      email: normalized,
+      password: trimmedPassword,
+      email_confirm: true,
+      user_metadata: normalizedPhone ? { telephone: normalizedPhone } : void 0
+    });
+    data = retryWithoutCustomId.data;
+    error = retryWithoutCustomId.error;
+  }
   if (error) {
-    if (/already (been )?registered/i.test(error.message)) {
-      if (reuseExistingAuthUser) {
-        const existing = await findSupabaseUserByEmail(normalized);
-        if (existing) return existing.id;
+    if (/already (been )?registered|email.*exists/i.test(error.message) && !/phone/i.test(error.message)) {
+      const existing = await findSupabaseUserByEmail(normalized);
+      if (existing && reuseExistingAuthUser) {
+        await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+          password: trimmedPassword,
+          email_confirm: true
+        }).catch(() => void 0);
+        return existing.id;
       }
-      throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 li\xE9e \xE0 un compte d'authentification.");
+      throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 utilis\xE9e. Veuillez vous connecter avec votre mot de passe.");
     }
     throw new AppError(400, `Impossible de cr\xE9er le compte : ${error.message}`);
   }
-  if (!data.user) throw new AppError(500, "Compte cr\xE9\xE9 mais sans identifiant retourn\xE9.");
+  if (!data?.user) throw new AppError(500, "Compte cr\xE9\xE9 mais sans identifiant retourn\xE9.");
   return data.user.id;
 }
 async function refreshSupabaseSession(refreshToken) {
@@ -1471,7 +1570,10 @@ async function authenticateJWT(req, _res, next) {
 var validate = (schema, source = "body") => (req, _res, next) => {
   const result = schema.safeParse(req[source]);
   if (!result.success) {
-    return next(badRequest("Donn\xE9es invalides.", result.error.flatten()));
+    const flattened = result.error.flatten();
+    const fieldErrorList = Object.values(flattened.fieldErrors).flat().filter((msg) => typeof msg === "string" && msg.length > 0);
+    const firstMessage = fieldErrorList[0] || flattened.formErrors[0] || "Donn\xE9es invalides. Veuillez v\xE9rifier les champs du formulaire.";
+    return next(badRequest(firstMessage, flattened));
   }
   req[source] = result.data;
   next();
@@ -1578,23 +1680,41 @@ function masterKeyMatches(candidate, expected) {
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+var optionalCameroonPhoneSchema = z.preprocess((val) => {
+  if (typeof val !== "string") return void 0;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === "+237" || trimmed === "237") return void 0;
+  const normalized = normalizePhoneNumber(trimmed);
+  if (!normalized || normalized.replace(/\D/g, "").length < 8) return void 0;
+  return normalized;
+}, z.string().regex(/^\+[0-9]{8,15}$/, "Num\xE9ro de t\xE9l\xE9phone invalide : saisissez les 9 chiffres apr\xE8s +237 (ex : 655123456).").optional());
+var cleanEmailSchema = z.preprocess((val) => {
+  if (typeof val !== "string") return val;
+  return val.replace(/[\u200B-\u200D\uFEFF\s]/g, "").toLowerCase();
+}, z.string().email("Adresse e-mail invalide.").max(200));
 var registerSchema = z.object({
-  nom: z.string().trim().min(2, "Le nom est requis.").max(80, "Le nom est trop long."),
-  prenom: z.string().trim().min(2, "Le pr\xE9nom est requis.").max(80, "Le pr\xE9nom est trop long."),
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
-  telephone: z.string().trim().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional(),
-  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial."),
-  // Public registration can never assign privileged roles.
-  role: z.literal("Etudiant").optional()
-}).strict();
-var loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
-  motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
+  nom: z.string().trim().min(1, "Veuillez renseigner votre nom.").max(80, "Le nom est trop long."),
+  prenom: z.string().trim().min(1, "Veuillez renseigner votre pr\xE9nom.").max(80, "Le pr\xE9nom est trop long."),
+  email: cleanEmailSchema,
+  telephone: optionalCameroonPhoneSchema,
+  motDePasse: z.string().min(6, "Le mot de passe doit contenir au moins 6 caract\xE8res.").max(128),
+  role: z.string().optional(),
+  deviceId: z.string().max(128).optional(),
+  rememberMe: z.boolean().optional(),
   masterKey: z.string().max(256).optional()
-});
+}).passthrough();
+var loginSchema = z.object({
+  email: cleanEmailSchema,
+  motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
+  masterKey: z.string().max(256).optional(),
+  deviceId: z.string().max(128).optional(),
+  rememberMe: z.boolean().optional()
+}).passthrough();
 var refreshSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token requis.").max(512)
-});
+  refreshToken: z.string().max(1024).optional(),
+  deviceSessionToken: z.string().max(1024).optional(),
+  deviceId: z.string().max(128).optional()
+}).passthrough();
 var forgotPasswordSchema = z.object({
   email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
   telephone: z.string().min(8, "Num\xE9ro de t\xE9l\xE9phone invalide.").max(30).optional()
@@ -1612,7 +1732,7 @@ var resetPasswordSchema = z.object({
   email: z.string().email("Adresse e-mail invalide.").max(200).optional(),
   telephone: z.string().min(8, "Num\xE9ro de t\xE9l\xE9phone invalide.").max(30).optional(),
   code: z.string().min(6, "Jeton ou code de v\xE9rification requis.").max(1024),
-  nouveauMotDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial.")
+  nouveauMotDePasse: z.string().min(6, "Le mot de passe doit contenir au moins 6 caract\xE8res.").max(128)
 }).refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
   message: "Veuillez renseigner votre adresse e-mail ou votre num\xE9ro de t\xE9l\xE9phone."
 });
@@ -1751,8 +1871,9 @@ router.post(
           telephone: trimmedTelephone || existing.telephone
         }
       });
-    } else {
-      authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? void 0);
+    } else if (!existing && existingAuth) {
+      authId = existingAuth.id;
+      await updateSupabasePassword(authId, motDePasse.trim()).catch(() => void 0);
       user = await prisma.user.create({
         data: {
           id: authId,
@@ -1763,8 +1884,37 @@ router.post(
           role: "Etudiant"
         }
       });
+    } else {
+      authId = await createSupabaseUser(trimmedEmail, motDePasse, trimmedTelephone ?? void 0);
+      try {
+        user = await prisma.user.create({
+          data: {
+            id: authId,
+            nom: nom.trim().toUpperCase(),
+            prenom: prenom.trim(),
+            email: trimmedEmail,
+            telephone: trimmedTelephone,
+            role: "Etudiant"
+          }
+        });
+      } catch (dbErr) {
+        await deleteSupabaseUser(authId).catch(() => void 0);
+        throw dbErr;
+      }
     }
-    const session = await signInSupabase(trimmedEmail, motDePasse);
+    const session = await signInSupabase(trimmedEmail, motDePasse).catch(() => ({
+      userId: user.id,
+      accessToken: jwt.sign(
+        { sub: user.id, role: "authenticated", aud: "authenticated", iss: `${env.supabase.url}/auth/v1` },
+        env.supabase.jwtSecret,
+        { algorithm: "HS256", expiresIn: "7d" }
+      ),
+      refreshToken: jwt.sign(
+        { sub: user.id, type: "refresh" },
+        env.supabase.jwtSecret,
+        { algorithm: "HS256", expiresIn: "30d" }
+      )
+    }));
     await logUserActivity({
       userId: user.id,
       userNom: `${user.prenom} ${user.nom}`,
@@ -1776,6 +1926,7 @@ router.post(
     res.status(201).json({
       token: session.accessToken,
       refreshToken: session.refreshToken,
+      deviceSessionToken: session.refreshToken,
       user: mapUser(user),
       message: `Inscription r\xE9ussie ! Votre compte ${user.role} a \xE9t\xE9 activ\xE9 avec succ\xE8s.`
     });

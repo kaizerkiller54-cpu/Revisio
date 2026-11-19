@@ -51,38 +51,43 @@ function masterKeyMatches(candidate: string | undefined, expected: string | null
 const optionalCameroonPhoneSchema = z.preprocess((val) => {
   if (typeof val !== "string") return undefined;
   const trimmed = val.trim();
-  if (!trimmed || trimmed === "+237") return undefined;
-  return normalizePhoneNumber(trimmed);
-}, z.string().regex(/^\+237[0-9]{9}$/, "Numéro de téléphone invalide : saisissez les 9 chiffres après +237 (ex : 655123456).").optional());
+  if (!trimmed || trimmed === "+237" || trimmed === "237") return undefined;
+  const normalized = normalizePhoneNumber(trimmed);
+  if (!normalized || normalized.replace(/\D/g, "").length < 8) return undefined;
+  return normalized;
+}, z.string().regex(/^\+[0-9]{8,15}$/, "Numéro de téléphone invalide : saisissez les 9 chiffres après +237 (ex : 655123456).").optional());
+
+const cleanEmailSchema = z.preprocess((val) => {
+  if (typeof val !== "string") return val;
+  return val.replace(/[\u200B-\u200D\uFEFF\s]/g, "").toLowerCase();
+}, z.string().email("Adresse e-mail invalide.").max(200));
 
 const registerSchema = z.object({
   nom: z.string().trim().min(1, "Veuillez renseigner votre nom.").max(80, "Le nom est trop long."),
   prenom: z.string().trim().min(1, "Veuillez renseigner votre prénom.").max(80, "Le prénom est trop long."),
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
+  email: cleanEmailSchema,
   telephone: optionalCameroonPhoneSchema,
-  motDePasse: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128)
-    .regex(/[a-zA-Z]/, "Le mot de passe doit contenir au moins une lettre.")
-    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre."),
+  motDePasse: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.").max(128),
   // Public registration can never assign privileged roles.
   role: z.string().optional(),
   deviceId: z.string().max(128).optional(),
   rememberMe: z.boolean().optional(),
   masterKey: z.string().max(256).optional(),
-});
+}).passthrough();
 
 const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide.").max(200),
+  email: cleanEmailSchema,
   motDePasse: z.string().min(1, "Le mot de passe est requis.").max(128),
   masterKey: z.string().max(256).optional(),
   deviceId: z.string().max(128).optional(),
   rememberMe: z.boolean().optional(),
-});
+}).passthrough();
 
 const refreshSchema = z.object({
   refreshToken: z.string().max(1024).optional(),
   deviceSessionToken: z.string().max(1024).optional(),
   deviceId: z.string().max(128).optional(),
-});
+}).passthrough();
 
 const forgotPasswordSchema = z
   .object({
@@ -110,10 +115,8 @@ const resetPasswordSchema = z
     code: z.string().min(6, "Jeton ou code de vérification requis.").max(1024),
     nouveauMotDePasse: z
       .string()
-      .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
-      .max(128)
-      .regex(/[a-zA-Z]/, "Le mot de passe doit contenir au moins une lettre.")
-      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre."),
+      .min(6, "Le mot de passe doit contenir au moins 6 caractères.")
+      .max(128),
   })
   .refine((data) => Boolean(data.email?.trim() || data.telephone?.trim()), {
     message: "Veuillez renseigner votre adresse e-mail ou votre numéro de téléphone.",
