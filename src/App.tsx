@@ -189,6 +189,10 @@ export default function App() {
   useEffect(() => {
     if (!user || typeof Notification === "undefined" || Notification.permission !== "granted") return;
     if (!hasStoredSessionCandidate()) return;
+    try {
+      const prefsRaw = localStorage.getItem("revisio_user_preferences_v1");
+      if (prefsRaw && JSON.parse(prefsRaw)?.notificationsEnabled === false) return;
+    } catch {}
     const seenKey = `revisio_seen_publications_${user.id}`;
     let cancelled = false;
 
@@ -567,9 +571,14 @@ export default function App() {
                 onChangeTheme={handleThemeChange}
                 onUpdateUser={(updated) => setUser(updated)}
                 onNavigateToRegister={() => setActiveTab("register")}
+                onNavigateToLogin={() => setActiveTab("login")}
                 onNavigateToFavorites={() => handleNavigate("favorites")}
+                onNavigateToActivityLog={() => handleNavigate("activity-log")}
+                onNavigateToPlanning={() => handleNavigate("planning")}
+                onNavigateToContributions={() => handleNavigate("contribute")}
                 onLogout={handleLogout}
                 favoritesCount={favorites.length}
+                contributionsCount={userContributions.length}
               />
             )}
 

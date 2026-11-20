@@ -218,7 +218,16 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
   matieres,
   onNavigateToExams,
 }) => {
-  const [selectedSemestre, setSelectedSemestre] = useState<"Semestre 1" | "Semestre 2">("Semestre 1");
+  const [selectedSemestre, setSelectedSemestre] = useState<"Semestre 1" | "Semestre 2">(() => {
+    try {
+      const raw = localStorage.getItem("revisio_user_preferences_v1");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.defaultSemestre === "Semestre 2") return "Semestre 2";
+      }
+    } catch {}
+    return "Semestre 1";
+  });
   const [selectedMatiere, setSelectedMatiere] = useState<string>("Toutes");
   const [statusFilter, setStatusFilter] = useState<"upcoming" | "all" | "past">("upcoming");
   // On mobile/tablet (< lg), "split" acts like "calendar" so the user doesn't have to scroll past everything,
