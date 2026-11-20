@@ -428,6 +428,9 @@ export default function App() {
           setActiveTab={handleNavigate}
           onLogout={handleLogout}
           favoritesCount={favorites.length}
+          pendingModerationCount={contributions.filter((c) => c.statut === "En attente").length}
+          currentTheme={theme}
+          onChangeTheme={handleThemeChange}
         />
       )}
 
