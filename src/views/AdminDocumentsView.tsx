@@ -8,6 +8,7 @@ import {
   setDocumentVisibilityApi,
 } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { AdminSubNav } from "../components/AdminSubNav";
 import {
   FileCheck,
   CheckCircle2,
@@ -27,6 +28,8 @@ interface AdminDocumentsViewProps {
   isSuperAdmin: boolean;
   onRefreshData: () => void;
   onPreviewPdf: (doc: DocumentModel) => void;
+  onNavigateToDashboard?: () => void;
+  onNavigateToAudit?: () => void;
 }
 
 export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
@@ -36,6 +39,8 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
   isSuperAdmin,
   onRefreshData,
   onPreviewPdf,
+  onNavigateToDashboard,
+  onNavigateToAudit,
 }) => {
   const [activeTab, setActiveTab] = useState<"pending" | "published" | "hidden">("pending");
   const [selectedContrib, setSelectedContrib] = useState<ContributionModel | null>(null);
@@ -167,54 +172,105 @@ export const AdminDocumentsView: React.FC<AdminDocumentsViewProps> = ({
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center space-x-2">
-            <FileCheck className="w-7 h-7 text-blue-700" />
-            <span>Gestion et Modération</span>
+    <div className="space-y-6 pb-12">
+      {/* Barre de navigation inter-modules Administration */}
+      <AdminSubNav
+        activeModule="admin-documents"
+        isSuperAdmin={isSuperAdmin}
+        pendingCount={pendingList.length}
+        publishedCount={documents.length}
+        onNavigateModule={(mod) => {
+          if (mod === "admin-dashboard" && onNavigateToDashboard) onNavigateToDashboard();
+          if (mod === "super-admin-audit" && onNavigateToAudit) onNavigateToAudit();
+        }}
+        onRefresh={onRefreshData}
+      />
+
+      {/* Header & Soft Segmented Status Switcher */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xs">
+        <div className="space-y-1">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2.5 tracking-tight">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/25 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <FileCheck className="w-5 h-5" />
+            </div>
+            <span>Gestion et Modération des Épreuves</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Validez les épreuves soumises par les étudiants et gérez le fonds documentaire.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Validez les épreuves soumises par les étudiants et administrez le fonds documentaire officiel.
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="grid grid-cols-3 items-stretch gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 w-full sm:w-auto sm:flex sm:items-center sm:space-x-1.5 sm:rounded-full self-stretch sm:self-auto">
+        {/* Soft Segmented Tab Switcher */}
+        <div
+          className={`grid ${
+            isSuperAdmin ? "grid-cols-3" : "grid-cols-2"
+          } items-stretch gap-1 bg-slate-100/90 dark:bg-slate-800/90 p-1.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 w-full lg:w-auto sm:inline-flex sm:items-center self-stretch lg:self-auto`}
+        >
           <button
+            type="button"
             onClick={() => setActiveTab("pending")}
-            className={`min-w-0 px-1.5 sm:px-3 py-2 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 leading-tight ${
+            className={`min-w-0 px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 leading-tight select-none touch-manipulation active:scale-95 cursor-pointer ${
               activeTab === "pending"
-                ? "bg-blue-900 text-white shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-blue-900 dark:bg-blue-600 text-white shadow-2xs"
+                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="whitespace-nowrap">En attente <span className="opacity-80">({pendingList.length})</span></span>
+            <span className="truncate">En attente</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold tabular-nums leading-none shrink-0 ${
+                activeTab === "pending"
+                  ? "bg-amber-400 text-slate-950"
+                  : "bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {pendingList.length}
+            </span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveTab("published")}
-            className={`min-w-0 px-1.5 sm:px-3 py-2 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 leading-tight ${
+            className={`min-w-0 px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 leading-tight select-none touch-manipulation active:scale-95 cursor-pointer ${
               activeTab === "published"
-                ? "bg-blue-900 text-white shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-blue-900 dark:bg-blue-600 text-white shadow-2xs"
+                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="whitespace-nowrap">Publiés <span className="opacity-80">({documents.length})</span></span>
+            <span className="truncate">Publiés</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold tabular-nums leading-none shrink-0 ${
+                activeTab === "published"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {documents.length}
+            </span>
           </button>
+
           {isSuperAdmin && (
             <button
+              type="button"
               onClick={() => setActiveTab("hidden")}
-              className={`min-w-0 px-1.5 sm:px-3 py-2 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 leading-tight ${
+              className={`min-w-0 px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 leading-tight select-none touch-manipulation active:scale-95 cursor-pointer ${
                 activeTab === "hidden"
-                  ? "bg-amber-600 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-amber-600 text-white shadow-2xs"
+                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="whitespace-nowrap">Masquées <span className="opacity-80">({hiddenDocuments.length})</span></span>
+              <span className="truncate">Masquées</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold tabular-nums leading-none shrink-0 ${
+                  activeTab === "hidden"
+                    ? "bg-white/25 text-white"
+                    : "bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+                }`}
+              >
+                {hiddenDocuments.length}
+              </span>
             </button>
           )}
         </div>

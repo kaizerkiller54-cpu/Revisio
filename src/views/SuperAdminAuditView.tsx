@@ -3,6 +3,7 @@ import { User, AuditLog, UserRole, AuditActionType, DocumentModel, ContributionM
 import { getAuditLogsApi, getUsersApi, updateUserRoleApi, createAdminUserApi, deleteUserApi } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { UserDetailModal } from "../components/UserDetailModal";
+import { AdminSubNav } from "../components/AdminSubNav";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -32,6 +33,7 @@ interface SuperAdminAuditViewProps {
   contributions?: ContributionModel[];
   onPreviewDoc?: (doc: DocumentModel) => void;
   onNavigateToModeration?: () => void;
+  onNavigateToDashboard?: () => void;
 }
 
 export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
@@ -41,6 +43,7 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
   contributions = [],
   onPreviewDoc,
   onNavigateToModeration,
+  onNavigateToDashboard,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<"logs" | "users">("logs");
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -273,8 +276,27 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
 
   const adminsList = users.filter((u) => u.role === "Administrateur" || u.role === "SuperAdministrateur");
 
+  const pendingModerationCount = contributions.filter((c) => c.statut === "En attente").length;
+
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Barre de navigation inter-modules Administration */}
+      <AdminSubNav
+        activeModule="super-admin-audit"
+        isSuperAdmin={true}
+        pendingCount={pendingModerationCount}
+        publishedCount={documents.length}
+        isRefreshing={isLoading}
+        onNavigateModule={(mod) => {
+          if (mod === "admin-dashboard" && onNavigateToDashboard) onNavigateToDashboard();
+          if (mod === "admin-documents" && onNavigateToModeration) onNavigateToModeration();
+        }}
+        onRefresh={() => {
+          fetchAuditData();
+          if (onRefreshData) onRefreshData();
+        }}
+      />
+
       {/* Page Header */}
       <div className="bg-gradient-to-r from-sky-800 via-blue-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-64 h-64 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -288,14 +310,14 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
               Journal d'Audit & Traçabilité des Admins
             </h1>
             <p className="text-xs sm:text-sm text-sky-200 max-w-2xl leading-relaxed">
-              Consultez en temps réel l'historique complet des actions effectuées par l'ensemble des administrateurs (plusieurs administrateurs enregistrés). Contrôlez les accès et gérez les privilèges.
+              Consultez en temps réel l'historique complet des actions effectuées par l'ensemble des administrateurs. Contrôlez les accès et gérez les privilèges.
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={handleExportLogs}
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-bold text-white transition-all flex items-center space-x-2 backdrop-blur-sm shadow-sm"
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-bold text-white transition-all flex items-center space-x-2 backdrop-blur-sm shadow-sm active:scale-95 cursor-pointer"
             >
               <Download className="w-4 h-4 text-sky-300" />
               <span>Exporter Journal (JSON)</span>
@@ -306,95 +328,103 @@ export const SuperAdminAuditView: React.FC<SuperAdminAuditViewProps> = ({
 
       {/* Global Stats bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-sky-500/15 border border-sky-100 dark:border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Administrateurs Actifs
             </p>
-            <p className="text-2xl font-black text-slate-900">{adminsList.length}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{adminsList.length}</p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-100 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
             <History className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Actions Tracées dans l'Audit
             </p>
-            <p className="text-2xl font-black text-slate-900">{auditLogs.length}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{auditLogs.length}</p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Approbations Enregistrées
             </p>
-            <p className="text-2xl font-black text-slate-900">
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
               {auditLogs.filter((l) => l.action === "APPROVE_CONTRIBUTION").length}
             </p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-100 dark:border-amber-500/30 text-amber-800 dark:text-amber-400 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Comptes Utilisateurs Totaux
             </p>
-            <p className="text-2xl font-black text-slate-900">{users.length}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{users.length}</p>
           </div>
         </div>
       </div>
 
       {/* Messages */}
       {errorMsg && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-semibold flex items-center space-x-3">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-200 rounded-2xl text-xs font-semibold flex items-center space-x-3">
+          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold flex items-center space-x-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200 rounded-2xl text-xs font-semibold flex items-center space-x-3">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      {/* Main Tabs Navigation */}
-      <div className="flex border-b border-slate-200 space-x-4 overflow-x-auto">
+      {/* Soft Segmented Sub-Tabs Navigation */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-1.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/70">
         <button
+          type="button"
           onClick={() => setActiveSubTab("logs")}
-          className={`pb-3 px-1 font-bold text-sm flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all select-none touch-manipulation active:scale-96 cursor-pointer ${
             activeSubTab === "logs"
-              ? "border-sky-500 text-sky-800 font-extrabold"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "bg-white dark:bg-slate-900 text-blue-900 dark:text-sky-300 shadow-xs font-extrabold"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           <History className="w-4 h-4 shrink-0" />
-          <span>Historique des Actions des Admins ({auditLogs.length})</span>
+          <span className="truncate">Historique des Actions Admins</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 tabular-nums">
+            {auditLogs.length}
+          </span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveSubTab("users")}
-          className={`pb-3 px-1 font-bold text-sm flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all select-none touch-manipulation active:scale-96 cursor-pointer ${
             activeSubTab === "users"
-              ? "border-sky-500 text-sky-800 font-extrabold"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "bg-white dark:bg-slate-900 text-blue-900 dark:text-sky-300 shadow-xs font-extrabold"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           <Users className="w-4 h-4 shrink-0" />
-          <span>Gestion des Administrateurs & Rôles ({users.length})</span>
+          <span className="truncate">Gestion des Comptes & Rôles</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 tabular-nums">
+            {users.length}
+          </span>
         </button>
       </div>
 

@@ -14,6 +14,7 @@ import {
   ContributionActivityEvent,
 } from "../lib/api";
 import { UserDetailModal } from "../components/UserDetailModal";
+import { AdminSubNav } from "../components/AdminSubNav";
 import { Reveal } from "../components/motion";
 import {
   ResponsiveContainer,
@@ -632,6 +633,20 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
   return (
     <div className="space-y-6 pb-14">
+      {/* 0. BARRE DE NAVIGATION INTER-MODULES ADMINISTRATION */}
+      <AdminSubNav
+        activeModule="admin-dashboard"
+        isSuperAdmin={Boolean(onNavigateToAudit)}
+        pendingCount={pendingCount}
+        publishedCount={publishedDocsCount}
+        isRefreshing={isRefreshing}
+        onNavigateModule={(mod) => {
+          if (mod === "admin-documents") onNavigateToModeration();
+          if (mod === "super-admin-audit" && onNavigateToAudit) onNavigateToAudit();
+        }}
+        onRefresh={onRefreshData ? handleRefresh : undefined}
+      />
+
       {/* 1. EN-TÊTE INSTITUTIONNEL & BARRE D'ACTIONS */}
       <Reveal>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xs">

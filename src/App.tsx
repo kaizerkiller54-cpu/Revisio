@@ -547,6 +547,12 @@ export default function App() {
                 isSuperAdmin={user?.role === "SuperAdministrateur"}
                 onRefreshData={() => loadData(true)}
                 onPreviewPdf={(doc) => setPreviewDocument(doc)}
+                onNavigateToDashboard={() => setActiveTab("admin-dashboard")}
+                onNavigateToAudit={
+                  user?.role === "SuperAdministrateur"
+                    ? () => setActiveTab("super-admin-audit")
+                    : undefined
+                }
               />
             )}
 
@@ -558,6 +564,7 @@ export default function App() {
                 contributions={contributions}
                 onPreviewDoc={(doc) => setPreviewDocument(doc)}
                 onNavigateToModeration={() => setActiveTab("admin-documents")}
+                onNavigateToDashboard={() => setActiveTab("admin-dashboard")}
               />
             )}
 
