@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { User } from "../types";
 import { NotificationCenter } from "./NotificationCenter";
 import { AppLogo } from "./AppLogo";
+import { PWAInstallButton } from "./PWAInstallButton";
 import {
   ArrowLeft,
   BookOpen,
@@ -480,6 +481,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Settings className="w-4 h-4 shrink-0" />
                   <span className="hidden 2xl:inline">Paramètres</span>
                 </button>
+
+                <PWAInstallButton variant="navbar" />
 
                 <NotificationCenter
                   currentUser={user}
@@ -1104,8 +1107,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Pinned Bottom Thumb-Zone Bar: Theme Switcher + Sign Out / Auth */}
+            {/* Pinned Bottom Thumb-Zone Bar: PWA Install + Theme Switcher + Sign Out / Auth */}
             <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/90 space-y-2.5 shrink-0">
+              <PWAInstallButton variant="mobile-menu" onClickAfter={() => setMobileMenuOpen(false)} />
+
               {/* Instant 1-Tap Theme Switcher */}
               {onChangeTheme && (
                 <div className="flex items-center justify-between gap-2">

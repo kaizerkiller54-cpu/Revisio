@@ -4,7 +4,7 @@ import express3 from "express";
 // server/routes/auth.ts
 import { Router } from "express";
 import { z } from "zod";
-import { timingSafeEqual } from "crypto";
+import { timingSafeEqual as timingSafeEqual2 } from "crypto";
 
 // server/prisma/client.ts
 import { randomUUID as randomUUID2 } from "crypto";
@@ -154,21 +154,21 @@ if (isMockSupabase) {
   supabaseAdmin.storage.from = ((bucket) => {
     if (bucket === BUCKET) {
       return {
-        upload: async (path5, fileBody) => {
+        upload: async (path6, fileBody) => {
           const buf = Buffer.isBuffer(fileBody) ? fileBody : Buffer.from(fileBody);
-          mockPdfStore.set(path5, buf);
-          return { data: { path: path5 }, error: null };
+          mockPdfStore.set(path6, buf);
+          return { data: { path: path6 }, error: null };
         },
-        download: async (path5) => {
-          let buf = mockPdfStore.get(path5);
+        download: async (path6) => {
+          let buf = mockPdfStore.get(path6);
           if (!buf) {
-            buf = makeSamplePdfBuffer(path5.replace(/\.pdf$/i, ""), [
+            buf = makeSamplePdfBuffer(path6.replace(/\.pdf$/i, ""), [
               "Sujet d'epreuve - Institut Universitaire Saint Jean",
               "Exercice 1 : Questions de cours et applications directes (5 pts)",
               "Exercice 2 : Probleme d'analyse et resolution (10 pts)",
               "Exercice 3 : Synthese et deduction (5 pts)"
             ]);
-            mockPdfStore.set(path5, buf);
+            mockPdfStore.set(path6, buf);
           }
           const blob = new Blob([new Uint8Array(buf)], { type: "application/pdf" });
           return { data: blob, error: null };
@@ -193,8 +193,8 @@ function isSupabaseStorageUrl(url) {
     return false;
   }
 }
-function publicStorageUrl(path5) {
-  return `${env.supabase.url}/storage/v1/object/public/${BUCKET}/${path5}`;
+function publicStorageUrl(path6) {
+  return `${env.supabase.url}/storage/v1/object/public/${BUCKET}/${path6}`;
 }
 function sanitizeFilename(name) {
   const base = name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "epreuve.pdf";
@@ -238,15 +238,15 @@ async function uploadPdfBuffer(buffer, originalName) {
     throw badRequest("Le fichier n'est pas un PDF valide (signature %PDF- absente).");
   }
   await ensureBucket();
-  const path5 = `${randomUUID()}-${sanitizeFilename(originalName)}`;
-  const { error } = await supabaseAdmin.storage.from(BUCKET).upload(path5, buffer, {
+  const path6 = `${randomUUID()}-${sanitizeFilename(originalName)}`;
+  const { error } = await supabaseAdmin.storage.from(BUCKET).upload(path6, buffer, {
     contentType: "application/pdf",
     upsert: true
   });
   if (error) {
     throw new AppError(500, `\xC9chec de l'upload du fichier : ${error.message}`);
   }
-  return publicStorageUrl(path5);
+  return publicStorageUrl(path6);
 }
 async function uploadPdfFromDataUrl(dataUrl, fileName) {
   const match = /^data:application\/pdf;base64,(.+)$/.exec(dataUrl);
@@ -266,9 +266,9 @@ async function resolvePdfUrl(fichierUrl, fichierNom) {
 }
 async function deleteStorageFileByUrl(url) {
   if (!isSupabaseStorageUrl(url)) return;
-  const path5 = url.split(`/storage/v1/object/public/${BUCKET}/`)[1];
-  if (!path5) return;
-  const { error } = await supabaseAdmin.storage.from(BUCKET).remove([path5]);
+  const path6 = url.split(`/storage/v1/object/public/${BUCKET}/`)[1];
+  if (!path6) return;
+  const { error } = await supabaseAdmin.storage.from(BUCKET).remove([path6]);
   if (error && !/not found/i.test(error.message)) {
     console.error("\xC9chec de la suppression du fichier du storage :", error.message);
   }
@@ -325,51 +325,54 @@ function createSupabaseBackedPrisma() {
   const memoryReceipts = [];
   let hasRemoteReceiptsTable = null;
   let documentHasVisibleColumn = null;
-  const PRIMARY_DATE_COLUMN = {
-    user: "createdAt",
-    document: "createdAt",
-    contribution: "dateEnvoi",
-    userActivity: "timestamp",
-    userNotification: "createdAt",
-    auditLog: "date"
+  const MODEL_ORDER_COLUMN = {
+    user: { column: "createdAt", ascending: false },
+    matiere: { column: "nom", ascending: true },
+    document: { column: "createdAt", ascending: false },
+    contribution: { column: "dateEnvoi", ascending: false },
+    userActivity: { column: "timestamp", ascending: false },
+    userNotification: { column: "createdAt", ascending: false },
+    auditLog: { column: "date", ascending: false }
   };
-  async function fetchAllRowsFromSupabase(table, orderColumn) {
-    const PAGE_SIZE = 1e3;
-    const MAX_PAGES = 25;
+  const PAGE_SIZE = 1e3;
+  const MAX_FETCH_ROWS = 15e3;
+  const CACHE_TTL_MS = 1500;
+  const tableCache = /* @__PURE__ */ new Map();
+  const inFlightFetches = /* @__PURE__ */ new Map();
+  function invalidateModelCache(model) {
+    tableCache.delete(model);
+    inFlightFetches.delete(model);
+  }
+  async function fetchAllRowsFromTable(tableName, orderSpec) {
     const allRows = [];
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      let query = supabaseAdmin.from(table).select("*");
-      if (orderColumn) {
-        query = query.order(orderColumn, { ascending: false });
+    let offset = 0;
+    while (offset < MAX_FETCH_ROWS) {
+      let query = supabaseAdmin.from(tableName).select("*");
+      if (orderSpec) {
+        query = query.order(orderSpec.column, { ascending: orderSpec.ascending });
       }
-      const { data, error } = await query.range(from, to);
+      query = query.range(offset, offset + PAGE_SIZE - 1);
+      const { data, error } = await query;
       if (error) {
-        if (page === 0 && orderColumn) {
-          const fallback = await supabaseAdmin.from(table).select("*").range(from, to);
-          if (fallback.error) {
-            return { data: [], error: fallback.error };
-          }
-          const rows2 = fallback.data ?? [];
-          allRows.push(...rows2);
-          if (rows2.length < PAGE_SIZE) break;
-          continue;
+        if (offset === 0 && orderSpec) {
+          const fallback = await supabaseAdmin.from(tableName).select("*").range(0, PAGE_SIZE - 1);
+          return { data: fallback.data, error: fallback.error };
         }
-        return { data: allRows, error };
+        return { data: allRows.length > 0 ? allRows : null, error };
       }
-      const rows = data ?? [];
-      allRows.push(...rows);
-      if (rows.length < PAGE_SIZE) {
+      const batch = data ?? [];
+      allRows.push(...batch);
+      if (batch.length < PAGE_SIZE) {
         break;
       }
+      offset += PAGE_SIZE;
     }
     return { data: allRows, error: null };
   }
-  async function fetchTable(model) {
+  async function fetchTableUncached(model) {
     if (model === "notificationReceipt") {
       if (hasRemoteReceiptsTable === false) return memoryReceipts.map((r) => normalizeRow(model, r));
-      const { data: data2, error: error2 } = await fetchAllRowsFromSupabase("notification_receipts");
+      const { data: data2, error: error2 } = await fetchAllRowsFromTable("notification_receipts");
       if (error2) {
         hasRemoteReceiptsTable = false;
         return memoryReceipts.map((r) => normalizeRow(model, r));
@@ -379,7 +382,7 @@ function createSupabaseBackedPrisma() {
     }
     const table = MODEL_TO_TABLE[model];
     if (!table) return [];
-    const { data, error } = await fetchAllRowsFromSupabase(table, PRIMARY_DATE_COLUMN[model]);
+    const { data, error } = await fetchAllRowsFromTable(table, MODEL_ORDER_COLUMN[model]);
     if (error) {
       console.error(`Erreur Supabase lecture ${table}:`, error.message);
       return [];
@@ -388,6 +391,27 @@ function createSupabaseBackedPrisma() {
       documentHasVisibleColumn = "visible" in data[0];
     }
     return (data ?? []).map((r) => normalizeRow(model, r));
+  }
+  async function fetchTable(model) {
+    const now = Date.now();
+    const cached = tableCache.get(model);
+    if (cached && cached.expiresAt > now) {
+      return cached.rows;
+    }
+    const existingPromise = inFlightFetches.get(model);
+    if (existingPromise) {
+      return existingPromise;
+    }
+    const fetchPromise = fetchTableUncached(model).then((rows) => {
+      tableCache.set(model, { rows, expiresAt: Date.now() + CACHE_TTL_MS });
+      inFlightFetches.delete(model);
+      return rows;
+    }).catch((err) => {
+      inFlightFetches.delete(model);
+      throw err;
+    });
+    inFlightFetches.set(model, fetchPromise);
+    return fetchPromise;
   }
   const toComparableValue = (v) => {
     if (v instanceof Date) return v.getTime();
@@ -602,11 +626,13 @@ function createSupabaseBackedPrisma() {
         delete payload.visible;
       }
       const { data, error } = await supabaseAdmin.from(table).insert(payload).select("*").single();
+      invalidateModelCache(model);
       if (error) {
         if (model === "document" && /visible/i.test(error.message)) {
           documentHasVisibleColumn = false;
           delete payload.visible;
           const retry = await supabaseAdmin.from(table).insert(payload).select("*").single();
+          invalidateModelCache(model);
           if (!retry.error && retry.data) {
             const [res2] = await resolveRelations(model, [normalizeRow(model, { ...retry.data, visible: record.visible })], args?.include);
             return res2;
@@ -641,12 +667,14 @@ function createSupabaseBackedPrisma() {
         delete payload.visible;
       }
       const { data, error } = await supabaseAdmin.from(table).update(payload).eq("id", current.id).select("*").single();
+      invalidateModelCache(model);
       if (error) {
         if (model === "document" && /visible/i.test(error.message)) {
           documentHasVisibleColumn = false;
           delete payload.visible;
           if (Object.keys(payload).length > 0) {
             await supabaseAdmin.from(table).update(payload).eq("id", current.id);
+            invalidateModelCache(model);
           }
           const [res2] = await resolveRelations(model, [normalizeRow(model, { ...current, ...updates })], args?.include);
           return res2;
@@ -668,6 +696,7 @@ function createSupabaseBackedPrisma() {
       const ids = targets.map((t) => t.id).filter(Boolean);
       if (ids.length) {
         await supabaseAdmin.from(table).update(payload).in("id", ids);
+        invalidateModelCache(model);
       }
       return { count: targets.length };
     },
@@ -686,6 +715,7 @@ function createSupabaseBackedPrisma() {
         }
         const payload = serializeForSupabase(model, { ...args.create, ...args.update });
         const { data } = await supabaseAdmin.from("notification_receipts").upsert(payload).select("*").single();
+        invalidateModelCache(model);
         return normalizeRow(model, data ?? payload);
       }
       const existing = await makeDelegate(model).findUnique({ where: args.where });
@@ -703,6 +733,7 @@ function createSupabaseBackedPrisma() {
       if (!target) return null;
       const table = MODEL_TO_TABLE[model];
       await supabaseAdmin.from(table).delete().eq("id", target.id);
+      invalidateModelCache(model);
       return target;
     },
     deleteMany: async (args) => {
@@ -716,6 +747,7 @@ function createSupabaseBackedPrisma() {
       const ids = targets.map((t) => t.id).filter(Boolean);
       if (ids.length) {
         await supabaseAdmin.from(table).delete().in("id", ids);
+        invalidateModelCache(model);
       }
       return { count: targets.length };
     }
@@ -1004,7 +1036,13 @@ async function verifyAccessToken(token) {
       if (!payload2.sub || payload2.role !== "authenticated" || !audiences.includes("authenticated")) {
         throw new Error("Claims de session invalides");
       }
-      return { userId: payload2.sub, role: payload2.role, tokenType: "access" };
+      return {
+        userId: payload2.sub,
+        role: payload2.role,
+        tokenType: "access",
+        sessionId: payload2.sid,
+        deviceId: payload2.did
+      };
     };
     const header = JSON.parse(Buffer.from(token.split(".")[0], "base64url").toString());
     if (header.alg === "HS256") {
@@ -1100,7 +1138,11 @@ async function createSupabaseUser(email, password, phone, reuseExistingAuthUser 
   if (isMockSupabase) {
     const existing = Array.from(mockAuthUsers.values()).find((u) => u.email.toLowerCase() === normalized);
     if (existing) {
-      if (reuseExistingAuthUser) return existing.id;
+      if (reuseExistingAuthUser) {
+        existing.password = trimmedPassword;
+        if (normalizedPhone) existing.phone = normalizedPhone;
+        return existing.id;
+      }
       throw new AppError(409, "Cette adresse e-mail est d\xE9j\xE0 li\xE9e \xE0 un compte d'authentification.");
     }
     const id = customId || randomUUID3();
@@ -1213,11 +1255,22 @@ async function updateSupabasePhone(userId, phone) {
     if (u) u.phone = phone;
     return;
   }
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : void 0;
   const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-    phone: phone || void 0,
-    phone_confirm: !!phone
+    phone: normalizedPhone || void 0,
+    phone_confirm: !!normalizedPhone
   });
-  if (error) throw new AppError(400, `Impossible de modifier le num\xE9ro de t\xE9l\xE9phone : ${error.message}`);
+  if (error) {
+    if (/phone/i.test(error.message)) {
+      const existing = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => null);
+      const currentMeta = existing?.data?.user?.user_metadata || {};
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { ...currentMeta, telephone: normalizedPhone || null }
+      }).catch(() => void 0);
+      return;
+    }
+    throw new AppError(400, `Impossible de modifier le num\xE9ro de t\xE9l\xE9phone : ${error.message}`);
+  }
 }
 async function deleteSupabaseUser(userId) {
   if (isMockSupabase) {
@@ -1539,17 +1592,611 @@ async function verifyResetCodeAndUpdatePassword(email, codeOrResetToken, newPass
   return verified.userId;
 }
 
-// server/middlewares/authenticate.ts
-async function authenticateJWT(req, _res, next) {
+// server/services/session.service.ts
+import { createHash, randomBytes, randomUUID as randomUUID4, timingSafeEqual } from "crypto";
+import fs from "fs";
+import path2 from "path";
+import jwt2 from "jsonwebtoken";
+var PERSISTENT_TTL_MS = 90 * 24 * 60 * 60 * 1e3;
+var EPHEMERAL_TTL_MS = 24 * 60 * 60 * 1e3;
+var ROTATION_INTERVAL_MS = 15 * 60 * 1e3;
+var ROTATION_GRACE_MS = 60 * 1e3;
+var MAX_SESSIONS_PER_USER = 15;
+var COOKIE_SESSION_NAME = "revisio_session";
+var COOKIE_ACCESS_NAME = "revisio_access";
+var COOKIE_DEVICE_NAME = "revisio_device_id";
+var DATA_DIR = path2.join(process.cwd(), ".data");
+var SESSIONS_FILE = path2.join(DATA_DIR, "device-sessions.json");
+var userSessionsCache = /* @__PURE__ */ new Map();
+var hydratedUsers = /* @__PURE__ */ new Set();
+var revokedSessionIds = /* @__PURE__ */ new Set();
+var revokedAccessTokens = /* @__PURE__ */ new Set();
+var graceRotatedTokens = /* @__PURE__ */ new Map();
+function sha256Hex(value) {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+function safeHashEquals(hashA, hashB) {
+  if (!hashA || !hashB) return false;
+  const bufA = Buffer.from(hashA, "utf8");
+  const bufB = Buffer.from(hashB, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+function loadSessionsFromDisk() {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return next(unauthorized());
+    if (!fs.existsSync(SESSIONS_FILE)) return;
+    const raw = fs.readFileSync(SESSIONS_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    for (const [userId, records] of Object.entries(parsed)) {
+      if (!Array.isArray(records)) continue;
+      const map = /* @__PURE__ */ new Map();
+      for (const r of records) {
+        if (r && r.sessionId) {
+          map.set(r.sessionId, r);
+          if (r.revokedAt) {
+            revokedSessionIds.add(r.sessionId);
+          }
+        }
+      }
+      userSessionsCache.set(userId, map);
     }
-    const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyAccessToken(token);
+  } catch {
+  }
+}
+loadSessionsFromDisk();
+function saveSessionsToDisk() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const serialized = {};
+    for (const [userId, sessionMap] of userSessionsCache.entries()) {
+      serialized[userId] = Array.from(sessionMap.values());
+    }
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(serialized, null, 2), "utf8");
+  } catch {
+  }
+}
+async function ensureUserSessionsHydrated(userId) {
+  let map = userSessionsCache.get(userId);
+  if (!map) {
+    map = /* @__PURE__ */ new Map();
+    userSessionsCache.set(userId, map);
+  }
+  if (hydratedUsers.has(userId) || isMockSupabase) {
+    return map;
+  }
+  hydratedUsers.add(userId);
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (!error && data?.user) {
+      const remoteSessions = data.user.user_metadata?.device_sessions;
+      if (Array.isArray(remoteSessions)) {
+        for (const item of remoteSessions) {
+          if (!item || !item.sessionId) continue;
+          const local = map.get(item.sessionId);
+          if (!local) {
+            map.set(item.sessionId, item);
+            if (item.revokedAt) revokedSessionIds.add(item.sessionId);
+          } else {
+            if (item.revokedAt && !local.revokedAt) {
+              local.revokedAt = item.revokedAt;
+              revokedSessionIds.add(item.sessionId);
+            } else if (new Date(item.lastActiveAt).getTime() > new Date(local.lastActiveAt).getTime()) {
+              map.set(item.sessionId, item);
+            }
+          }
+        }
+        saveSessionsToDisk();
+      }
+    }
+  } catch {
+  }
+  return map;
+}
+async function persistUserSessionsToRemote(userId) {
+  saveSessionsToDisk();
+  if (isMockSupabase) return;
+  const map = userSessionsCache.get(userId);
+  if (!map) return;
+  const now = Date.now();
+  const pruned = Array.from(map.values()).filter((s) => {
+    const exp = new Date(s.expiresAt).getTime();
+    if (s.revokedAt) {
+      const rev = new Date(s.revokedAt).getTime();
+      return now - rev < 7 * 24 * 60 * 60 * 1e3;
+    }
+    return exp > now;
+  }).sort((a, b) => new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime()).slice(0, MAX_SESSIONS_PER_USER);
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error || !data?.user) return;
+    const currentMeta = data.user.user_metadata || {};
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+      user_metadata: {
+        ...currentMeta,
+        device_sessions: pruned
+      }
+    });
+  } catch {
+  }
+}
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  const out = {};
+  if (!header) return out;
+  const pairs = header.split(";");
+  for (const pair of pairs) {
+    const idx = pair.indexOf("=");
+    if (idx === -1) continue;
+    const key = pair.slice(0, idx).trim();
+    const val = pair.slice(idx + 1).trim();
+    if (!key) continue;
+    try {
+      out[key] = decodeURIComponent(val);
+    } catch {
+      out[key] = val;
+    }
+  }
+  return out;
+}
+function parseDeviceName(userAgentRaw) {
+  const ua = (userAgentRaw || "").trim();
+  if (!ua) return "Navigateur Web";
+  let browser = "Navigateur";
+  if (/Edg\//i.test(ua)) browser = "Edge";
+  else if (/OPR\/|Opera/i.test(ua)) browser = "Opera";
+  else if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) browser = "Chrome";
+  else if (/Firefox\//i.test(ua)) browser = "Firefox";
+  else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = "Safari";
+  let os3 = "Appareil";
+  if (/iPhone/i.test(ua)) os3 = "iPhone";
+  else if (/iPad/i.test(ua)) os3 = "iPad";
+  else if (/Android/i.test(ua)) os3 = "Android";
+  else if (/Windows/i.test(ua)) os3 = "Windows";
+  else if (/Mac OS X|Macintosh/i.test(ua)) os3 = "macOS";
+  else if (/Linux/i.test(ua)) os3 = "Linux";
+  return `${browser} sur ${os3}`;
+}
+function extractClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.trim()) {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || "127.0.0.1";
+}
+function resolveDeviceId(req, explicitDeviceId) {
+  const cookies = parseCookies(req);
+  const headerDeviceId = typeof req.headers["x-device-id"] === "string" ? req.headers["x-device-id"].trim() : "";
+  const candidate = explicitDeviceId && explicitDeviceId.trim() || headerDeviceId || cookies[COOKIE_DEVICE_NAME] || "";
+  if (candidate && /^[a-zA-Z0-9_-]{8,128}$/.test(candidate)) {
+    return candidate;
+  }
+  return randomUUID4();
+}
+function issueSessionBoundAccessToken(userId, sessionId, deviceId) {
+  const issuer = new URL("/auth/v1", env.supabase.url).toString().replace(/\/$/, "");
+  return jwt2.sign(
+    {
+      sub: userId,
+      role: "authenticated",
+      aud: "authenticated",
+      iss: issuer,
+      sid: sessionId,
+      did: deviceId,
+      jti: randomUUID4()
+    },
+    env.supabase.jwtSecret,
+    { algorithm: "HS256", expiresIn: "2h" }
+  );
+}
+function buildRawDeviceSessionToken(userId, sessionId, secret) {
+  return `${userId}.${sessionId}.${secret}`;
+}
+function parseRawDeviceSessionToken(rawToken) {
+  if (!rawToken || typeof rawToken !== "string") return null;
+  const parts = rawToken.trim().split(".");
+  if (parts.length !== 3) return null;
+  const [userId, sessionId, secret] = parts;
+  if (!userId || !sessionId || !secret || secret.length < 16) return null;
+  return { userId, sessionId, secret };
+}
+function isHttpsOrIframeContext(req) {
+  const proto = req.headers["x-forwarded-proto"];
+  if (req.secure) return true;
+  if (typeof proto === "string" && proto.toLowerCase().includes("https")) return true;
+  const origin = req.headers.origin || req.headers.referer || "";
+  if (origin.startsWith("https://")) return true;
+  return process.env.NODE_ENV === "production";
+}
+function serializeCookie(name, value, options) {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+  parts.push(`Path=${options.path || "/"}`);
+  if (typeof options.maxAgeSeconds === "number") {
+    parts.push(`Max-Age=${Math.floor(options.maxAgeSeconds)}`);
+    const expires = new Date(Date.now() + options.maxAgeSeconds * 1e3).toUTCString();
+    parts.push(`Expires=${expires}`);
+  }
+  if (options.httpOnly !== false) {
+    parts.push("HttpOnly");
+  }
+  if (options.secure) {
+    parts.push("Secure");
+  }
+  if (options.sameSite) {
+    parts.push(`SameSite=${options.sameSite}`);
+  }
+  return parts.join("; ");
+}
+function attachSessionCookiesAndHeaders(req, res, params) {
+  const secure = isHttpsOrIframeContext(req);
+  const sameSite = secure ? "None" : "Lax";
+  const persistent = params.persistent !== false;
+  const ttlSeconds = persistent ? Math.floor(PERSISTENT_TTL_MS / 1e3) : Math.floor(EPHEMERAL_TTL_MS / 1e3);
+  const cookiesToSet = [
+    serializeCookie(COOKIE_SESSION_NAME, params.deviceSessionToken, {
+      maxAgeSeconds: persistent ? ttlSeconds : void 0,
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: "/"
+    }),
+    serializeCookie(COOKIE_ACCESS_NAME, params.accessToken, {
+      maxAgeSeconds: persistent ? ttlSeconds : void 0,
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: "/"
+    }),
+    serializeCookie(COOKIE_DEVICE_NAME, params.deviceId, {
+      maxAgeSeconds: 365 * 24 * 60 * 60,
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: "/"
+    })
+  ];
+  res.setHeader("Set-Cookie", cookiesToSet);
+  res.setHeader("X-Renewed-Access-Token", params.accessToken);
+  res.setHeader("X-Rotated-Device-Session", params.deviceSessionToken);
+  res.setHeader("X-Device-Id", params.deviceId);
+  res.setHeader("X-Session-Id", params.sessionId);
+}
+function clearSessionCookies(req, res) {
+  const secure = isHttpsOrIframeContext(req);
+  const sameSite = secure ? "None" : "Lax";
+  const expiredCookies = [
+    serializeCookie(COOKIE_SESSION_NAME, "", {
+      maxAgeSeconds: 0,
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: "/"
+    }),
+    serializeCookie(COOKIE_ACCESS_NAME, "", {
+      maxAgeSeconds: 0,
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: "/"
+    })
+  ];
+  res.setHeader("Set-Cookie", expiredCookies);
+  res.setHeader("X-Session-Revoked", "true");
+}
+async function createOrReplaceDeviceSession(req, userId, options) {
+  const deviceId = resolveDeviceId(req, options?.deviceId);
+  const persistent = options?.persistent !== false;
+  const userAgent = String(req.headers["user-agent"] || "");
+  const deviceName = parseDeviceName(userAgent);
+  const ipAddress = extractClientIp(req);
+  const sessionMap = await ensureUserSessionsHydrated(userId);
+  for (const [existingSid, existingRecord] of sessionMap.entries()) {
+    if (existingRecord.deviceId === deviceId) {
+      sessionMap.delete(existingSid);
+      revokedSessionIds.add(existingSid);
+    }
+  }
+  const sessionId = randomUUID4();
+  const rawSecret = randomBytes(32).toString("base64url");
+  const tokenHash = sha256Hex(rawSecret);
+  const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+  const ttlMs = persistent ? PERSISTENT_TTL_MS : EPHEMERAL_TTL_MS;
+  const expiresAtIso = new Date(Date.now() + ttlMs).toISOString();
+  const record = {
+    sessionId,
+    userId,
+    deviceId,
+    deviceName,
+    userAgent: userAgent.slice(0, 256),
+    ipAddress,
+    tokenHash,
+    previousTokenHash: null,
+    rotatedAt: nowIso,
+    createdAt: nowIso,
+    lastActiveAt: nowIso,
+    expiresAt: expiresAtIso,
+    persistent,
+    revokedAt: null
+  };
+  sessionMap.set(sessionId, record);
+  if (sessionMap.size > MAX_SESSIONS_PER_USER) {
+    const sorted = Array.from(sessionMap.values()).sort(
+      (a, b) => new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime()
+    );
+    for (const old of sorted.slice(MAX_SESSIONS_PER_USER)) {
+      sessionMap.delete(old.sessionId);
+    }
+  }
+  void persistUserSessionsToRemote(userId);
+  const deviceSessionToken = buildRawDeviceSessionToken(userId, sessionId, rawSecret);
+  const accessToken = issueSessionBoundAccessToken(userId, sessionId, deviceId);
+  return {
+    sessionId,
+    deviceId,
+    deviceName,
+    accessToken,
+    deviceSessionToken,
+    expiresAt: expiresAtIso,
+    persistent
+  };
+}
+async function verifyAndRotateDeviceSessionToken(req, rawDeviceSessionToken, forceRotate = false) {
+  const parsed = parseRawDeviceSessionToken(rawDeviceSessionToken);
+  if (!parsed) return null;
+  const { userId, sessionId, secret } = parsed;
+  if (revokedSessionIds.has(sessionId)) return null;
+  const sessionMap = await ensureUserSessionsHydrated(userId);
+  const record = sessionMap.get(sessionId);
+  if (!record || record.revokedAt) {
+    revokedSessionIds.add(sessionId);
+    return null;
+  }
+  const now = Date.now();
+  if (new Date(record.expiresAt).getTime() <= now) {
+    sessionMap.delete(sessionId);
+    void persistUserSessionsToRemote(userId);
+    return null;
+  }
+  const candidateHash = sha256Hex(secret);
+  const matchesCurrent = safeHashEquals(candidateHash, record.tokenHash);
+  const rotatedAtMs = record.rotatedAt ? new Date(record.rotatedAt).getTime() : 0;
+  const withinGrace = Boolean(record.previousTokenHash) && now - rotatedAtMs <= ROTATION_GRACE_MS && safeHashEquals(candidateHash, record.previousTokenHash);
+  if (!matchesCurrent && !withinGrace) {
+    record.revokedAt = (/* @__PURE__ */ new Date()).toISOString();
+    revokedSessionIds.add(sessionId);
+    void persistUserSessionsToRemote(userId);
+    return null;
+  }
+  if (withinGrace && !matchesCurrent) {
+    const cachedGrace = graceRotatedTokens.get(sessionId);
+    if (cachedGrace && cachedGrace.expiresAt > now) {
+      const accessToken2 = issueSessionBoundAccessToken(userId, sessionId, record.deviceId);
+      return {
+        userId,
+        sessionId,
+        deviceId: record.deviceId,
+        accessToken: accessToken2,
+        deviceSessionToken: cachedGrace.rawToken,
+        rotated: true,
+        persistent: record.persistent
+      };
+    }
+  }
+  const shouldRotate = forceRotate || now - rotatedAtMs >= ROTATION_INTERVAL_MS;
+  const ttlMs = record.persistent ? PERSISTENT_TTL_MS : EPHEMERAL_TTL_MS;
+  record.lastActiveAt = new Date(now).toISOString();
+  record.expiresAt = new Date(now + ttlMs).toISOString();
+  record.ipAddress = extractClientIp(req);
+  let activeRawToken = rawDeviceSessionToken;
+  let rotated = false;
+  if (shouldRotate) {
+    const newSecret = randomBytes(32).toString("base64url");
+    record.previousTokenHash = record.tokenHash;
+    record.tokenHash = sha256Hex(newSecret);
+    record.rotatedAt = new Date(now).toISOString();
+    activeRawToken = buildRawDeviceSessionToken(userId, sessionId, newSecret);
+    graceRotatedTokens.set(sessionId, {
+      rawToken: activeRawToken,
+      expiresAt: now + ROTATION_GRACE_MS
+    });
+    rotated = true;
+  }
+  void persistUserSessionsToRemote(userId);
+  const accessToken = issueSessionBoundAccessToken(userId, sessionId, record.deviceId);
+  return {
+    userId,
+    sessionId,
+    deviceId: record.deviceId,
+    accessToken,
+    deviceSessionToken: activeRawToken,
+    rotated,
+    persistent: record.persistent
+  };
+}
+function extractDeviceSessionTokenFromRequest(req) {
+  const cookies = parseCookies(req);
+  if (cookies[COOKIE_SESSION_NAME]) {
+    return cookies[COOKIE_SESSION_NAME];
+  }
+  const headerToken = req.headers["x-device-session"];
+  if (typeof headerToken === "string" && headerToken.trim()) {
+    return headerToken.trim();
+  }
+  return null;
+}
+function extractAccessTokenFromRequest(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (token) return token;
+  }
+  const cookies = parseCookies(req);
+  if (cookies[COOKIE_ACCESS_NAME]) {
+    return cookies[COOKIE_ACCESS_NAME];
+  }
+  return null;
+}
+async function isSessionActiveOnServer(userId, sessionId, rawAccessToken) {
+  if (rawAccessToken && revokedAccessTokens.has(sha256Hex(rawAccessToken))) {
+    return false;
+  }
+  if (!sessionId) {
+    return true;
+  }
+  if (revokedSessionIds.has(sessionId)) {
+    return false;
+  }
+  const sessionMap = await ensureUserSessionsHydrated(userId);
+  const record = sessionMap.get(sessionId);
+  if (!record) {
+    return false;
+  }
+  if (record.revokedAt) {
+    revokedSessionIds.add(sessionId);
+    return false;
+  }
+  if (new Date(record.expiresAt).getTime() <= Date.now()) {
+    return false;
+  }
+  return true;
+}
+async function revokeCurrentDeviceSession(req, userId, sessionIdFromToken) {
+  const rawAccess = extractAccessTokenFromRequest(req);
+  if (rawAccess) {
+    revokedAccessTokens.add(sha256Hex(rawAccess));
+  }
+  const rawDeviceSession = extractDeviceSessionTokenFromRequest(req);
+  const parsed = parseRawDeviceSessionToken(rawDeviceSession);
+  const targetUserId = userId || parsed?.userId;
+  const targetSessionId = sessionIdFromToken || parsed?.sessionId;
+  const targetDeviceId = typeof req.headers["x-device-id"] === "string" ? req.headers["x-device-id"].trim() : parseCookies(req)[COOKIE_DEVICE_NAME];
+  if (targetSessionId) {
+    revokedSessionIds.add(targetSessionId);
+    graceRotatedTokens.delete(targetSessionId);
+  }
+  if (!targetUserId) return;
+  const sessionMap = await ensureUserSessionsHydrated(targetUserId);
+  const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+  if (targetSessionId && sessionMap.has(targetSessionId)) {
+    const rec = sessionMap.get(targetSessionId);
+    rec.revokedAt = nowIso;
+    revokedSessionIds.add(targetSessionId);
+  } else if (targetDeviceId) {
+    for (const rec of sessionMap.values()) {
+      if (rec.deviceId === targetDeviceId && !rec.revokedAt) {
+        rec.revokedAt = nowIso;
+        revokedSessionIds.add(rec.sessionId);
+      }
+    }
+  }
+  await persistUserSessionsToRemote(targetUserId);
+}
+async function revokeDeviceSessionById(userId, sessionId) {
+  revokedSessionIds.add(sessionId);
+  graceRotatedTokens.delete(sessionId);
+  const sessionMap = await ensureUserSessionsHydrated(userId);
+  const record = sessionMap.get(sessionId);
+  if (!record) return false;
+  record.revokedAt = (/* @__PURE__ */ new Date()).toISOString();
+  await persistUserSessionsToRemote(userId);
+  return true;
+}
+async function revokeAllUserSessions(userId, exceptSessionId) {
+  const sessionMap = await ensureUserSessionsHydrated(userId);
+  const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+  let count = 0;
+  for (const record of sessionMap.values()) {
+    if (exceptSessionId && record.sessionId === exceptSessionId) continue;
+    if (!record.revokedAt) {
+      record.revokedAt = nowIso;
+      revokedSessionIds.add(record.sessionId);
+      graceRotatedTokens.delete(record.sessionId);
+      count += 1;
+    }
+  }
+  await persistUserSessionsToRemote(userId);
+  return count;
+}
+async function listActiveUserDeviceSessions(userId, currentSessionId, currentDeviceId) {
+  const sessionMap = await ensureUserSessionsHydrated(userId);
+  const now = Date.now();
+  const active = [];
+  for (const record of sessionMap.values()) {
+    if (record.revokedAt || revokedSessionIds.has(record.sessionId)) continue;
+    if (new Date(record.expiresAt).getTime() <= now) continue;
+    const isCurrentDevice = Boolean(
+      currentSessionId && record.sessionId === currentSessionId || !currentSessionId && currentDeviceId && record.deviceId === currentDeviceId
+    );
+    active.push({
+      sessionId: record.sessionId,
+      deviceId: record.deviceId,
+      deviceName: record.deviceName,
+      ipAddress: record.ipAddress,
+      createdAt: record.createdAt,
+      lastActiveAt: record.lastActiveAt,
+      expiresAt: record.expiresAt,
+      persistent: record.persistent,
+      isCurrentDevice
+    });
+  }
+  return active.sort((a, b) => {
+    if (a.isCurrentDevice !== b.isCurrentDevice) return a.isCurrentDevice ? -1 : 1;
+    return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
+  });
+}
+
+// server/middlewares/authenticate.ts
+async function authenticateJWT(req, res, next) {
+  try {
+    const rawAccessToken = extractAccessTokenFromRequest(req);
+    const rawDeviceSessionToken = extractDeviceSessionTokenFromRequest(req);
+    let payload = null;
+    if (rawAccessToken) {
+      try {
+        const verified = await verifyAccessToken(rawAccessToken);
+        const isActive = await isSessionActiveOnServer(
+          verified.userId,
+          verified.sessionId,
+          rawAccessToken
+        );
+        if (isActive) {
+          payload = verified;
+        }
+      } catch {
+        payload = null;
+      }
+    }
+    if (!payload && rawDeviceSessionToken) {
+      const rotatedSession = await verifyAndRotateDeviceSessionToken(
+        req,
+        rawDeviceSessionToken,
+        false
+      );
+      if (rotatedSession) {
+        attachSessionCookiesAndHeaders(req, res, {
+          accessToken: rotatedSession.accessToken,
+          deviceSessionToken: rotatedSession.deviceSessionToken,
+          deviceId: rotatedSession.deviceId,
+          sessionId: rotatedSession.sessionId,
+          persistent: rotatedSession.persistent
+        });
+        payload = {
+          userId: rotatedSession.userId,
+          role: "authenticated",
+          tokenType: "access",
+          sessionId: rotatedSession.sessionId,
+          deviceId: rotatedSession.deviceId
+        };
+      }
+    }
+    if (!payload) {
+      clearSessionCookies(req, res);
+      return next(unauthorized("Session expir\xE9e ou non authentifi\xE9e."));
+    }
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user) {
+      clearSessionCookies(req, res);
       return next(unauthorized("Compte introuvable ou supprim\xE9."));
     }
     req.user = {
@@ -1649,8 +2296,8 @@ async function logUserActivity(input) {
 }
 
 // server/config/superadmin.ts
-import path2 from "path";
-import fs from "fs";
+import path3 from "path";
+import fs2 from "fs";
 function tryGetSuperAdminMasterKey() {
   return readSuperAdminMasterKey();
 }
@@ -1658,9 +2305,9 @@ function readSuperAdminMasterKey() {
   const fromEnv = process.env.SUPERADMIN_MASTER_KEY?.trim();
   if (fromEnv) return fromEnv;
   try {
-    const configPath = path2.join(process.cwd(), "superadmin.config.json");
-    if (fs.existsSync(configPath)) {
-      const data = fs.readFileSync(configPath, "utf-8");
+    const configPath = path3.join(process.cwd(), "superadmin.config.json");
+    if (fs2.existsSync(configPath)) {
+      const data = fs2.readFileSync(configPath, "utf-8");
       const parsed = JSON.parse(data);
       if (parsed.superadminMasterKey) {
         return String(parsed.superadminMasterKey).trim();
@@ -1678,7 +2325,7 @@ function masterKeyMatches(candidate, expected) {
   if (!expected || !candidate) return false;
   const a = Buffer.from(candidate.trim());
   const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return a.length === b.length && timingSafeEqual2(a, b);
 }
 var optionalCameroonPhoneSchema = z.preprocess((val) => {
   if (typeof val !== "string") return void 0;
@@ -1698,6 +2345,7 @@ var registerSchema = z.object({
   email: cleanEmailSchema,
   telephone: optionalCameroonPhoneSchema,
   motDePasse: z.string().min(6, "Le mot de passe doit contenir au moins 6 caract\xE8res.").max(128),
+  // Public registration can never assign privileged roles.
   role: z.string().optional(),
   deviceId: z.string().max(128).optional(),
   rememberMe: z.boolean().optional(),
@@ -1845,7 +2493,7 @@ router.post(
   authRateLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { nom, prenom, email, telephone, motDePasse } = req.body;
+    const { nom, prenom, email, telephone, motDePasse, deviceId, rememberMe } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedTelephone = telephone?.trim() || null;
     const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
@@ -1902,31 +2550,33 @@ router.post(
         throw dbErr;
       }
     }
-    const session = await signInSupabase(trimmedEmail, motDePasse).catch(() => ({
-      userId: user.id,
-      accessToken: jwt.sign(
-        { sub: user.id, role: "authenticated", aud: "authenticated", iss: `${env.supabase.url}/auth/v1` },
-        env.supabase.jwtSecret,
-        { algorithm: "HS256", expiresIn: "7d" }
-      ),
-      refreshToken: jwt.sign(
-        { sub: user.id, type: "refresh" },
-        env.supabase.jwtSecret,
-        { algorithm: "HS256", expiresIn: "30d" }
-      )
-    }));
+    await signInSupabase(trimmedEmail, motDePasse).catch(() => null);
+    const deviceSession = await createOrReplaceDeviceSession(req, user.id, {
+      deviceId,
+      persistent: rememberMe !== false
+    });
+    attachSessionCookiesAndHeaders(req, res, {
+      accessToken: deviceSession.accessToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      persistent: deviceSession.persistent
+    });
     await logUserActivity({
       userId: user.id,
       userNom: `${user.prenom} ${user.nom}`,
       userEmail: user.email,
       userRole: user.role,
       actionType: "REGISTER",
-      description: `Cr\xE9ation du compte ${user.role} ${user.prenom} ${user.nom}.`
+      description: `Cr\xE9ation du compte ${user.role} ${user.prenom} ${user.nom} (${deviceSession.deviceName}).`
     });
     res.status(201).json({
-      token: session.accessToken,
-      refreshToken: session.refreshToken,
-      deviceSessionToken: session.refreshToken,
+      token: deviceSession.accessToken,
+      refreshToken: deviceSession.deviceSessionToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      expiresAt: deviceSession.expiresAt,
       user: mapUser(user),
       message: `Inscription r\xE9ussie ! Votre compte ${user.role} a \xE9t\xE9 activ\xE9 avec succ\xE8s.`
     });
@@ -1937,7 +2587,7 @@ router.post(
   authRateLimiter,
   validate(loginSchema),
   asyncHandler(async (req, res) => {
-    const { email, motDePasse, masterKey } = req.body;
+    const { email, motDePasse, masterKey, deviceId, rememberMe } = req.body;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = motDePasse.trim();
     const currentMasterKey = tryGetSuperAdminMasterKey();
@@ -1948,17 +2598,32 @@ router.post(
       ]);
       if (!existingProfile && !existingSuperAdmin) {
         const result = await bootstrapFirstSuperAdmin(trimmedEmail, motDePasse);
+        const deviceSession2 = await createOrReplaceDeviceSession(req, result.user.id, {
+          deviceId,
+          persistent: rememberMe !== false
+        });
+        attachSessionCookiesAndHeaders(req, res, {
+          accessToken: deviceSession2.accessToken,
+          deviceSessionToken: deviceSession2.deviceSessionToken,
+          deviceId: deviceSession2.deviceId,
+          sessionId: deviceSession2.sessionId,
+          persistent: deviceSession2.persistent
+        });
         await logUserActivity({
           userId: result.user.id,
           userNom: `${result.user.prenom} ${result.user.nom}`,
           userEmail: result.user.email,
           userRole: result.user.role,
           actionType: "LOGIN",
-          description: "A initialis\xE9 le premier compte SuperAdministrateur."
+          description: `A initialis\xE9 le premier compte SuperAdministrateur (${deviceSession2.deviceName}).`
         });
         return res.json({
-          token: result.session.accessToken,
-          refreshToken: result.session.refreshToken,
+          token: deviceSession2.accessToken,
+          refreshToken: deviceSession2.deviceSessionToken,
+          deviceSessionToken: deviceSession2.deviceSessionToken,
+          deviceId: deviceSession2.deviceId,
+          sessionId: deviceSession2.sessionId,
+          expiresAt: deviceSession2.expiresAt,
           user: mapUser(result.user),
           message: "Compte SuperAdministrateur initialis\xE9 avec succ\xE8s."
         });
@@ -2016,17 +2681,32 @@ router.post(
         }
       });
     }
+    const deviceSession = await createOrReplaceDeviceSession(req, user.id, {
+      deviceId,
+      persistent: rememberMe !== false
+    });
+    attachSessionCookiesAndHeaders(req, res, {
+      accessToken: deviceSession.accessToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      persistent: deviceSession.persistent
+    });
     await logUserActivity({
       userId: user.id,
       userNom: `${user.prenom} ${user.nom}`,
       userEmail: user.email,
       userRole: user.role,
       actionType: "LOGIN",
-      description: "S'est connect\xE9 \xE0 la plateforme ISJ Revisio."
+      description: `S'est connect\xE9 \xE0 la plateforme ISJ Revisio (${deviceSession.deviceName}).`
     });
     res.json({
-      token: session.accessToken,
-      refreshToken: session.refreshToken,
+      token: deviceSession.accessToken,
+      refreshToken: deviceSession.deviceSessionToken,
+      deviceSessionToken: deviceSession.deviceSessionToken,
+      deviceId: deviceSession.deviceId,
+      sessionId: deviceSession.sessionId,
+      expiresAt: deviceSession.expiresAt,
       user: mapUser(user),
       message: `Bienvenue ${user.prenom} ${user.nom} !`
     });
@@ -2037,36 +2717,100 @@ router.post(
   refreshRateLimiter,
   validate(refreshSchema),
   asyncHandler(async (req, res) => {
-    const session = await refreshSupabaseSession(req.body.refreshToken);
-    const user = await prisma.user.findUnique({ where: { id: session.userId } });
-    if (!user) {
-      throw unauthorized("Compte introuvable.");
+    const candidateToken = req.body?.deviceSessionToken || req.body?.refreshToken || extractDeviceSessionTokenFromRequest(req);
+    if (!candidateToken) {
+      clearSessionCookies(req, res);
+      throw unauthorized("Aucun jeton de session persistant trouv\xE9 sur cet appareil.");
     }
-    res.json({
-      token: session.accessToken,
-      refreshToken: session.refreshToken,
-      user: mapUser(user)
-    });
+    const rotated = await verifyAndRotateDeviceSessionToken(req, candidateToken, true);
+    if (rotated) {
+      const user = await prisma.user.findUnique({ where: { id: rotated.userId } });
+      if (!user) {
+        clearSessionCookies(req, res);
+        throw unauthorized("Compte introuvable.");
+      }
+      attachSessionCookiesAndHeaders(req, res, {
+        accessToken: rotated.accessToken,
+        deviceSessionToken: rotated.deviceSessionToken,
+        deviceId: rotated.deviceId,
+        sessionId: rotated.sessionId,
+        persistent: rotated.persistent
+      });
+      return res.json({
+        token: rotated.accessToken,
+        refreshToken: rotated.deviceSessionToken,
+        deviceSessionToken: rotated.deviceSessionToken,
+        deviceId: rotated.deviceId,
+        sessionId: rotated.sessionId,
+        user: mapUser(user)
+      });
+    }
+    try {
+      const supaSession = await refreshSupabaseSession(candidateToken);
+      const user = await prisma.user.findUnique({ where: { id: supaSession.userId } });
+      if (!user) {
+        clearSessionCookies(req, res);
+        throw unauthorized("Compte introuvable.");
+      }
+      const upgraded = await createOrReplaceDeviceSession(req, user.id, {
+        deviceId: req.body?.deviceId,
+        persistent: true
+      });
+      attachSessionCookiesAndHeaders(req, res, {
+        accessToken: upgraded.accessToken,
+        deviceSessionToken: upgraded.deviceSessionToken,
+        deviceId: upgraded.deviceId,
+        sessionId: upgraded.sessionId,
+        persistent: upgraded.persistent
+      });
+      return res.json({
+        token: upgraded.accessToken,
+        refreshToken: upgraded.deviceSessionToken,
+        deviceSessionToken: upgraded.deviceSessionToken,
+        deviceId: upgraded.deviceId,
+        sessionId: upgraded.sessionId,
+        user: mapUser(user)
+      });
+    } catch {
+      clearSessionCookies(req, res);
+      throw unauthorized("Session expir\xE9e ou r\xE9voqu\xE9e. Veuillez vous reconnecter.");
+    }
   })
 );
 router.post(
   "/logout",
-  authenticateJWT,
   asyncHandler(async (req, res) => {
-    const header = req.headers.authorization ?? "";
-    try {
-      await revokeSupabaseSession(header.replace(/^Bearer\s+/i, ""));
-    } catch {
+    let userId;
+    let sessionId;
+    const rawAccess = extractAccessTokenFromRequest(req);
+    if (rawAccess) {
+      try {
+        const verified = await verifyAccessToken(rawAccess);
+        userId = verified.userId;
+        sessionId = verified.sessionId;
+      } catch {
+      }
+      try {
+        await revokeSupabaseSession(rawAccess);
+      } catch {
+      }
     }
-    await logUserActivity({
-      userId: req.user.id,
-      userNom: `${req.user.prenom} ${req.user.nom}`,
-      userEmail: req.user.email,
-      userRole: req.user.role,
-      actionType: "LOGOUT",
-      description: "S'est d\xE9connect\xE9 de la plateforme ISJ Revisio."
-    });
-    res.json({ message: "D\xE9connexion r\xE9ussie." });
+    await revokeCurrentDeviceSession(req, userId, sessionId);
+    clearSessionCookies(req, res);
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
+      if (user) {
+        await logUserActivity({
+          userId: user.id,
+          userNom: `${user.prenom} ${user.nom}`,
+          userEmail: user.email,
+          userRole: user.role,
+          actionType: "LOGOUT",
+          description: "S'est d\xE9connect\xE9 de la plateforme ISJ Revisio sur cet appareil."
+        }).catch(() => void 0);
+      }
+    }
+    res.json({ message: "D\xE9connexion r\xE9ussie sur cet appareil." });
   })
 );
 router.get(
@@ -2075,9 +2819,90 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
+      clearSessionCookies(req, res);
       throw new AppError(401, "Session expir\xE9e ou invalide.");
     }
-    res.json({ user: mapUser(user) });
+    const existingDeviceSession = extractDeviceSessionTokenFromRequest(req);
+    let activeAccessToken = extractAccessTokenFromRequest(req) || void 0;
+    let activeDeviceSessionToken = existingDeviceSession || void 0;
+    let activeDeviceId = req.tokenPayload?.deviceId || resolveDeviceId(req);
+    let activeSessionId = req.tokenPayload?.sessionId;
+    if (!existingDeviceSession && !req.tokenPayload?.sessionId) {
+      const created = await createOrReplaceDeviceSession(req, user.id, {
+        deviceId: activeDeviceId,
+        persistent: true
+      });
+      attachSessionCookiesAndHeaders(req, res, {
+        accessToken: created.accessToken,
+        deviceSessionToken: created.deviceSessionToken,
+        deviceId: created.deviceId,
+        sessionId: created.sessionId,
+        persistent: created.persistent
+      });
+      activeAccessToken = created.accessToken;
+      activeDeviceSessionToken = created.deviceSessionToken;
+      activeDeviceId = created.deviceId;
+      activeSessionId = created.sessionId;
+    }
+    const renewedAccess = res.getHeader("X-Renewed-Access-Token");
+    const rotatedSession = res.getHeader("X-Rotated-Device-Session");
+    res.json({
+      user: mapUser(user),
+      token: typeof renewedAccess === "string" ? renewedAccess : activeAccessToken,
+      deviceSessionToken: typeof rotatedSession === "string" ? rotatedSession : activeDeviceSessionToken,
+      deviceId: activeDeviceId,
+      sessionId: activeSessionId
+    });
+  })
+);
+router.get(
+  "/sessions",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const currentSessionId = req.tokenPayload?.sessionId;
+    const currentDeviceId = req.tokenPayload?.deviceId || resolveDeviceId(req);
+    const sessions = await listActiveUserDeviceSessions(
+      req.user.id,
+      currentSessionId,
+      currentDeviceId
+    );
+    res.json({ sessions });
+  })
+);
+router.delete(
+  "/sessions/:sessionId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const targetSessionId = String(req.params.sessionId || "").trim();
+    if (!targetSessionId) {
+      throw badRequest("Identifiant de session manquant.");
+    }
+    await revokeDeviceSessionById(req.user.id, targetSessionId);
+    const isCurrent = req.tokenPayload?.sessionId === targetSessionId;
+    if (isCurrent) {
+      clearSessionCookies(req, res);
+    }
+    res.json({
+      revokedSessionId: targetSessionId,
+      revokedCurrentDevice: isCurrent,
+      message: isCurrent ? "Session de cet appareil r\xE9voqu\xE9e." : "L'appareil s\xE9lectionn\xE9 a \xE9t\xE9 d\xE9connect\xE9 \xE0 distance."
+    });
+  })
+);
+router.post(
+  "/logout-all",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const keepCurrent = req.body?.keepCurrentDevice !== false;
+    const currentSessionId = keepCurrent ? req.tokenPayload?.sessionId : void 0;
+    const revokedCount = await revokeAllUserSessions(req.user.id, currentSessionId);
+    if (!keepCurrent) {
+      clearSessionCookies(req, res);
+    }
+    res.json({
+      revokedCount,
+      message: keepCurrent ? `${revokedCount} autre(s) appareil(s) d\xE9connect\xE9(s) avec succ\xE8s.` : "Toutes vos sessions ont \xE9t\xE9 d\xE9connect\xE9es."
+    });
   })
 );
 var bootstrapPasswordSchema = z.string().min(12).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9\s]/);
@@ -2563,13 +3388,15 @@ router2.get(
     res.send(stamped);
   })
 );
+var recentUserDocumentDownloads = /* @__PURE__ */ new Map();
+var DOWNLOAD_COUNT_COOLDOWN_MS = 5 * 60 * 1e3;
 router2.get(
   "/:id/download",
   authenticateJWT,
   downloadRateLimiter,
   validate(uuidParam, "params"),
   asyncHandler(async (req, res) => {
-    const doc = await prisma.document.findUnique({ where: { id: req.params.id } });
+    const doc = await prisma.document.findUnique({ where: { id: req.params.id }, include: { matiere: true } });
     const canDownloadHidden = req.user?.role === "SuperAdministrateur" || req.user?.role === "Administrateur";
     if (!doc || (!doc.visible || doc.statut !== "Publie") && !canDownloadHidden) {
       throw notFound("\xC9preuve non trouv\xE9e.");
@@ -2581,25 +3408,51 @@ router2.get(
       throw notFound("Fichier \xE9preuve introuvable.");
     }
     const outBuffer = Buffer.from(await stampPdf(buffer));
-    const updated = await prisma.document.update({
-      where: { id: doc.id },
-      data: { telechargementsCount: { increment: 1 } }
-    });
-    await logUserActivity({
-      userId: req.user.id,
-      userNom: `${req.user.prenom} ${req.user.nom}`,
-      userEmail: req.user.email,
-      userRole: req.user.role,
-      actionType: "DOWNLOAD_DOCUMENT",
-      description: `A t\xE9l\xE9charg\xE9 l'\xE9preuve '${doc.titre}' (${doc.matiereId}).`,
-      targetId: doc.id,
-      targetTitle: doc.titre
-    });
+    const userId = req.user.id;
+    const dedupKey = `${userId}::${doc.id}`;
+    const nowMs = Date.now();
+    const lastMemoryDownload = recentUserDocumentDownloads.get(dedupKey);
+    let shouldCountDownload = lastMemoryDownload === void 0 || nowMs - lastMemoryDownload >= DOWNLOAD_COUNT_COOLDOWN_MS;
+    if (shouldCountDownload) {
+      const recentCutoff = new Date(nowMs - DOWNLOAD_COUNT_COOLDOWN_MS);
+      const existingRecentLog = await prisma.userActivity.findFirst({
+        where: {
+          userId,
+          targetId: doc.id,
+          actionType: "DOWNLOAD_DOCUMENT",
+          timestamp: { gte: recentCutoff }
+        }
+      }).catch(() => null);
+      if (existingRecentLog) {
+        shouldCountDownload = false;
+      }
+    }
+    let currentDownloadsCount = doc.telechargementsCount || 0;
+    if (shouldCountDownload) {
+      recentUserDocumentDownloads.set(dedupKey, nowMs);
+      const updated = await prisma.document.update({
+        where: { id: doc.id },
+        data: { telechargementsCount: { increment: 1 } }
+      });
+      currentDownloadsCount = updated.telechargementsCount;
+      const matiereLabel = doc.matiere?.nom || doc.matiereId;
+      await logUserActivity({
+        userId,
+        userNom: `${req.user.prenom} ${req.user.nom}`,
+        userEmail: req.user.email,
+        userRole: req.user.role,
+        actionType: "DOWNLOAD_DOCUMENT",
+        description: `A t\xE9l\xE9charg\xE9 l'\xE9preuve '${doc.titre}' (${matiereLabel}).`,
+        targetId: doc.id,
+        targetTitle: doc.titre
+      });
+    }
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", buildAttachmentHeader(safeName));
     res.setHeader("Content-Length", String(outBuffer.length));
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Document-Downloads-Count", String(currentDownloadsCount));
     res.send(outBuffer);
   })
 );
@@ -2788,13 +3641,13 @@ import { z as z3 } from "zod";
 
 // server/config/upload.ts
 import multer from "multer";
-import path3 from "path";
-import fs2 from "fs";
+import path4 from "path";
+import fs3 from "fs";
 import os from "os";
-var uploadsDir = process.env.VERCEL ? path3.join(os.tmpdir(), "uploads") : path3.join(process.cwd(), "uploads");
+var uploadsDir = process.env.VERCEL ? path4.join(os.tmpdir(), "uploads") : path4.join(process.cwd(), "uploads");
 try {
-  if (!fs2.existsSync(uploadsDir)) {
-    fs2.mkdirSync(uploadsDir, { recursive: true });
+  if (!fs3.existsSync(uploadsDir)) {
+    fs3.mkdirSync(uploadsDir, { recursive: true });
   }
 } catch {
 }
@@ -3175,24 +4028,31 @@ var matieres_default = router4;
 // server/routes/users.ts
 import { Router as Router5 } from "express";
 import { z as z5 } from "zod";
-import { randomBytes } from "crypto";
+import { randomBytes as randomBytes2 } from "crypto";
 var router5 = Router5();
 var uuidParam4 = z5.object({ id: z5.string().uuid("Identifiant invalide.") });
+var nullableCameroonPhoneSchema = z5.preprocess((val) => {
+  if (val === null) return null;
+  if (typeof val !== "string") return void 0;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === "+237") return null;
+  return normalizePhoneNumber(trimmed);
+}, z5.string().regex(/^\+237[0-9]{9}$/, "Num\xE9ro de t\xE9l\xE9phone invalide : saisissez les 9 chiffres apr\xE8s +237 (ex : 655123456).").optional().nullable());
 var profileSchema = z5.object({
-  nom: z5.string().min(2).max(80).optional(),
-  prenom: z5.string().min(2).max(80).optional(),
+  nom: z5.string().min(1).max(80).optional(),
+  prenom: z5.string().min(1).max(80).optional(),
   email: z5.string().email().max(200).optional(),
-  telephone: z5.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional().nullable(),
+  telephone: nullableCameroonPhoneSchema,
   currentMotDePasse: z5.string().min(1).max(128).optional(),
-  nouveauMotDePasse: z5.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir un chiffre.").regex(/[^a-zA-Z0-9\s]/, "Le mot de passe doit contenir un caract\xE8re sp\xE9cial.").optional()
+  nouveauMotDePasse: z5.string().min(8, "Le mot de passe doit contenir au moins 8 caract\xE8res.").max(128).regex(/[a-zA-Z]/, "Le mot de passe doit contenir au moins une lettre.").regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre.").optional()
 });
 var createUserSchema = z5.object({
-  nom: z5.string().min(2).max(80),
-  prenom: z5.string().min(2).max(80),
+  nom: z5.string().min(1).max(80),
+  prenom: z5.string().min(1).max(80),
   email: z5.string().email().max(200),
   role: z5.enum(["Etudiant", "Administrateur", "SuperAdministrateur"]).optional(),
-  telephone: z5.string().regex(/^\+237[0-9]{9}$/, "Format invalide : +237XXXXXXXXX (9 chiffres apr\xE8s +237)").optional().nullable(),
-  motDePasse: z5.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9\s]/).optional()
+  telephone: nullableCameroonPhoneSchema,
+  motDePasse: z5.string().min(8).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/).optional()
 });
 var updateRoleSchema = z5.object({
   role: z5.enum(["Etudiant", "Administrateur", "SuperAdministrateur"])
@@ -3404,7 +4264,7 @@ router5.post(
     }
     const assignedRole = role ?? "Administrateur";
     const trimmedTelephone = telephone?.trim() || null;
-    const temporaryPassword = motDePasse?.trim() || `${randomBytes(18).toString("base64url")}aA1!`;
+    const temporaryPassword = motDePasse?.trim() || `${randomBytes2(18).toString("base64url")}aA1!`;
     const authId = await createSupabaseUser(trimmedEmail, temporaryPassword, trimmedTelephone ?? void 0);
     const user = await prisma.user.create({
       data: {
@@ -3784,6 +4644,177 @@ async function computeStats() {
   };
 }
 router8.get(
+  "/daily-analytics",
+  authenticateJWT,
+  requireRole("Administrateur", "SuperAdministrateur"),
+  asyncHandler(async (req, res) => {
+    const daysParam = Number(req.query.days) || 30;
+    const daysCount = Math.min(Math.max(daysParam, 7), 90);
+    const now = /* @__PURE__ */ new Date();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - (daysCount - 1));
+    startDate.setHours(0, 0, 0, 0);
+    const [activities, contributions, dbUsers, supaUsersRes] = await Promise.all([
+      prisma.userActivity.findMany({
+        where: {
+          actionType: {
+            in: ["DOWNLOAD_DOCUMENT", "SUBMIT_CONTRIBUTION", "LOGIN", "REGISTER"]
+          },
+          timestamp: { gte: startDate }
+        },
+        orderBy: { timestamp: "desc" },
+        take: 1e4
+      }).catch(() => []),
+      prisma.contribution.findMany({
+        where: { dateEnvoi: { gte: startDate } },
+        orderBy: { dateEnvoi: "desc" },
+        take: 2e3
+      }).catch(() => []),
+      prisma.user.findMany({
+        orderBy: { createdAt: "desc" }
+      }).catch(() => []),
+      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 500 }).catch(() => ({ data: { users: [] }, error: null }))
+    ]);
+    const mappedActivities = activities.map(mapActivity);
+    const mappedContributions = contributions.map(mapContribution);
+    const userById = /* @__PURE__ */ new Map();
+    for (const u of dbUsers) {
+      userById.set(u.id, u);
+    }
+    const supaUsers = supaUsersRes?.data?.users || [];
+    const syntheticLogins = [];
+    for (const su of supaUsers) {
+      if (!su?.last_sign_in_at) continue;
+      const signInDate = new Date(su.last_sign_in_at);
+      if (isNaN(signInDate.getTime()) || signInDate < startDate) continue;
+      const dbUser = userById.get(su.id);
+      const hasCloseMatch = mappedActivities.some(
+        (a) => (a.actionType === "LOGIN" || a.actionType === "REGISTER") && a.userId === su.id && Math.abs(new Date(a.timestamp).getTime() - signInDate.getTime()) < 5 * 60 * 1e3
+      );
+      if (!hasCloseMatch && dbUser) {
+        syntheticLogins.push({
+          id: `supa-signin-${dbUser.id}-${signInDate.getTime()}`,
+          userId: dbUser.id,
+          userNom: `${dbUser.prenom} ${dbUser.nom}`,
+          userEmail: dbUser.email,
+          userRole: dbUser.role,
+          actionType: "LOGIN",
+          description: "S'est connect\xE9 \xE0 la plateforme ISJ Revisio.",
+          targetId: void 0,
+          targetTitle: void 0,
+          timestamp: signInDate.toISOString()
+        });
+      }
+    }
+    const allEvents = [...mappedActivities, ...syntheticLogins].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    const toDateKey = (iso) => {
+      try {
+        const d = new Date(iso);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      } catch {
+        return iso.slice(0, 10);
+      }
+    };
+    const dailyMap = /* @__PURE__ */ new Map();
+    for (let i = 0; i < daysCount; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const key = `${yyyy}-${mm}-${dd}`;
+      const label = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+      const fullLabel = d.toLocaleDateString("fr-FR", {
+        weekday: "short",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+      dailyMap.set(key, {
+        dateIso: key,
+        label,
+        fullLabel,
+        downloads: 0,
+        contributions: 0,
+        logins: 0,
+        uniqueConnectedUsers: /* @__PURE__ */ new Set(),
+        connectedUserNames: /* @__PURE__ */ new Set(),
+        downloadedDocTitles: /* @__PURE__ */ new Set(),
+        contributedDocTitles: /* @__PURE__ */ new Set()
+      });
+    }
+    const countedContribDates = /* @__PURE__ */ new Set();
+    for (const act of allEvents) {
+      const key = toDateKey(act.timestamp);
+      const bucket = dailyMap.get(key);
+      if (!bucket) continue;
+      if (act.actionType === "DOWNLOAD_DOCUMENT") {
+        bucket.downloads += 1;
+        if (act.targetTitle) bucket.downloadedDocTitles.add(act.targetTitle);
+      } else if (act.actionType === "SUBMIT_CONTRIBUTION") {
+        bucket.contributions += 1;
+        if (act.targetId) countedContribDates.add(act.targetId);
+        if (act.targetTitle) bucket.contributedDocTitles.add(act.targetTitle);
+      } else if (act.actionType === "LOGIN" || act.actionType === "REGISTER") {
+        bucket.logins += 1;
+        bucket.uniqueConnectedUsers.add(act.userId || act.userEmail);
+        if (act.userNom) bucket.connectedUserNames.add(act.userNom);
+      }
+    }
+    for (const c of mappedContributions) {
+      if (countedContribDates.has(c.id)) continue;
+      const key = toDateKey(c.dateEnvoi);
+      const bucket = dailyMap.get(key);
+      if (bucket) {
+        bucket.contributions += 1;
+        if (c.titre || c.fichierNom) {
+          bucket.contributedDocTitles.add(c.titre || c.fichierNom);
+        }
+      }
+    }
+    const dailySeries = Array.from(dailyMap.values()).map((b) => ({
+      dateIso: b.dateIso,
+      label: b.label,
+      fullLabel: b.fullLabel,
+      downloads: b.downloads,
+      contributions: b.contributions,
+      logins: b.logins,
+      uniqueUsers: b.uniqueConnectedUsers.size,
+      connectedUsersList: Array.from(b.connectedUserNames).slice(0, 4),
+      downloadedDocsList: Array.from(b.downloadedDocTitles).slice(0, 3),
+      contributedDocsList: Array.from(b.contributedDocTitles).slice(0, 3)
+    }));
+    const downloadEvents = allEvents.filter((a) => a.actionType === "DOWNLOAD_DOCUMENT").slice(0, 60);
+    const loginEvents = allEvents.filter((a) => a.actionType === "LOGIN" || a.actionType === "REGISTER").slice(0, 60);
+    const contributionEvents = mappedContributions.slice(0, 60).map((c) => ({
+      id: c.id,
+      userId: c.utilisateurId,
+      userNom: c.utilisateurNom,
+      userEmail: c.utilisateurEmail,
+      userRole: userById.get(c.utilisateurId)?.role || "Etudiant",
+      actionType: "SUBMIT_CONTRIBUTION",
+      description: `A soumis \xAB ${c.titre || c.fichierNom} \xBB (${c.matiere || "Mati\xE8re"} \u2022 ${c.typeEpreuve || "\xC9preuve"})`,
+      targetId: c.id,
+      targetTitle: c.titre || c.fichierNom,
+      matiere: c.matiere,
+      typeEpreuve: c.typeEpreuve,
+      statut: c.statut,
+      timestamp: c.dateEnvoi
+    }));
+    res.json({
+      dailySeries,
+      downloadEvents,
+      loginEvents,
+      contributionEvents
+    });
+  })
+);
+router8.get(
   "/",
   authenticateJWT,
   requireRole("Administrateur", "SuperAdministrateur"),
@@ -3847,18 +4878,18 @@ var admin_default = router9;
 // server/routes/contact.ts
 import { Router as Router10 } from "express";
 import { z as z8 } from "zod";
-import { randomUUID as randomUUID4 } from "crypto";
+import { randomUUID as randomUUID5 } from "crypto";
 
 // server/services/feedback.service.ts
-import { promises as fs3 } from "fs";
-import path4 from "path";
+import { promises as fs4 } from "fs";
+import path5 from "path";
 import os2 from "os";
-var DATA_DIR = process.env.VERCEL ? path4.join(os2.tmpdir(), "data") : path4.join(process.cwd(), "data");
-var FILE = path4.join(DATA_DIR, "contact-messages.json");
+var DATA_DIR2 = process.env.VERCEL ? path5.join(os2.tmpdir(), "data") : path5.join(process.cwd(), "data");
+var FILE = path5.join(DATA_DIR2, "contact-messages.json");
 var writeQueue = Promise.resolve();
 async function readRecords() {
   try {
-    const raw = await fs3.readFile(FILE, "utf8");
+    const raw = await fs4.readFile(FILE, "utf8");
     const data = JSON.parse(raw);
     return Array.isArray(data) ? data : [];
   } catch {
@@ -3869,14 +4900,14 @@ async function appendFeedback(record) {
   writeQueue = writeQueue.then(async () => {
     const rows = await readRecords();
     rows.push(record);
-    await fs3.mkdir(DATA_DIR, { recursive: true });
-    await fs3.writeFile(FILE, JSON.stringify(rows, null, 2), "utf8");
+    await fs4.mkdir(DATA_DIR2, { recursive: true });
+    await fs4.writeFile(FILE, JSON.stringify(rows, null, 2), "utf8");
   });
   return writeQueue;
 }
 async function feedbackFileExists() {
   try {
-    await fs3.access(FILE);
+    await fs4.access(FILE);
     return true;
   } catch {
     return false;
@@ -3902,7 +4933,7 @@ router10.post(
   asyncHandler(async (req, res) => {
     const { nom, email, sujet, message, categorie } = req.body;
     await appendFeedback({
-      id: randomUUID4(),
+      id: randomUUID5(),
       nom: String(nom).trim(),
       email: String(email).trim().toLowerCase(),
       categorie: String(categorie ?? "").trim() || "G\xE9n\xE9ral",

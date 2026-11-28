@@ -27,6 +27,14 @@ function resolvePort(): number {
     const parsed = Number(args[portFlagIndex + 1]);
     if (!Number.isNaN(parsed) && parsed > 0) return parsed;
   }
+  if (process.env.DEFAULT_APP_PORT) {
+    const appPort = Number(process.env.DEFAULT_APP_PORT);
+    if (!Number.isNaN(appPort) && appPort > 0) return appPort;
+  }
+  if (process.env.PORT && process.env.PORT !== process.env.NGINX_PORT) {
+    const envPort = Number(process.env.PORT);
+    if (!Number.isNaN(envPort) && envPort > 0) return envPort;
+  }
   return 3000;
 }
 

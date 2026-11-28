@@ -1,7 +1,7 @@
 import http from "http";
 import express from "express";
 import path from "path";
-import { createServer as createViteServer, type ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite";
 import { createApp } from "./server/app";
 import { env } from "./server/config/env";
 import { prisma } from "./server/prisma/client";
@@ -16,6 +16,7 @@ async function startServer() {
   let vite: ViteDevServer | undefined;
 
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     vite = await createViteServer({
       server: {
         middlewareMode: true,

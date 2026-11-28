@@ -24,6 +24,8 @@ import { PdfViewerModal } from "./components/PdfViewerModal";
 import { CookieConsent } from "./components/CookieConsent";
 import { DownloadStatusToast, DownloadToastState } from "./components/DownloadStatusToast";
 import { GlobalProgressBar } from "./components/GlobalProgressBar";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
+import { OfflineIndicator } from "./components/OfflineIndicator";
 import { HomeView } from "./views/HomeView";
 import { SubjectsView } from "./views/SubjectsView";
 import { ExamsView } from "./views/ExamsView";
@@ -74,6 +76,7 @@ export default function App() {
   const [isContributionSubmitting, setIsContributionSubmitting] = useState(false);
   const [dataLoadError, setDataLoadError] = useState(false);
   const [consentReminderKey, setConsentReminderKey] = useState(0);
+  const [pwaLoginPromptKey, setPwaLoginPromptKey] = useState(0);
 
   // Load initial datasets from API (real Supabase database)
   const loadData = async (showProgress = false) => {
@@ -606,6 +609,7 @@ export default function App() {
                   setActiveTab("home");
                   setAuthNotice(null);
                   setConsentReminderKey((k) => k + 1);
+                  setPwaLoginPromptKey((k) => k + 1);
                 }}
                 onNavigateToRegister={() => {
                   setAuthNotice(null);
@@ -629,6 +633,7 @@ export default function App() {
                   setActiveTab("home");
                   setAuthNotice(null);
                   setConsentReminderKey((k) => k + 1);
+                  setPwaLoginPromptKey((k) => k + 1);
                 }}
                 onNavigateToLogin={() => setActiveTab("login")}
                 redirectReason={authNotice}
@@ -655,6 +660,12 @@ export default function App() {
 
       {/* Toast flottant de progression de téléchargement */}
       <DownloadStatusToast toast={downloadToast} onDismiss={() => setDownloadToast(null)} />
+
+      {/* Notification d'installation PWA (à l'arrivée et après connexion) */}
+      <PWAInstallPrompt loginPromptKey={pwaLoginPromptKey} userName={user?.prenom} />
+
+      {/* Indicateur mode hors ligne */}
+      <OfflineIndicator />
     </div>
     </MotionConfig>
   );
